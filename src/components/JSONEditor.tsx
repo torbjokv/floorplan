@@ -1,4 +1,4 @@
-import { ChangeEvent, useRef, useEffect, useState } from 'react';
+import { type ChangeEvent, useRef, useEffect, useState } from 'react';
 
 interface JSONEditorProps {
   value: string;
