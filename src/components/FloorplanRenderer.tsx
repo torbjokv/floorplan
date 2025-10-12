@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
-import type { FloorplanData, ResolvedRoom, Anchor, Door, Window, WallPosition, SwingDirection } from '../types';
-import { mm, resolveRoomPositions, getCorner, resolveCompositeRoom } from '../utils';
+import type { FloorplanData, ResolvedRoom, Door, Window, WallPosition } from '../types';
+import { mm, resolveRoomPositions, resolveCompositeRoom } from '../utils';
 
 interface FloorplanRendererProps {
   data: FloorplanData;
