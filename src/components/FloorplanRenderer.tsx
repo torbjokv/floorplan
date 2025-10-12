@@ -307,31 +307,57 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
           if (obj.type === 'circle') {
             const radius = mm(obj.radius || 500);
             return (
-              <circle
-                key={`obj-${idx}`}
-                cx={mm(absX)}
-                cy={mm(absY)}
-                r={radius}
-                fill={color}
-                stroke="#333"
-                strokeWidth="1"
-              />
+              <g key={`obj-${idx}`}>
+                <circle
+                  cx={mm(absX)}
+                  cy={mm(absY)}
+                  r={radius}
+                  fill={color}
+                  stroke="#333"
+                  strokeWidth="1"
+                />
+                {obj.text && (
+                  <text
+                    x={mm(absX)}
+                    y={mm(absY)}
+                    fontSize="12"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fill="#000"
+                  >
+                    {obj.text}
+                  </text>
+                )}
+              </g>
             );
           } else {
             // Square
             const w = mm(obj.width || 1000);
             const h = mm(obj.height || 1000);
             return (
-              <rect
-                key={`obj-${idx}`}
-                x={mm(absX) - w / 2}
-                y={mm(absY) - h / 2}
-                width={w}
-                height={h}
-                fill={color}
-                stroke="#333"
-                strokeWidth="1"
-              />
+              <g key={`obj-${idx}`}>
+                <rect
+                  x={mm(absX) - w / 2}
+                  y={mm(absY) - h / 2}
+                  width={w}
+                  height={h}
+                  fill={color}
+                  stroke="#333"
+                  strokeWidth="1"
+                />
+                {obj.text && (
+                  <text
+                    x={mm(absX)}
+                    y={mm(absY)}
+                    fontSize="12"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fill="#000"
+                  >
+                    {obj.text}
+                  </text>
+                )}
+              </g>
             );
           }
         })}

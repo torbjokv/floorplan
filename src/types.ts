@@ -18,6 +18,8 @@ export interface RoomObject {
   radius?: number; // For circles
   color?: string;
   name?: string;
+  text?: string; // Optional text in center
+  anchor?: Anchor; // For squares only
 }
 
 export interface Room {
