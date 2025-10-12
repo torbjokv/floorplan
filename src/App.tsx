@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import { JSONEditor } from './components/JSONEditor'
+import { GUIEditor } from './components/GUIEditor'
 import { FloorplanRenderer } from './components/FloorplanRenderer'
 import type { FloorplanData } from './types'
 
@@ -102,6 +103,7 @@ function App() {
   const [positioningErrors, setPositioningErrors] = useState<string[]>([]);
   const [showUpdateAnimation, setShowUpdateAnimation] = useState(false);
   const [showCopyNotification, setShowCopyNotification] = useState(false);
+  const [activeTab, setActiveTab] = useState<'json' | 'gui'>('json');
 
   // Auto-update on JSON changes with debounce
   useEffect(() => {
@@ -126,6 +128,11 @@ function App() {
 
   const handlePositioningErrors = (errors: string[]) => {
     setPositioningErrors(errors);
+  };
+
+  const handleGUIChange = (data: FloorplanData) => {
+    // Update JSON text from GUI changes
+    setJsonText(JSON.stringify(data, null, 2));
   };
 
   const handleDownloadJSON = () => {
@@ -170,12 +177,33 @@ function App() {
   return (
     <div className="app-container">
       <div className="editor-section">
-        <JSONEditor
-          value={jsonText}
-          onChange={setJsonText}
-          error={jsonError}
-          warnings={positioningErrors}
-        />
+        <div className="tabs">
+          <button
+            className={`tab ${activeTab === 'json' ? 'active' : ''}`}
+            onClick={() => setActiveTab('json')}
+          >
+            JSON Editor
+          </button>
+          <button
+            className={`tab ${activeTab === 'gui' ? 'active' : ''}`}
+            onClick={() => setActiveTab('gui')}
+          >
+            GUI Editor
+          </button>
+        </div>
+        {activeTab === 'json' ? (
+          <JSONEditor
+            value={jsonText}
+            onChange={setJsonText}
+            error={jsonError}
+            warnings={positioningErrors}
+          />
+        ) : (
+          <GUIEditor
+            data={floorplanData}
+            onChange={handleGUIChange}
+          />
+        )}
         <div className="button-row">
           <button className="download-button" onClick={handleDownloadJSON}>
             💾 Download JSON
