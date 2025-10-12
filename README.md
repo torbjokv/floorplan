@@ -84,16 +84,16 @@ Create a simple floor plan with two rooms:
   "rooms": [...],
   "doors": [
     {
-      "room": "Living Room:bottom-left",
-      "offset": [1000, 0],
+      "room": "Living Room:bottom",
+      "offset": 1000,
       "width": 800,
-      "swing": "right"
+      "swing": "inwards-right"
     }
   ],
   "windows": [
     {
-      "room": "Kitchen:top-right",
-      "offset": [-1000, 0],
+      "room": "Kitchen:top",
+      "offset": 1000,
       "width": 1200
     }
   ]
@@ -143,11 +143,10 @@ Doors have a fixed thickness of 100mm.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `room` | string | required | Room reference with corner |
+| `room` | string | required | Room reference with wall: `"RoomName:wall"` where wall is `top`, `bottom`, `left`, or `right` |
 | `width` | number | required | Door width in mm |
-| `offset` | [number, number] | [0, 0] | Position offset |
-| `rotation` | number | 0 | Rotation in degrees |
-| `swing` | string | "right" | `"left"` or `"right"` |
+| `offset` | number | 0 | Distance along the wall from the wall's start in mm |
+| `swing` | string | "inwards-right" | `"inwards-left"`, `"inwards-right"`, `"outwards-left"`, or `"outwards-right"` |
 
 ### Window Properties
 
@@ -155,10 +154,9 @@ Windows have a fixed thickness of 100mm.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `room` | string | required | Room reference with corner |
+| `room` | string | required | Room reference with wall: `"RoomName:wall"` where wall is `top`, `bottom`, `left`, or `right` |
 | `width` | number | required | Window width in mm |
-| `offset` | [number, number] | [0, 0] | Position offset |
-| `rotation` | number | 0 | Rotation in degrees |
+| `offset` | number | 0 | Distance along the wall from the wall's start in mm |
 
 ## 🎨 Positioning System
 
@@ -309,27 +307,27 @@ npm run build
   ],
   "doors": [
     {
-      "room": "Living Room:bottom-left",
-      "offset": [2000, 0],
+      "room": "Living Room:bottom",
+      "offset": 2000,
       "width": 900,
-      "swing": "right"
+      "swing": "inwards-right"
     },
     {
-      "room": "Bedroom:top-left",
-      "offset": [1000, 0],
+      "room": "Bedroom:top",
+      "offset": 1000,
       "width": 800,
-      "swing": "left"
+      "swing": "inwards-left"
     }
   ],
   "windows": [
     {
-      "room": "Living Room:top-left",
-      "offset": [1000, 0],
+      "room": "Living Room:top",
+      "offset": 1000,
       "width": 1500
     },
     {
-      "room": "Kitchen:top-right",
-      "offset": [-1200, 0],
+      "room": "Kitchen:right",
+      "offset": 1000,
       "width": 1200
     }
   ]

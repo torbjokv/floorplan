@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import type { FloorplanData, ResolvedRoom, Anchor, Door, Window } from '../types';
+import { useEffect, useMemo } from 'react';
+import type { FloorplanData, ResolvedRoom, Anchor, Door, Window, WallPosition, SwingDirection } from '../types';
 import { mm, resolveRoomPositions, getCorner, resolveCompositeRoom } from '../utils';
 
 interface FloorplanRendererProps {
@@ -9,7 +9,9 @@ interface FloorplanRendererProps {
 
 export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRendererProps) {
   const gridStep = data.grid_step || 1000;
-  const { roomMap, errors } = resolveRoomPositions(data.rooms);
+
+  // Memoize room resolution to avoid recalculating on every render
+  const { roomMap, errors } = useMemo(() => resolveRoomPositions(data.rooms), [data.rooms]);
 
   // Notify parent component of positioning errors
   useEffect(() => {
@@ -56,9 +58,12 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
     };
   };
 
-  const bounds = Object.keys(roomMap).length > 0
-    ? calculateBounds()
-    : { x: 0, y: 0, width: 10000, depth: 10000 };
+  // Memoize bounds calculation to avoid recalculating on every render
+  const bounds = useMemo(() => {
+    return Object.keys(roomMap).length > 0
+      ? calculateBounds()
+      : { x: 0, y: 0, width: 10000, depth: 10000 };
+  }, [roomMap]);
 
   // Calculate grid bounds based on actual content
   const gridMinX = Math.floor(bounds.x / gridStep) * gridStep;
@@ -259,49 +264,150 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
   };
 
   const renderDoor = (door: Door, index: number) => {
-    const [roomName, anchorStr = 'top-left'] = door.room.split(':') as [string, Anchor];
+    const [roomName, wallStr = 'left'] = door.room.split(':') as [string, WallPosition];
     const room = roomMap[roomName];
     if (!room) return null;
 
-    const anchor = getCorner(room, anchorStr);
-    const offset = door.offset || [0, 0];
-    const posX = anchor.x + offset[0];
-    const posY = anchor.y + offset[1];
-    const x = mm(posX);
-    const y = mm(posY);
+    const wall = wallStr as WallPosition;
+    const offset = mm(door.offset ?? 0);
+    const swing = door.swing || 'inwards-right';
     const w = mm(door.width);
     const d = mm(100); // Fixed door thickness: 100mm
-    const rot = door.rotation || 0;
-    const swing = door.swing || 'right';
 
-    // Door swing arc - the arc shows where the door swings to
-    // The hinge is at one end, and the arc shows the swing path
-    // Door is positioned inward (negative y direction from the wall)
-    // swing 'right': hinge on left (x=0), door swings right
-    // swing 'left': hinge on right (x=w), door swings left
+    // Determine if door swings inwards or outwards, and left or right
+    const isInwards = swing.startsWith('inwards');
+    const isRight = swing.endsWith('right');
 
-    let doorRect, arcPath;
+    // Calculate position based on wall and offset
+    let x: number, y: number;
+    let doorRect: { x: number; y: number; width: number; height: number };
+    let arcPath: string;
 
-    if (swing === 'right') {
-      // Hinge on left side at (0, 0), door swings to the right
-      doorRect = { x: 0, y: -d };
-      // Arc from hinge (0, 0) to door end position (w, -w)
-      arcPath = `M 0 0 A ${w} ${w} 0 0 1 ${w} ${-w}`;
-    } else {
-      // Hinge on right side at (w, 0), door swings to the left
-      doorRect = { x: 0, y: -d };
-      // Arc from hinge (w, 0) to door end position (0, -w)
-      arcPath = `M ${w} 0 A ${w} ${w} 0 0 0 0 ${-w}`;
+    switch (wall) {
+      case 'bottom':
+        // Bottom wall - door opens into room (upward)
+        x = mm(room.x) + offset;
+        y = mm(room.y + room.depth);
+
+        if (isInwards) {
+          // Door swings into room (upward)
+          doorRect = { x: 0, y: -d, width: w, height: d };
+          if (isRight) {
+            // Hinge on right, arc from right edge to left
+            arcPath = `M ${w} ${-d} A ${w} ${w} 0 0 0 0 ${-d - w}`;
+          } else {
+            // Hinge on left, arc from left edge to right
+            arcPath = `M 0 ${-d} A ${w} ${w} 0 0 1 ${w} ${-d - w}`;
+          }
+        } else {
+          // Door swings out of room (downward)
+          doorRect = { x: 0, y: 0, width: w, height: d };
+          if (isRight) {
+            // Hinge on right, arc from right edge outward
+            arcPath = `M ${w} 0 A ${w} ${w} 0 0 1 0 ${w}`;
+          } else {
+            // Hinge on left, arc from left edge outward
+            arcPath = `M 0 0 A ${w} ${w} 0 0 0 ${w} ${w}`;
+          }
+        }
+        break;
+
+      case 'top':
+        // Top wall - door opens into room (downward)
+        x = mm(room.x) + offset;
+        y = mm(room.y);
+
+        if (isInwards) {
+          // Door swings into room (downward)
+          doorRect = { x: 0, y: 0, width: w, height: d };
+          if (isRight) {
+            // Hinge on right, arc from right edge to left
+            arcPath = `M ${w} ${d} A ${w} ${w} 0 0 1 0 ${d + w}`;
+          } else {
+            // Hinge on left, arc from left edge to right
+            arcPath = `M 0 ${d} A ${w} ${w} 0 0 0 ${w} ${d + w}`;
+          }
+        } else {
+          // Door swings out of room (upward)
+          doorRect = { x: 0, y: -d, width: w, height: d };
+          if (isRight) {
+            // Hinge on right, arc from right edge outward
+            arcPath = `M ${w} ${-d} A ${w} ${w} 0 0 0 0 ${-d - w}`;
+          } else {
+            // Hinge on left, arc from left edge outward
+            arcPath = `M 0 ${-d} A ${w} ${w} 0 0 1 ${w} ${-d - w}`;
+          }
+        }
+        break;
+
+      case 'left':
+        // Left wall - door opens into room (rightward)
+        x = mm(room.x);
+        y = mm(room.y) + offset;
+
+        if (isInwards) {
+          // Door swings into room (rightward)
+          doorRect = { x: 0, y: 0, width: d, height: w };
+          if (isRight) {
+            // Hinge on bottom, arc from bottom edge upward
+            arcPath = `M ${d} ${w} A ${w} ${w} 0 0 0 ${d + w} 0`;
+          } else {
+            // Hinge on top, arc from top edge downward
+            arcPath = `M ${d} 0 A ${w} ${w} 0 0 1 ${d + w} ${w}`;
+          }
+        } else {
+          // Door swings out of room (leftward)
+          doorRect = { x: -d, y: 0, width: d, height: w };
+          if (isRight) {
+            // Hinge on bottom, arc from bottom edge outward
+            arcPath = `M ${-d} ${w} A ${w} ${w} 0 0 1 ${-d - w} 0`;
+          } else {
+            // Hinge on top, arc from top edge outward
+            arcPath = `M ${-d} 0 A ${w} ${w} 0 0 0 ${-d - w} ${w}`;
+          }
+        }
+        break;
+
+      case 'right':
+        // Right wall - door opens into room (leftward)
+        x = mm(room.x + room.width);
+        y = mm(room.y) + offset;
+
+        if (isInwards) {
+          // Door swings into room (leftward)
+          doorRect = { x: -d, y: 0, width: d, height: w };
+          if (isRight) {
+            // Hinge on bottom, arc from bottom edge upward
+            arcPath = `M ${-d} ${w} A ${w} ${w} 0 0 1 ${-d - w} 0`;
+          } else {
+            // Hinge on top, arc from top edge downward
+            arcPath = `M ${-d} 0 A ${w} ${w} 0 0 0 ${-d - w} ${w}`;
+          }
+        } else {
+          // Door swings out of room (rightward)
+          doorRect = { x: 0, y: 0, width: d, height: w };
+          if (isRight) {
+            // Hinge on bottom, arc from bottom edge outward
+            arcPath = `M ${d} ${w} A ${w} ${w} 0 0 0 ${d + w} 0`;
+          } else {
+            // Hinge on top, arc from top edge outward
+            arcPath = `M ${d} 0 A ${w} ${w} 0 0 1 ${d + w} ${w}`;
+          }
+        }
+        break;
+
+      default:
+        return null;
     }
 
     return (
-      <g key={`door-${index}`} transform={`translate(${x},${y}) rotate(${rot})`}>
+      <g key={`door-${index}`}>
         {/* Door rectangle */}
         <rect
-          x={doorRect.x}
-          y={doorRect.y}
-          width={w}
-          height={d}
+          x={x + doorRect.x}
+          y={y + doorRect.y}
+          width={doorRect.width}
+          height={doorRect.height}
           fill="saddlebrown"
           stroke="#333"
           strokeWidth="1"
@@ -309,6 +415,7 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
         {/* Door swing arc */}
         <path
           d={arcPath}
+          transform={`translate(${x},${y})`}
           fill="none"
           stroke="#333"
           strokeWidth="1"
@@ -319,30 +426,69 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
   };
 
   const renderWindow = (win: Window, index: number) => {
-    const [roomName, anchorStr = 'top-left'] = win.room.split(':') as [string, Anchor];
+    const [roomName, wallStr = 'top'] = win.room.split(':') as [string, WallPosition];
     const room = roomMap[roomName];
     if (!room) return null;
 
-    const anchor = getCorner(room, anchorStr);
-    const offset = win.offset || [0, 0];
-    const posX = anchor.x + offset[0];
-    const posY = anchor.y + offset[1];
-    const x = mm(posX);
-    const y = mm(posY);
+    const wall = wallStr as WallPosition;
+    const offset = win.offset ?? 0;
     const w = mm(win.width);
     const d = mm(100); // Fixed window thickness: 100mm
-    const rot = win.rotation || 0;
+
+    // Calculate position and rotation based on wall
+    let posX: number, posY: number, rotation: number;
+    let rectX = 0, rectY = 0;
+
+    switch (wall) {
+      case 'left':
+        posX = room.x;
+        posY = room.y + offset;
+        rotation = 90;
+        rectX = 0;  // Window thickness extends into room (rightward)
+        rectY = -d; // Shift up by window thickness (which is rotated)
+        break;
+
+      case 'right':
+        posX = room.x + room.width;
+        posY = room.y + offset;
+        rotation = 90;
+        rectX = -d; // Window extends into room
+        rectY = 0;
+        break;
+
+      case 'top':
+        posX = room.x + offset;
+        posY = room.y;
+        rotation = 0;
+        rectX = 0;
+        rectY = 0;  // Window extends into room (downward)
+        break;
+
+      case 'bottom':
+        posX = room.x + offset;
+        posY = room.y + room.depth;
+        rotation = 0;
+        rectX = 0;
+        rectY = -d; // Window extends into room (upward)
+        break;
+
+      default:
+        return null;
+    }
+
+    const x = mm(posX);
+    const y = mm(posY);
 
     return (
-      <g key={`window-${index}`} transform={`translate(${x},${y}) rotate(${rot})`}>
+      <g key={`window-${index}`} transform={`translate(${x},${y}) rotate(${rotation})`}>
         <rect
-          x={0}
-          y={0}
+          x={rectX}
+          y={rectY}
           width={w}
           height={d}
           fill="lightblue"
           stroke="#444"
-          strokeWidth="1"
+          strokeWidth="2"
         />
       </g>
     );

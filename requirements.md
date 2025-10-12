@@ -118,22 +118,26 @@ Doors are rendered with a swing arc showing the opening direction. Doors have a 
 
 | Property | Type | Required | Default | Description |
 |----------|------|----------|---------|-------------|
-| `room` | string | ✓ | - | Room reference with anchor: `"RoomName:corner"` |
+| `room` | string | ✓ | - | Room reference with wall: `"RoomName:wall"` where wall is `top`, `bottom`, `left`, or `right` |
 | `width` | number | ✓ | - | Door width in mm |
-| `offset` | [number, number] | - | [0, 0] | Position offset from anchor |
-| `rotation` | number | - | 0 | Rotation angle in degrees |
-| `swing` | "left" \| "right" | - | "right" | Direction of door swing |
+| `offset` | number | - | 0 | Distance along the wall from the wall's start position in mm |
+| `swing` | SwingDirection | - | "inwards-right" | Direction the door swings: `"inwards-left"`, `"inwards-right"`, `"outwards-left"`, `"outwards-right"` |
 
 **Example**:
 ```json
 {
-  "room": "Living Room:bottom-left",
-  "offset": [1000, 0],
+  "room": "Living Room:bottom",
+  "offset": 1000,
   "width": 800,
-  "rotation": 0,
-  "swing": "right"
+  "swing": "inwards-right"
 }
 ```
+
+**Swing Directions**:
+- `inwards-left`: Door swings into the room, hinge on the left
+- `inwards-right`: Door swings into the room, hinge on the right
+- `outwards-left`: Door swings out of the room, hinge on the left
+- `outwards-right`: Door swings out of the room, hinge on the right
 
 ### 5. Windows
 
@@ -141,18 +145,16 @@ Windows are rendered as simple rectangular elements. Windows have a fixed thickn
 
 | Property | Type | Required | Default | Description |
 |----------|------|----------|---------|-------------|
-| `room` | string | ✓ | - | Room reference with anchor: `"RoomName:corner"` |
+| `room` | string | ✓ | - | Room reference with wall: `"RoomName:wall"` where wall is `top`, `bottom`, `left`, or `right` |
 | `width` | number | ✓ | - | Window width in mm |
-| `offset` | [number, number] | - | [0, 0] | Position offset from anchor |
-| `rotation` | number | - | 0 | Rotation angle in degrees |
+| `offset` | number | - | 0 | Distance along the wall from the wall's start position in mm |
 
 **Example**:
 ```json
 {
-  "room": "Kitchen:top-right",
-  "offset": [-1000, 0],
-  "width": 800,
-  "rotation": 0
+  "room": "Kitchen:top",
+  "offset": 1000,
+  "width": 1200
 }
 ```
 
@@ -215,19 +217,17 @@ Windows are rendered as simple rectangular elements. Windows have a fixed thickn
   ],
   "doors": [
     {
-      "room": "Living Room:bottom-left",
-      "offset": [1000, 0],
+      "room": "Living Room:bottom",
+      "offset": 1000,
       "width": 800,
-      "rotation": 0,
-      "swing": "right"
+      "swing": "inwards-right"
     }
   ],
   "windows": [
     {
-      "room": "Kitchen:top-right",
-      "offset": [-1000, 0],
-      "width": 800,
-      "rotation": 0
+      "room": "Kitchen:top",
+      "offset": 1000,
+      "width": 1200
     }
   ]
 }

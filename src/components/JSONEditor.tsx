@@ -9,6 +9,7 @@ interface JSONEditorProps {
 
 export function JSONEditor({ value, onChange, error, warnings }: JSONEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const lineNumbersRef = useRef<HTMLDivElement>(null);
   const [lineNumbers, setLineNumbers] = useState<number[]>([]);
 
   const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
@@ -16,11 +17,8 @@ export function JSONEditor({ value, onChange, error, warnings }: JSONEditorProps
   };
 
   const handleScroll = () => {
-    if (textareaRef.current) {
-      const lineNumbersEl = document.querySelector('.line-numbers');
-      if (lineNumbersEl) {
-        (lineNumbersEl as HTMLElement).scrollTop = textareaRef.current.scrollTop;
-      }
+    if (textareaRef.current && lineNumbersRef.current) {
+      lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
     }
   };
 
@@ -34,7 +32,7 @@ export function JSONEditor({ value, onChange, error, warnings }: JSONEditorProps
       <h2>📏 Floorplan JSON</h2>
       <div className="editor-wrapper">
         <div className={`editor-with-lines ${error || (warnings && warnings.length > 0) ? 'has-error' : ''}`}>
-          <div className="line-numbers">
+          <div ref={lineNumbersRef} className="line-numbers">
             {lineNumbers.map(num => (
               <div key={num} className="line-number">
                 {num}

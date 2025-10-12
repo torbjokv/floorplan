@@ -41,19 +41,17 @@ const defaultJSON = `{
   ],
   "doors": [
     {
-      "room": "Living Room:bottom-left",
-      "offset": [1000, 0],
+      "room": "Living Room:bottom",
+      "offset": 1000,
       "width": 800,
-      "rotation": 0,
-      "swing": "right"
+      "swing": "inwards-right"
     }
   ],
   "windows": [
     {
-      "room": "Kitchen:top-right",
-      "offset": [-1000, 0],
-      "width": 800,
-      "rotation": 0
+      "room": "Kitchen:top",
+      "offset": 1000,
+      "width": 1200
     }
   ]
 }`;
