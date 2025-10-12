@@ -57,8 +57,27 @@ const defaultJSON = `{
 }`;
 
 function App() {
-  const [jsonText, setJsonText] = useState(defaultJSON);
+  const [jsonText, setJsonText] = useState(() => {
+    // Try to load JSON from URL hash
+    const hash = window.location.hash.slice(1);
+    if (hash) {
+      try {
+        return decodeURIComponent(hash);
+      } catch {
+        return defaultJSON;
+      }
+    }
+    return defaultJSON;
+  });
   const [floorplanData, setFloorplanData] = useState<FloorplanData>(() => {
+    const hash = window.location.hash.slice(1);
+    if (hash) {
+      try {
+        return JSON.parse(decodeURIComponent(hash));
+      } catch {
+        return JSON.parse(defaultJSON);
+      }
+    }
     try {
       return JSON.parse(defaultJSON);
     } catch {
@@ -71,6 +90,7 @@ function App() {
   const [jsonError, setJsonError] = useState<string>('');
   const [positioningErrors, setPositioningErrors] = useState<string[]>([]);
   const [showUpdateAnimation, setShowUpdateAnimation] = useState(false);
+  const [showCopyNotification, setShowCopyNotification] = useState(false);
 
   // Auto-update on JSON changes with debounce
   useEffect(() => {
@@ -82,6 +102,9 @@ function App() {
         setPositioningErrors([]);
         setShowUpdateAnimation(true);
         setTimeout(() => setShowUpdateAnimation(false), 1000);
+
+        // Update URL hash with encoded JSON
+        window.history.replaceState(null, '', '#' + encodeURIComponent(jsonText));
       } catch (e) {
         setJsonError((e as Error).message);
       }
@@ -90,21 +113,47 @@ function App() {
     return () => clearTimeout(timer);
   }, [jsonText]);
 
-  const handleRender = () => {
-    try {
-      const data = JSON.parse(jsonText);
-      setFloorplanData(data);
-      setJsonError('');
-      setPositioningErrors([]);
-      setShowUpdateAnimation(true);
-      setTimeout(() => setShowUpdateAnimation(false), 1000);
-    } catch (e) {
-      setJsonError((e as Error).message);
-    }
-  };
-
   const handlePositioningErrors = (errors: string[]) => {
     setPositioningErrors(errors);
+  };
+
+  const handleDownloadJSON = () => {
+    const blob = new Blob([jsonText], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'floorplan.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadSVG = () => {
+    const svgElement = document.querySelector('.floorplan-svg');
+    if (!svgElement) return;
+
+    const svgData = new XMLSerializer().serializeToString(svgElement);
+    const blob = new Blob([svgData], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'floorplan.svg';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+      setShowCopyNotification(true);
+      setTimeout(() => setShowCopyNotification(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy URL:', err);
+    }
   };
 
   return (
@@ -116,9 +165,14 @@ function App() {
           error={jsonError}
           warnings={positioningErrors}
         />
-        <button className="render-button" onClick={handleRender}>
-          🔄 Render
-        </button>
+        <div className="button-row">
+          <button className="download-button" onClick={handleDownloadJSON}>
+            💾 Download JSON
+          </button>
+          <button className="share-button" onClick={handleShare}>
+            🔗 Share
+          </button>
+        </div>
       </div>
       <div className="preview-section">
         {showUpdateAnimation && (
@@ -126,7 +180,15 @@ function App() {
             ✓ Updated
           </div>
         )}
+        {showCopyNotification && (
+          <div className="copy-notification">
+            ✓ Link copied to clipboard!
+          </div>
+        )}
         <FloorplanRenderer data={floorplanData} onPositioningErrors={handlePositioningErrors} />
+        <button className="download-svg-button" onClick={handleDownloadSVG}>
+          📥 Download SVG
+        </button>
       </div>
     </div>
   )
