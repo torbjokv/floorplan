@@ -323,7 +323,10 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
                     fontSize="12"
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fill="#000"
+                    fill="#fff"
+                    stroke="#000"
+                    strokeWidth="0.5"
+                    paintOrder="stroke"
                   >
                     {obj.text}
                   </text>
@@ -331,14 +334,45 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
               </g>
             );
           } else {
-            // Square
+            // Square - apply anchor adjustment
             const w = mm(obj.width || 1000);
             const h = mm(obj.height || 1000);
+            const anchor = obj.anchor || 'top-left';
+
+            // Calculate position based on anchor
+            let rectX = mm(absX);
+            let rectY = mm(absY);
+            let centerX = mm(absX);
+            let centerY = mm(absY);
+
+            switch (anchor) {
+              case 'top-left':
+                centerX = rectX + w / 2;
+                centerY = rectY + h / 2;
+                break;
+              case 'top-right':
+                rectX = rectX - w;
+                centerX = rectX + w / 2;
+                centerY = rectY + h / 2;
+                break;
+              case 'bottom-left':
+                rectY = rectY - h;
+                centerX = rectX + w / 2;
+                centerY = rectY + h / 2;
+                break;
+              case 'bottom-right':
+                rectX = rectX - w;
+                rectY = rectY - h;
+                centerX = rectX + w / 2;
+                centerY = rectY + h / 2;
+                break;
+            }
+
             return (
               <g key={`obj-${idx}`}>
                 <rect
-                  x={mm(absX) - w / 2}
-                  y={mm(absY) - h / 2}
+                  x={rectX}
+                  y={rectY}
                   width={w}
                   height={h}
                   fill={color}
@@ -347,12 +381,15 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
                 />
                 {obj.text && (
                   <text
-                    x={mm(absX)}
-                    y={mm(absY)}
+                    x={centerX}
+                    y={centerY}
                     fontSize="12"
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fill="#000"
+                    fill="#fff"
+                    stroke="#000"
+                    strokeWidth="0.5"
+                    paintOrder="stroke"
                   >
                     {obj.text}
                   </text>
