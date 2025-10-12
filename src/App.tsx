@@ -318,28 +318,26 @@ function App() {
         </div>
         <div className="tabs">
           <button
-            className={`tab ${activeTab === 'json' ? 'active' : ''}`}
-            onClick={() => setActiveTab('json')}
-          >
-            JSON Editor
-          </button>
-          <button
             className={`tab ${activeTab === 'gui' ? 'active' : ''}`}
             onClick={() => setActiveTab('gui')}
           >
             GUI Editor
           </button>
-          {activeTab === 'json' && (
-            <a
-              href="https://github.com/torbjokv/floorplan"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="manual-link"
-              title="View JSON format documentation"
-            >
-              Manual
-            </a>
-          )}
+          <button
+            className={`tab ${activeTab === 'json' ? 'active' : ''}`}
+            onClick={() => setActiveTab('json')}
+          >
+            JSON Editor
+          </button>
+          <a
+            href="https://github.com/torbjokv/floorplan"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="manual-link"
+            title="View JSON format documentation"
+          >
+            📖 Manual
+          </a>
         </div>
         {activeTab === 'json' ? (
           <JSONEditor

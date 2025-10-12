@@ -188,23 +188,25 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
               />
               <button onClick={() => deleteRoom(index)} className="delete-button">Delete</button>
             </div>
-            <div className="form-grid-three">
-              <label>
-                Width (mm):
-                <input
-                  type="number"
-                  value={room.width}
-                  onChange={(e) => updateRoom(index, { ...room, width: Number(e.target.value) })}
-                />
-              </label>
-              <label>
-                Depth (mm):
-                <input
-                  type="number"
-                  value={room.depth}
-                  onChange={(e) => updateRoom(index, { ...room, depth: Number(e.target.value) })}
-                />
-              </label>
+            <div className="dimensions-layout">
+              <div className="dimensions-stack">
+                <label>
+                  Width (mm):
+                  <input
+                    type="number"
+                    value={room.width}
+                    onChange={(e) => updateRoom(index, { ...room, width: Number(e.target.value) })}
+                  />
+                </label>
+                <label>
+                  Depth (mm):
+                  <input
+                    type="number"
+                    value={room.depth}
+                    onChange={(e) => updateRoom(index, { ...room, depth: Number(e.target.value) })}
+                  />
+                </label>
+              </div>
               <div>
                 <label className="section-label">My Anchor:</label>
                 <AnchorSelector

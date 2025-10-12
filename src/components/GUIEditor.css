@@ -377,3 +377,42 @@
   margin-bottom: 10px;
   align-items: start;
 }
+
+.dimensions-layout {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 10px;
+  align-items: start;
+}
+
+.dimensions-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.dimensions-stack label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #b0b0b0;
+}
+
+.dimensions-stack input {
+  padding: 8px 10px;
+  border: 1px solid #404040;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  background-color: #3a3a3a;
+  color: #e0e0e0;
+}
+
+.dimensions-stack input:focus {
+  outline: none;
+  border-color: #646cff;
+  background-color: #424242;
+}
