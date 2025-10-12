@@ -242,31 +242,94 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
             if (obj.type === 'circle') {
               const radius = mm(obj.radius || 500);
               return (
-                <circle
-                  key={`obj-${idx}`}
-                  cx={mm(absX)}
-                  cy={mm(absY)}
-                  r={radius}
-                  fill={color}
-                  stroke="#333"
-                  strokeWidth="1"
-                />
+                <g key={`obj-${idx}`}>
+                  <circle
+                    cx={mm(absX)}
+                    cy={mm(absY)}
+                    r={radius}
+                    fill={color}
+                    stroke="#333"
+                    strokeWidth="1"
+                  />
+                  {obj.text && (
+                    <text
+                      x={mm(absX)}
+                      y={mm(absY)}
+                      fontSize="12"
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fill="#fff"
+                      stroke="#000"
+                      strokeWidth="0.5"
+                      paintOrder="stroke"
+                    >
+                      {obj.text}
+                    </text>
+                  )}
+                </g>
               );
             } else {
-              // Square
+              // Square - apply anchor adjustment
               const w = mm(obj.width || 1000);
               const h = mm(obj.height || 1000);
+              const anchor = obj.anchor || 'top-left';
+
+              // Calculate position based on anchor
+              let rectX = mm(absX);
+              let rectY = mm(absY);
+              let centerX = mm(absX);
+              let centerY = mm(absY);
+
+              switch (anchor) {
+                case 'top-left':
+                  centerX = rectX + w / 2;
+                  centerY = rectY + h / 2;
+                  break;
+                case 'top-right':
+                  rectX = rectX - w;
+                  centerX = rectX + w / 2;
+                  centerY = rectY + h / 2;
+                  break;
+                case 'bottom-left':
+                  rectY = rectY - h;
+                  centerX = rectX + w / 2;
+                  centerY = rectY + h / 2;
+                  break;
+                case 'bottom-right':
+                  rectX = rectX - w;
+                  rectY = rectY - h;
+                  centerX = rectX + w / 2;
+                  centerY = rectY + h / 2;
+                  break;
+              }
+
               return (
-                <rect
-                  key={`obj-${idx}`}
-                  x={mm(absX) - w / 2}
-                  y={mm(absY) - h / 2}
-                  width={w}
-                  height={h}
-                  fill={color}
-                  stroke="#333"
-                  strokeWidth="1"
-                />
+                <g key={`obj-${idx}`}>
+                  <rect
+                    x={rectX}
+                    y={rectY}
+                    width={w}
+                    height={h}
+                    fill={color}
+                    stroke="#333"
+                    strokeWidth="1"
+                  />
+                  {obj.text && (
+                    <text
+                      x={centerX}
+                      y={centerY}
+                      fontSize="12"
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fill="#fff"
+                      stroke="#000"
+                      strokeWidth="0.5"
+                      paintOrder="stroke"
+                    >
+                      {obj.text}
+                    </text>
+                  )}
+                </g>
               );
             }
           })}
