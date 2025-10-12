@@ -109,7 +109,7 @@ function App() {
   const [positioningErrors, setPositioningErrors] = useState<string[]>([]);
   const [showUpdateAnimation, setShowUpdateAnimation] = useState(false);
   const [showCopyNotification, setShowCopyNotification] = useState(false);
-  const [activeTab, setActiveTab] = useState<'json' | 'gui'>('json');
+  const [activeTab, setActiveTab] = useState<'json' | 'gui'>('gui');
   const [projectName, setProjectName] = useState<string>('Untitled Project');
   const [savedProjects, setSavedProjects] = useState<SavedProject[]>(() => {
     try {
@@ -302,7 +302,7 @@ function App() {
           </button>
           {activeTab === 'json' && (
             <a
-              href="https://github.com/anthropics/claude-code"
+              href="https://github.com/torbjokv/floorplan"
               target="_blank"
               rel="noopener noreferrer"
               className="manual-link"

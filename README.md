@@ -2,6 +2,8 @@
 
 A browser-based SVG floorplan designer for creating architectural floor plans through JSON input with real-time visual feedback.
 
+**🌐 Live Demo: [https://torbjokv.github.io/floorplan/](https://torbjokv.github.io/floorplan/)**
+
 ![React](https://img.shields.io/badge/React-19.1-blue.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)
 ![Vite](https://img.shields.io/badge/Vite-7.1-646CFF.svg)
