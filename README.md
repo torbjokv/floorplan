@@ -29,7 +29,6 @@ A browser-based SVG floorplan designer for creating architectural floor plans th
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/floorplan.git
-cd floorplan
 
 # Install dependencies
 npm install

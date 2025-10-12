@@ -45,11 +45,22 @@ const defaultJSON = `{
       "offset": 1000,
       "width": 800,
       "swing": "inwards-right"
+    },
+    {
+      "room": "Kitchen:left",
+      "offset": 1000,
+      "width": 800,
+      "swing": "inwards-left"
     }
   ],
   "windows": [
     {
       "room": "Kitchen:top",
+      "offset": 1000,
+      "width": 1200
+    },
+    {
+      "room": "Living Room:top",
       "offset": 1000,
       "width": 1200
     }
