@@ -1,14 +1,22 @@
+import { useEffect } from 'react';
 import type { FloorplanData, ResolvedRoom, Anchor, Door, Window } from '../types';
 import { mm, resolveRoomPositions, getCorner, resolveCompositeRoom } from '../utils';
 
 interface FloorplanRendererProps {
   data: FloorplanData;
+  onPositioningErrors?: (errors: string[]) => void;
 }
 
-export function FloorplanRenderer({ data }: FloorplanRendererProps) {
-  const scale = data.scale || 1;
+export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRendererProps) {
   const gridStep = data.grid_step || 1000;
-  const roomMap = resolveRoomPositions(data.rooms);
+  const { roomMap, errors } = resolveRoomPositions(data.rooms);
+
+  // Notify parent component of positioning errors
+  useEffect(() => {
+    if (onPositioningErrors) {
+      onPositioningErrors(errors);
+    }
+  }, [errors, onPositioningErrors]);
 
   // Calculate bounding box for all rooms and their additions
   const calculateBounds = () => {
@@ -24,39 +32,39 @@ export function FloorplanRenderer({ data }: FloorplanRendererProps) {
       minX = Math.min(minX, room.x);
       minY = Math.min(minY, room.y);
       maxX = Math.max(maxX, room.x + room.width);
-      maxY = Math.max(maxY, room.y + room.height);
+      maxY = Math.max(maxY, room.y + room.depth);
 
       // Check additions bounds
       additions.forEach(addition => {
         minX = Math.min(minX, addition.x);
         minY = Math.min(minY, addition.y);
         maxX = Math.max(maxX, addition.x + addition.width);
-        maxY = Math.max(maxY, addition.y + addition.height);
+        maxY = Math.max(maxY, addition.y + addition.depth);
       });
     });
 
     // Add padding (10% on each side)
     const width = maxX - minX;
-    const height = maxY - minY;
-    const padding = Math.max(width, height) * 0.1;
+    const depth = maxY - minY;
+    const padding = Math.max(width, depth) * 0.1;
 
     return {
       x: minX - padding,
       y: minY - padding,
       width: width + padding * 2,
-      height: height + padding * 2
+      depth: depth + padding * 2
     };
   };
 
   const bounds = Object.keys(roomMap).length > 0
     ? calculateBounds()
-    : { x: 0, y: 0, width: 10000, height: 10000 };
+    : { x: 0, y: 0, width: 10000, depth: 10000 };
 
   // Calculate grid bounds based on actual content
   const gridMinX = Math.floor(bounds.x / gridStep) * gridStep;
   const gridMinY = Math.floor(bounds.y / gridStep) * gridStep;
   const gridMaxX = Math.ceil((bounds.x + bounds.width) / gridStep) * gridStep;
-  const gridMaxY = Math.ceil((bounds.y + bounds.height) / gridStep) * gridStep;
+  const gridMaxY = Math.ceil((bounds.y + bounds.depth) / gridStep) * gridStep;
 
   const renderGrid = () => {
     const lines = [];
@@ -66,10 +74,10 @@ export function FloorplanRenderer({ data }: FloorplanRendererProps) {
       lines.push(
         <line
           key={`v-${i}`}
-          x1={mm(i, scale)}
-          y1={mm(gridMinY, scale)}
-          x2={mm(i, scale)}
-          y2={mm(gridMaxY, scale)}
+          x1={mm(i)}
+          y1={mm(gridMinY)}
+          x2={mm(i)}
+          y2={mm(gridMaxY)}
           stroke="#eee"
         />
       );
@@ -80,10 +88,10 @@ export function FloorplanRenderer({ data }: FloorplanRendererProps) {
       lines.push(
         <line
           key={`h-${i}`}
-          x1={mm(gridMinX, scale)}
-          y1={mm(i, scale)}
-          x2={mm(gridMaxX, scale)}
-          y2={mm(i, scale)}
+          x1={mm(gridMinX)}
+          y1={mm(i)}
+          x2={mm(gridMaxX)}
+          y2={mm(i)}
           stroke="#eee"
         />
       );
@@ -98,7 +106,7 @@ export function FloorplanRenderer({ data }: FloorplanRendererProps) {
     // For composite rooms, draw all rectangles WITH borders, then cover internal borders
     if (additions.length > 0) {
       const allParts = [
-        { x: room.x, y: room.y, width: room.width, height: room.height },
+        { x: room.x, y: room.y, width: room.width, depth: room.depth },
         ...additions
       ];
 
@@ -120,10 +128,10 @@ export function FloorplanRenderer({ data }: FloorplanRendererProps) {
           const b = allParts[j];
 
           // Check if they share a vertical edge (left/right sides touching)
-          if (a.x + a.width === b.x && !(a.y + a.height <= b.y || b.y + b.height <= a.y)) {
+          if (a.x + a.width === b.x && !(a.y + a.depth <= b.y || b.y + b.depth <= a.y)) {
             // A's right edge touches B's left edge
             const overlapTop = Math.max(a.y, b.y);
-            const overlapBottom = Math.min(a.y + a.height, b.y + b.height);
+            const overlapBottom = Math.min(a.y + a.depth, b.y + b.depth);
             sharedEdges.push({
               x1: a.x + a.width,
               y1: overlapTop,
@@ -131,10 +139,10 @@ export function FloorplanRenderer({ data }: FloorplanRendererProps) {
               y2: overlapBottom,
               isVertical: true
             });
-          } else if (b.x + b.width === a.x && !(a.y + a.height <= b.y || b.y + b.height <= a.y)) {
+          } else if (b.x + b.width === a.x && !(a.y + a.depth <= b.y || b.y + b.depth <= a.y)) {
             // B's right edge touches A's left edge
             const overlapTop = Math.max(a.y, b.y);
-            const overlapBottom = Math.min(a.y + a.height, b.y + b.height);
+            const overlapBottom = Math.min(a.y + a.depth, b.y + b.depth);
             sharedEdges.push({
               x1: b.x + b.width,
               y1: overlapTop,
@@ -145,26 +153,26 @@ export function FloorplanRenderer({ data }: FloorplanRendererProps) {
           }
 
           // Check if they share a horizontal edge (top/bottom sides touching)
-          if (a.y + a.height === b.y && !(a.x + a.width <= b.x || b.x + b.width <= a.x)) {
+          if (a.y + a.depth === b.y && !(a.x + a.width <= b.x || b.x + b.width <= a.x)) {
             // A's bottom edge touches B's top edge
             const overlapLeft = Math.max(a.x, b.x);
             const overlapRight = Math.min(a.x + a.width, b.x + b.width);
             sharedEdges.push({
               x1: overlapLeft,
-              y1: a.y + a.height,
+              y1: a.y + a.depth,
               x2: overlapRight,
-              y2: a.y + a.height,
+              y2: a.y + a.depth,
               isVertical: false
             });
-          } else if (b.y + b.height === a.y && !(a.x + a.width <= b.x || b.x + b.width <= a.x)) {
+          } else if (b.y + b.depth === a.y && !(a.x + a.width <= b.x || b.x + b.width <= a.x)) {
             // B's bottom edge touches A's top edge
             const overlapLeft = Math.max(a.x, b.x);
             const overlapRight = Math.min(a.x + a.width, b.x + b.width);
             sharedEdges.push({
               x1: overlapLeft,
-              y1: b.y + b.height,
+              y1: b.y + b.depth,
               x2: overlapRight,
-              y2: b.y + b.height,
+              y2: b.y + b.depth,
               isVertical: false
             });
           }
@@ -175,10 +183,10 @@ export function FloorplanRenderer({ data }: FloorplanRendererProps) {
         <g key={room.name}>
           {/* Layer 1: All rectangles WITH borders */}
           <rect
-            x={mm(room.x, scale)}
-            y={mm(room.y, scale)}
-            width={mm(room.width, scale)}
-            height={mm(room.height, scale)}
+            x={mm(room.x)}
+            y={mm(room.y)}
+            width={mm(room.width)}
+            height={mm(room.depth)}
             fill="#e0ebe8"
             stroke="black"
             strokeWidth="2"
@@ -186,10 +194,10 @@ export function FloorplanRenderer({ data }: FloorplanRendererProps) {
           {additions.map((addition, idx) => (
             <rect
               key={`border-${idx}`}
-              x={mm(addition.x, scale)}
-              y={mm(addition.y, scale)}
-              width={mm(addition.width, scale)}
-              height={mm(addition.height, scale)}
+              x={mm(addition.x)}
+              y={mm(addition.y)}
+              width={mm(addition.width)}
+              height={mm(addition.depth)}
               fill="#e0ebe8"
               stroke="black"
               strokeWidth="2"
@@ -200,10 +208,10 @@ export function FloorplanRenderer({ data }: FloorplanRendererProps) {
           {sharedEdges.map((edge, idx) => (
             <line
               key={`cover-${idx}`}
-              x1={mm(edge.x1, scale)}
-              y1={mm(edge.y1, scale)}
-              x2={mm(edge.x2, scale)}
-              y2={mm(edge.y2, scale)}
+              x1={mm(edge.x1)}
+              y1={mm(edge.y1)}
+              x2={mm(edge.x2)}
+              y2={mm(edge.y2)}
               stroke="#e0ebe8"
               strokeWidth="3"
             />
@@ -211,8 +219,8 @@ export function FloorplanRenderer({ data }: FloorplanRendererProps) {
 
           {/* Room label */}
           <text
-            x={mm(room.x + room.width / 2, scale)}
-            y={mm(room.y + room.height / 2, scale)}
+            x={mm(room.x + room.width / 2)}
+            y={mm(room.y + room.depth / 2)}
             fontSize="14"
             textAnchor="middle"
             dominantBaseline="middle"
@@ -227,10 +235,10 @@ export function FloorplanRenderer({ data }: FloorplanRendererProps) {
     return (
       <g key={room.name}>
         <rect
-          x={mm(room.x, scale)}
-          y={mm(room.y, scale)}
-          width={mm(room.width, scale)}
-          height={mm(room.height, scale)}
+          x={mm(room.x)}
+          y={mm(room.y)}
+          width={mm(room.width)}
+          height={mm(room.depth)}
           fill="#e0ebe8"
           stroke="black"
           strokeWidth="2"
@@ -238,8 +246,8 @@ export function FloorplanRenderer({ data }: FloorplanRendererProps) {
 
         {/* Room label */}
         <text
-          x={mm(room.x + room.width / 2, scale)}
-          y={mm(room.y + room.height / 2, scale)}
+          x={mm(room.x + room.width / 2)}
+          y={mm(room.y + room.depth / 2)}
           fontSize="14"
           textAnchor="middle"
           dominantBaseline="middle"
@@ -259,10 +267,10 @@ export function FloorplanRenderer({ data }: FloorplanRendererProps) {
     const offset = door.offset || [0, 0];
     const posX = anchor.x + offset[0];
     const posY = anchor.y + offset[1];
-    const x = mm(posX, scale);
-    const y = mm(posY, scale);
-    const w = mm(door.width, scale);
-    const d = mm(door.depth || 100, scale); // Default depth 100mm
+    const x = mm(posX);
+    const y = mm(posY);
+    const w = mm(door.width);
+    const d = mm(100); // Fixed door thickness: 100mm
     const rot = door.rotation || 0;
     const swing = door.swing || 'right';
 
@@ -319,10 +327,10 @@ export function FloorplanRenderer({ data }: FloorplanRendererProps) {
     const offset = win.offset || [0, 0];
     const posX = anchor.x + offset[0];
     const posY = anchor.y + offset[1];
-    const x = mm(posX, scale);
-    const y = mm(posY, scale);
-    const w = mm(win.width, scale);
-    const d = mm(win.depth || 100, scale); // Default depth 100mm
+    const x = mm(posX);
+    const y = mm(posY);
+    const w = mm(win.width);
+    const d = mm(100); // Fixed window thickness: 100mm
     const rot = win.rotation || 0;
 
     return (
@@ -341,7 +349,7 @@ export function FloorplanRenderer({ data }: FloorplanRendererProps) {
   };
 
   // Convert bounds to screen coordinates
-  const viewBox = `${mm(bounds.x, scale)} ${mm(bounds.y, scale)} ${mm(bounds.width, scale)} ${mm(bounds.height, scale)}`;
+  const viewBox = `${mm(bounds.x)} ${mm(bounds.y)} ${mm(bounds.width)} ${mm(bounds.depth)}`;
 
   return (
     <div className="preview-container">

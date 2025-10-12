@@ -4,49 +4,39 @@ import { JSONEditor } from './components/JSONEditor'
 import { FloorplanRenderer } from './components/FloorplanRenderer'
 import type { FloorplanData } from './types'
 
-  //TODO: remove scale everywhere. we dont need it  
-  //TODO: rename height to depth everywhere
-  
 const defaultJSON = `{
-  "scale": 2,
   "grid_step": 1000,
   "rooms": [
     {
       "name": "Living Room",
-      "x": 0,
-      "y": 0,
       "width": 4000,
-      "height": 3000
+      "depth": 3000
     },
     {
       "name": "Kitchen",
-      "anchor": "top-left",
       "attachTo": "Living Room:top-right",
       "offset": [500, 0],
       "width": 4000,
-      "height": 3000
+      "depth": 3000
     },
     {
       "name": "Composite Room",
       "width": 3000,
-      "height": 2000,
-      "anchor": "top-left",
+      "depth": 2000,
       "attachTo": "Living Room:bottom-left",
       "offset": [0, 500],
       "addition": [
         {
           "name": "1",
           "width": 1000,
-          "height": 1000,
-          "anchor": "top-left",
+          "depth": 1000,
           "attachTo": "parent:bottom-left",
           "offset": [0, 0]
         },
         {
           "name": "2",
           "width": 500,
-          "height": 500,
-          "anchor": "top-left",
+          "depth": 500,
           "attachTo": "1:bottom-left",
           "offset": [0, 0]
         }
@@ -79,13 +69,13 @@ function App() {
       return JSON.parse(defaultJSON);
     } catch {
       return {
-        scale: 2,
         grid_step: 1000,
         rooms: []
       };
     }
   });
   const [jsonError, setJsonError] = useState<string>('');
+  const [positioningErrors, setPositioningErrors] = useState<string[]>([]);
   const [showUpdateAnimation, setShowUpdateAnimation] = useState(false);
 
   // Auto-update on JSON changes with debounce
@@ -95,6 +85,7 @@ function App() {
         const data = JSON.parse(jsonText);
         setFloorplanData(data);
         setJsonError('');
+        setPositioningErrors([]);
         setShowUpdateAnimation(true);
         setTimeout(() => setShowUpdateAnimation(false), 1000);
       } catch (e) {
@@ -110,11 +101,16 @@ function App() {
       const data = JSON.parse(jsonText);
       setFloorplanData(data);
       setJsonError('');
+      setPositioningErrors([]);
       setShowUpdateAnimation(true);
       setTimeout(() => setShowUpdateAnimation(false), 1000);
     } catch (e) {
       setJsonError((e as Error).message);
     }
+  };
+
+  const handlePositioningErrors = (errors: string[]) => {
+    setPositioningErrors(errors);
   };
 
   return (
@@ -124,6 +120,7 @@ function App() {
           value={jsonText}
           onChange={setJsonText}
           error={jsonError}
+          warnings={positioningErrors}
         />
         <button className="render-button" onClick={handleRender}>
           🔄 Render
@@ -135,7 +132,7 @@ function App() {
             ✓ Updated
           </div>
         )}
-        <FloorplanRenderer data={floorplanData} />
+        <FloorplanRenderer data={floorplanData} onPositioningErrors={handlePositioningErrors} />
       </div>
     </div>
   )

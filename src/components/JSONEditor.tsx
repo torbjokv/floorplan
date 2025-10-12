@@ -4,9 +4,10 @@ interface JSONEditorProps {
   value: string;
   onChange: (value: string) => void;
   error?: string;
+  warnings?: string[];
 }
 
-export function JSONEditor({ value, onChange, error }: JSONEditorProps) {
+export function JSONEditor({ value, onChange, error, warnings }: JSONEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [lineNumbers, setLineNumbers] = useState<number[]>([]);
 
@@ -32,7 +33,7 @@ export function JSONEditor({ value, onChange, error }: JSONEditorProps) {
     <div className="editor-container">
       <h2>📏 Floorplan JSON</h2>
       <div className="editor-wrapper">
-        <div className={`editor-with-lines ${error ? 'has-error' : ''}`}>
+        <div className={`editor-with-lines ${error || (warnings && warnings.length > 0) ? 'has-error' : ''}`}>
           <div className="line-numbers">
             {lineNumbers.map(num => (
               <div key={num} className="line-number">
@@ -52,6 +53,16 @@ export function JSONEditor({ value, onChange, error }: JSONEditorProps) {
             {error && (
               <div className="json-error-overlay">
                 ❌ {error}
+              </div>
+            )}
+            {!error && warnings && warnings.length > 0 && (
+              <div className="json-error-overlay json-warning-overlay">
+                <strong>⚠️ Positioning Errors:</strong>
+                <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
+                  {warnings.map((warning, idx) => (
+                    <li key={idx}>{warning}</li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>

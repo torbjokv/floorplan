@@ -3,7 +3,7 @@ export type Anchor = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 export interface RoomAddition {
   name: string;
   width: number;
-  height: number;
+  depth: number;
   anchor?: Anchor;
   attachTo?: string;
   offset?: [number, number];
@@ -12,7 +12,7 @@ export interface RoomAddition {
 export interface Room {
   name: string;
   width: number;
-  height: number;
+  depth: number;
   x?: number;
   y?: number;
   anchor?: Anchor;
@@ -25,7 +25,6 @@ export interface Door {
   room: string;
   offset?: [number, number];
   width: number;
-  depth?: number; // Wall thickness (optional, defaults to reasonable value)
   rotation?: number;
   swing?: 'left' | 'right'; // Direction the door swings
 }
@@ -34,12 +33,10 @@ export interface Window {
   room: string;
   offset?: [number, number];
   width: number;
-  depth?: number; // Wall thickness (optional, defaults to reasonable value)
   rotation?: number;
 }
 
 export interface FloorplanData {
-  scale: number;
   grid_step: number;
   rooms: Room[];
   doors?: Door[];
