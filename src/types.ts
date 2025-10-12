@@ -1,12 +1,23 @@
 export type Anchor = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
-export interface RoomAddition {
+export interface RoomPart {
   name: string;
   width: number;
   depth: number;
   anchor?: Anchor;
   attachTo?: string;
   offset?: [number, number];
+}
+
+export interface RoomObject {
+  type: 'square' | 'circle';
+  x: number;
+  y: number;
+  width?: number; // For squares
+  height?: number; // For squares
+  radius?: number; // For circles
+  color?: string;
+  name?: string;
 }
 
 export interface Room {
@@ -18,7 +29,8 @@ export interface Room {
   anchor?: Anchor;
   attachTo?: string;
   offset?: [number, number];
-  addition?: RoomAddition[];
+  parts?: RoomPart[];
+  objects?: RoomObject[];
 }
 
 export type WallPosition = 'top' | 'bottom' | 'left' | 'right';

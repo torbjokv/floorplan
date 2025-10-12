@@ -20,7 +20,7 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
     }
   }, [errors, onPositioningErrors]);
 
-  // Calculate bounding box for all rooms and their additions
+  // Calculate bounding box for all rooms and their parts
   const calculateBounds = () => {
     let minX = Infinity;
     let minY = Infinity;
@@ -28,7 +28,7 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
     let maxY = -Infinity;
 
     Object.values(roomMap).forEach(room => {
-      const additions = resolveCompositeRoom(room);
+      const parts = resolveCompositeRoom(room);
 
       // Check main room bounds
       minX = Math.min(minX, room.x);
@@ -36,12 +36,12 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
       maxX = Math.max(maxX, room.x + room.width);
       maxY = Math.max(maxY, room.y + room.depth);
 
-      // Check additions bounds
-      additions.forEach(addition => {
-        minX = Math.min(minX, addition.x);
-        minY = Math.min(minY, addition.y);
-        maxX = Math.max(maxX, addition.x + addition.width);
-        maxY = Math.max(maxY, addition.y + addition.depth);
+      // Check parts bounds
+      parts.forEach(part => {
+        minX = Math.min(minX, part.x);
+        minY = Math.min(minY, part.y);
+        maxX = Math.max(maxX, part.x + part.width);
+        maxY = Math.max(maxY, part.y + part.depth);
       });
     });
 
@@ -106,13 +106,13 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
   };
 
   const renderRoom = (room: ResolvedRoom) => {
-    const additions = resolveCompositeRoom(room);
+    const parts = resolveCompositeRoom(room);
 
     // For composite rooms, draw all rectangles WITH borders, then cover internal borders
-    if (additions.length > 0) {
+    if (parts.length > 0) {
       const allParts = [
         { x: room.x, y: room.y, width: room.width, depth: room.depth },
-        ...additions
+        ...parts
       ];
 
       // Find shared edges between rectangles
@@ -196,13 +196,13 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
             stroke="black"
             strokeWidth="2"
           />
-          {additions.map((addition, idx) => (
+          {parts.map((part, idx) => (
             <rect
               key={`border-${idx}`}
-              x={mm(addition.x)}
-              y={mm(addition.y)}
-              width={mm(addition.width)}
-              height={mm(addition.depth)}
+              x={mm(part.x)}
+              y={mm(part.y)}
+              width={mm(part.width)}
+              height={mm(part.depth)}
               fill="#e0ebe8"
               stroke="black"
               strokeWidth="2"
@@ -232,11 +232,49 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
           >
             {room.name}
           </text>
+
+          {/* Room objects */}
+          {room.objects?.map((obj, idx) => {
+            const absX = room.x + obj.x;
+            const absY = room.y + obj.y;
+            const color = obj.color || '#888';
+
+            if (obj.type === 'circle') {
+              const radius = mm(obj.radius || 500);
+              return (
+                <circle
+                  key={`obj-${idx}`}
+                  cx={mm(absX)}
+                  cy={mm(absY)}
+                  r={radius}
+                  fill={color}
+                  stroke="#333"
+                  strokeWidth="1"
+                />
+              );
+            } else {
+              // Square
+              const w = mm(obj.width || 1000);
+              const h = mm(obj.height || 1000);
+              return (
+                <rect
+                  key={`obj-${idx}`}
+                  x={mm(absX) - w / 2}
+                  y={mm(absY) - h / 2}
+                  width={w}
+                  height={h}
+                  fill={color}
+                  stroke="#333"
+                  strokeWidth="1"
+                />
+              );
+            }
+          })}
         </g>
       );
     }
 
-    // Simple room without additions
+    // Simple room without parts
     return (
       <g key={room.name}>
         <rect
@@ -259,6 +297,44 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
         >
           {room.name}
         </text>
+
+        {/* Room objects */}
+        {room.objects?.map((obj, idx) => {
+          const absX = room.x + obj.x;
+          const absY = room.y + obj.y;
+          const color = obj.color || '#888';
+
+          if (obj.type === 'circle') {
+            const radius = mm(obj.radius || 500);
+            return (
+              <circle
+                key={`obj-${idx}`}
+                cx={mm(absX)}
+                cy={mm(absY)}
+                r={radius}
+                fill={color}
+                stroke="#333"
+                strokeWidth="1"
+              />
+            );
+          } else {
+            // Square
+            const w = mm(obj.width || 1000);
+            const h = mm(obj.height || 1000);
+            return (
+              <rect
+                key={`obj-${idx}`}
+                x={mm(absX) - w / 2}
+                y={mm(absY) - h / 2}
+                width={w}
+                height={h}
+                fill={color}
+                stroke="#333"
+                strokeWidth="1"
+              />
+            );
+          }
+        })}
       </g>
     );
   };

@@ -1,4 +1,4 @@
-import type { Anchor, Point, Room, ResolvedRoom, RoomAddition } from './types';
+import type { Anchor, Point, Room, ResolvedRoom, RoomPart } from './types';
 
 // Fixed scale for display (2 = 1mm real world = 0.2px on screen)
 const DISPLAY_SCALE = 1;
@@ -39,7 +39,7 @@ export function getAnchorAdjustment(anchor: Anchor, width: number, depth: number
   }
 }
 
-interface ResolvedAddition extends RoomAddition {
+interface ResolvedPart extends RoomPart {
   x: number;
   y: number;
 }
@@ -95,50 +95,50 @@ export function resolveRoomPositions(rooms: Room[]): PositioningResult {
   return { roomMap, errors };
 }
 
-export function resolveCompositeRoom(room: ResolvedRoom): ResolvedAddition[] {
-  if (!room.addition || room.addition.length === 0) {
+export function resolveCompositeRoom(room: ResolvedRoom): ResolvedPart[] {
+  if (!room.parts || room.parts.length === 0) {
     return [];
   }
 
-  const additions: ResolvedAddition[] = [];
-  const additionMap: Record<string, ResolvedAddition> = {};
-  const unresolved = [...room.addition];
+  const parts: ResolvedPart[] = [];
+  const partMap: Record<string, ResolvedPart> = {};
+  const unresolved = [...room.parts];
   let safety = 20;
 
   while (unresolved.length && safety--) {
     for (let i = unresolved.length - 1; i >= 0; i--) {
-      const addition = unresolved[i];
+      const part = unresolved[i];
 
-      if (!addition.attachTo) continue;
+      if (!part.attachTo) continue;
 
-      const [refName, refCorner] = addition.attachTo.split(':') as [string, Anchor];
+      const [refName, refCorner] = part.attachTo.split(':') as [string, Anchor];
 
-      let refRoom: ResolvedRoom | ResolvedAddition;
+      let refRoom: ResolvedRoom | ResolvedPart;
       if (refName === 'parent') {
         refRoom = room;
       } else {
-        const found = additionMap[refName];
+        const found = partMap[refName];
         if (!found) continue;
         refRoom = found;
       }
 
       const attachPos = getCorner(refRoom as ResolvedRoom, refCorner);
-      const offset = addition.offset || [0, 0];
-      const anchor = addition.anchor || 'top-left'; // Default to top-left
-      const anchorAdjust = getAnchorAdjustment(anchor, addition.width, addition.depth);
+      const offset = part.offset || [0, 0];
+      const anchor = part.anchor || 'top-left'; // Default to top-left
+      const anchorAdjust = getAnchorAdjustment(anchor, part.width, part.depth);
       const x = attachPos.x + offset[0] + anchorAdjust.x;
       const y = attachPos.y + offset[1] + anchorAdjust.y;
 
-      const resolved = { ...addition, x, y };
-      additionMap[addition.name] = resolved;
-      additions.push(resolved);
+      const resolved = { ...part, x, y };
+      partMap[part.name] = resolved;
+      parts.push(resolved);
       unresolved.splice(i, 1);
     }
   }
 
   if (unresolved.length) {
-    console.error('Some additions could not be placed:', unresolved);
+    console.error('Some parts could not be placed:', unresolved);
   }
 
-  return additions;
+  return parts;
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { FloorplanData, Room, Door, Window } from '../types';
+import type { FloorplanData, Room, Door, Window, RoomObject, Anchor } from '../types';
 import './GUIEditor.css';
 
 interface GUIEditorProps {
@@ -7,8 +7,51 @@ interface GUIEditorProps {
   onChange: (data: FloorplanData) => void;
 }
 
+// Corner icon selector component
+function AnchorSelector({ value, onChange }: { value?: Anchor; onChange: (anchor: Anchor) => void }) {
+  const currentAnchor = value || 'top-left';
+
+  return (
+    <div className="anchor-selector">
+      <button
+        type="button"
+        className={`anchor-corner top-left ${currentAnchor === 'top-left' ? 'active' : ''}`}
+        onClick={() => onChange('top-left')}
+        title="Top Left"
+      >
+        <div className="corner-dot" />
+      </button>
+      <button
+        type="button"
+        className={`anchor-corner top-right ${currentAnchor === 'top-right' ? 'active' : ''}`}
+        onClick={() => onChange('top-right')}
+        title="Top Right"
+      >
+        <div className="corner-dot" />
+      </button>
+      <button
+        type="button"
+        className={`anchor-corner bottom-left ${currentAnchor === 'bottom-left' ? 'active' : ''}`}
+        onClick={() => onChange('bottom-left')}
+        title="Bottom Left"
+      >
+        <div className="corner-dot" />
+      </button>
+      <button
+        type="button"
+        className={`anchor-corner bottom-right ${currentAnchor === 'bottom-right' ? 'active' : ''}`}
+        onClick={() => onChange('bottom-right')}
+        title="Bottom Right"
+      >
+        <div className="corner-dot" />
+      </button>
+    </div>
+  );
+}
+
 export function GUIEditor({ data, onChange }: GUIEditorProps) {
   const [localData, setLocalData] = useState<FloorplanData>(data);
+  const [expandedRooms, setExpandedRooms] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     setLocalData(data);
@@ -17,6 +60,16 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
   const updateData = (newData: FloorplanData) => {
     setLocalData(newData);
     onChange(newData);
+  };
+
+  const toggleRoomExpanded = (index: number) => {
+    const newExpanded = new Set(expandedRooms);
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index);
+    } else {
+      newExpanded.add(index);
+    }
+    setExpandedRooms(newExpanded);
   };
 
   const updateGridStep = (gridStep: number) => {
@@ -31,7 +84,8 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
       x: 0,
       y: 0,
     };
-    updateData({ ...localData, rooms: [...localData.rooms, newRoom] });
+    // Add room at the beginning (on top)
+    updateData({ ...localData, rooms: [newRoom, ...localData.rooms] });
   };
 
   const updateRoom = (index: number, room: Room) => {
@@ -86,6 +140,36 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
     updateData({ ...localData, windows: newWindows });
   };
 
+  const addRoomObject = (roomIndex: number) => {
+    const room = localData.rooms[roomIndex];
+    const newObject: RoomObject = {
+      type: 'square',
+      x: room.width / 2,
+      y: room.depth / 2,
+      width: 1000,
+      height: 1000,
+      color: '#888888',
+    };
+    const newObjects = [...(room.objects || []), newObject];
+    updateRoom(roomIndex, { ...room, objects: newObjects });
+  };
+
+  const updateRoomObject = (roomIndex: number, objectIndex: number, obj: RoomObject) => {
+    const room = localData.rooms[roomIndex];
+    const newObjects = [...(room.objects || [])];
+    newObjects[objectIndex] = obj;
+    updateRoom(roomIndex, { ...room, objects: newObjects });
+  };
+
+  const deleteRoomObject = (roomIndex: number, objectIndex: number) => {
+    const room = localData.rooms[roomIndex];
+    const newObjects = (room.objects || []).filter((_, i) => i !== objectIndex);
+    updateRoom(roomIndex, { ...room, objects: newObjects });
+  };
+
+  // Get list of room names for attachTo dropdown
+  const roomNames = localData.rooms.map(r => r.name);
+
   return (
     <div className="gui-editor">
       <div className="gui-section">
@@ -136,48 +220,164 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
                 />
               </label>
             </div>
-            <div className="form-grid">
-              <label>
-                X Position:
-                <input
-                  type="number"
-                  value={room.x ?? ''}
-                  placeholder="auto"
-                  onChange={(e) => updateRoom(index, { ...room, x: e.target.value ? Number(e.target.value) : undefined })}
-                />
-              </label>
-              <label>
-                Y Position:
-                <input
-                  type="number"
-                  value={room.y ?? ''}
-                  placeholder="auto"
-                  onChange={(e) => updateRoom(index, { ...room, y: e.target.value ? Number(e.target.value) : undefined })}
-                />
-              </label>
+
+            {/* Attach To section */}
+            <div className="form-section">
+              <label className="section-label">Positioning</label>
+              <div className="form-grid">
+                <label>
+                  Attach To Room:
+                  <select
+                    value={room.attachTo?.split(':')[0] || ''}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        const currentAnchor = room.attachTo?.split(':')[1] || 'top-left';
+                        updateRoom(index, { ...room, attachTo: `${e.target.value}:${currentAnchor}`, x: undefined, y: undefined });
+                      } else {
+                        updateRoom(index, { ...room, attachTo: undefined });
+                      }
+                    }}
+                  >
+                    <option value="">-- None (use x, y) --</option>
+                    {roomNames.filter((_, i) => i !== index).map((name) => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+                </label>
+
+                {room.attachTo && (
+                  <div>
+                    <label className="section-label">Attach To Corner:</label>
+                    <AnchorSelector
+                      value={(room.attachTo?.split(':')[1] as Anchor) || 'top-left'}
+                      onChange={(anchor) => {
+                        const roomName = room.attachTo?.split(':')[0] || roomNames[0];
+                        updateRoom(index, { ...room, attachTo: `${roomName}:${anchor}` });
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {room.attachTo && (
+                <div>
+                  <label className="section-label">My Anchor Point:</label>
+                  <AnchorSelector
+                    value={room.anchor}
+                    onChange={(anchor) => updateRoom(index, { ...room, anchor })}
+                  />
+                </div>
+              )}
             </div>
-            <div className="form-grid">
-              <label>
-                Anchor:
-                <select
-                  value={room.anchor ?? 'top-left'}
-                  onChange={(e) => updateRoom(index, { ...room, anchor: e.target.value as any })}
-                >
-                  <option value="top-left">Top Left</option>
-                  <option value="top-right">Top Right</option>
-                  <option value="bottom-left">Bottom Left</option>
-                  <option value="bottom-right">Bottom Right</option>
-                </select>
-              </label>
-              <label>
-                Attach To:
-                <input
-                  type="text"
-                  value={room.attachTo ?? ''}
-                  placeholder="e.g., Room:top-right"
-                  onChange={(e) => updateRoom(index, { ...room, attachTo: e.target.value || undefined })}
-                />
-              </label>
+
+            {/* Collapsible x, y section */}
+            <div className="collapsible-section">
+              <button
+                type="button"
+                className="collapse-toggle"
+                onClick={() => toggleRoomExpanded(index)}
+              >
+                {expandedRooms.has(index) ? '▼' : '▶'} Advanced (x, y coordinates)
+              </button>
+              {expandedRooms.has(index) && (
+                <div className="form-grid">
+                  <label>
+                    X Position:
+                    <input
+                      type="number"
+                      value={room.x ?? ''}
+                      placeholder="auto"
+                      onChange={(e) => updateRoom(index, { ...room, x: e.target.value ? Number(e.target.value) : undefined })}
+                    />
+                  </label>
+                  <label>
+                    Y Position:
+                    <input
+                      type="number"
+                      value={room.y ?? ''}
+                      placeholder="auto"
+                      onChange={(e) => updateRoom(index, { ...room, y: e.target.value ? Number(e.target.value) : undefined })}
+                    />
+                  </label>
+                </div>
+              )}
+            </div>
+
+            {/* Room Objects */}
+            <div className="objects-section">
+              <div className="section-header-small">
+                <span className="section-label">Objects in Room</span>
+                <button onClick={() => addRoomObject(index)} className="add-button-small">+ Add Object</button>
+              </div>
+              {(room.objects || []).map((obj, objIndex) => (
+                <div key={objIndex} className="object-card">
+                  <div className="object-header">
+                    <select
+                      value={obj.type}
+                      onChange={(e) => updateRoomObject(index, objIndex, { ...obj, type: e.target.value as 'square' | 'circle' })}
+                    >
+                      <option value="square">Square</option>
+                      <option value="circle">Circle</option>
+                    </select>
+                    <button onClick={() => deleteRoomObject(index, objIndex)} className="delete-button-small">×</button>
+                  </div>
+                  <div className="form-grid-small">
+                    <label>
+                      X:
+                      <input
+                        type="number"
+                        value={obj.x}
+                        onChange={(e) => updateRoomObject(index, objIndex, { ...obj, x: Number(e.target.value) })}
+                      />
+                    </label>
+                    <label>
+                      Y:
+                      <input
+                        type="number"
+                        value={obj.y}
+                        onChange={(e) => updateRoomObject(index, objIndex, { ...obj, y: Number(e.target.value) })}
+                      />
+                    </label>
+                    {obj.type === 'square' ? (
+                      <>
+                        <label>
+                          Width:
+                          <input
+                            type="number"
+                            value={obj.width || 1000}
+                            onChange={(e) => updateRoomObject(index, objIndex, { ...obj, width: Number(e.target.value) })}
+                          />
+                        </label>
+                        <label>
+                          Height:
+                          <input
+                            type="number"
+                            value={obj.height || 1000}
+                            onChange={(e) => updateRoomObject(index, objIndex, { ...obj, height: Number(e.target.value) })}
+                          />
+                        </label>
+                      </>
+                    ) : (
+                      <label>
+                        Radius:
+                        <input
+                          type="number"
+                          value={obj.radius || 500}
+                          onChange={(e) => updateRoomObject(index, objIndex, { ...obj, radius: Number(e.target.value) })}
+                        />
+                      </label>
+                    )}
+                    <label>
+                      Color:
+                      <input
+                        type="color"
+                        value={obj.color || '#888888'}
+                        onChange={(e) => updateRoomObject(index, objIndex, { ...obj, color: e.target.value })}
+                      />
+                    </label>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         ))}
@@ -196,14 +396,36 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
             </div>
             <div className="form-grid">
               <label>
-                Room:Wall:
-                <input
-                  type="text"
-                  value={door.room}
-                  placeholder="RoomName:wall"
-                  onChange={(e) => updateDoor(index, { ...door, room: e.target.value })}
-                />
+                Room:
+                <select
+                  value={door.room.split(':')[0]}
+                  onChange={(e) => {
+                    const wall = door.room.split(':')[1] || 'bottom';
+                    updateDoor(index, { ...door, room: `${e.target.value}:${wall}` });
+                  }}
+                >
+                  {roomNames.map((name) => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
               </label>
+              <label>
+                Wall:
+                <select
+                  value={door.room.split(':')[1] || 'bottom'}
+                  onChange={(e) => {
+                    const roomName = door.room.split(':')[0];
+                    updateDoor(index, { ...door, room: `${roomName}:${e.target.value}` });
+                  }}
+                >
+                  <option value="top">Top</option>
+                  <option value="bottom">Bottom</option>
+                  <option value="left">Left</option>
+                  <option value="right">Right</option>
+                </select>
+              </label>
+            </div>
+            <div className="form-grid">
               <label>
                 Width (mm):
                 <input
@@ -212,8 +434,6 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
                   onChange={(e) => updateDoor(index, { ...door, width: Number(e.target.value) })}
                 />
               </label>
-            </div>
-            <div className="form-grid">
               <label>
                 Offset (mm):
                 <input
@@ -222,8 +442,10 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
                   onChange={(e) => updateDoor(index, { ...door, offset: Number(e.target.value) })}
                 />
               </label>
+            </div>
+            <div className="form-row">
               <label>
-                Swing:
+                Swing Direction:
                 <select
                   value={door.swing ?? 'inwards-right'}
                   onChange={(e) => updateDoor(index, { ...door, swing: e.target.value as any })}
@@ -252,14 +474,36 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
             </div>
             <div className="form-grid">
               <label>
-                Room:Wall:
-                <input
-                  type="text"
-                  value={window.room}
-                  placeholder="RoomName:wall"
-                  onChange={(e) => updateWindow(index, { ...window, room: e.target.value })}
-                />
+                Room:
+                <select
+                  value={window.room.split(':')[0]}
+                  onChange={(e) => {
+                    const wall = window.room.split(':')[1] || 'top';
+                    updateWindow(index, { ...window, room: `${e.target.value}:${wall}` });
+                  }}
+                >
+                  {roomNames.map((name) => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
               </label>
+              <label>
+                Wall:
+                <select
+                  value={window.room.split(':')[1] || 'top'}
+                  onChange={(e) => {
+                    const roomName = window.room.split(':')[0];
+                    updateWindow(index, { ...window, room: `${roomName}:${e.target.value}` });
+                  }}
+                >
+                  <option value="top">Top</option>
+                  <option value="bottom">Bottom</option>
+                  <option value="left">Left</option>
+                  <option value="right">Right</option>
+                </select>
+              </label>
+            </div>
+            <div className="form-grid">
               <label>
                 Width (mm):
                 <input
@@ -268,8 +512,6 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
                   onChange={(e) => updateWindow(index, { ...window, width: Number(e.target.value) })}
                 />
               </label>
-            </div>
-            <div className="form-grid">
               <label>
                 Offset (mm):
                 <input

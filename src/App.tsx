@@ -24,7 +24,7 @@ const defaultJSON = `{
       "width": 3000,
       "depth": 2000,
       "attachTo": "Living Room:bottom-left",
-      "addition": [
+      "parts": [
         {
           "name": "1",
           "width": 1000,
@@ -68,6 +68,12 @@ const defaultJSON = `{
   ]
 }`;
 
+interface SavedProject {
+  name: string;
+  json: string;
+  timestamp: number;
+}
+
 function App() {
   const [jsonText, setJsonText] = useState(() => {
     // Try to load JSON from URL hash
@@ -104,6 +110,16 @@ function App() {
   const [showUpdateAnimation, setShowUpdateAnimation] = useState(false);
   const [showCopyNotification, setShowCopyNotification] = useState(false);
   const [activeTab, setActiveTab] = useState<'json' | 'gui'>('json');
+  const [projectName, setProjectName] = useState<string>('Untitled Project');
+  const [savedProjects, setSavedProjects] = useState<SavedProject[]>(() => {
+    try {
+      const saved = localStorage.getItem('floorplan_projects');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [showProjectMenu, setShowProjectMenu] = useState(false);
 
   // Auto-update on JSON changes with debounce
   useEffect(() => {
@@ -174,9 +190,103 @@ function App() {
     }
   };
 
+  const handleFormatJSON = () => {
+    try {
+      const parsed = JSON.parse(jsonText);
+      const formatted = JSON.stringify(parsed, null, 2);
+      setJsonText(formatted);
+    } catch (err) {
+      // If parsing fails, do nothing
+      console.error('Cannot format invalid JSON:', err);
+    }
+  };
+
+  const handleSaveProject = () => {
+    const newProject: SavedProject = {
+      name: projectName,
+      json: jsonText,
+      timestamp: Date.now(),
+    };
+    const updated = [newProject, ...savedProjects.filter(p => p.name !== projectName)];
+    setSavedProjects(updated);
+    localStorage.setItem('floorplan_projects', JSON.stringify(updated));
+    setShowUpdateAnimation(true);
+    setTimeout(() => setShowUpdateAnimation(false), 1000);
+  };
+
+  const handleLoadProject = (project: SavedProject) => {
+    setProjectName(project.name);
+    setJsonText(project.json);
+    setShowProjectMenu(false);
+  };
+
+  const handleDeleteProject = (projectName: string) => {
+    const updated = savedProjects.filter(p => p.name !== projectName);
+    setSavedProjects(updated);
+    localStorage.setItem('floorplan_projects', JSON.stringify(updated));
+  };
+
+  const handleNewProject = () => {
+    setProjectName('Untitled Project');
+    setJsonText(defaultJSON);
+    setShowProjectMenu(false);
+  };
+
+  const handleLoadExample = () => {
+    setProjectName('Example Floorplan');
+    setJsonText(defaultJSON);
+    setShowProjectMenu(false);
+  };
+
   return (
     <div className="app-container">
       <div className="editor-section">
+        <div className="project-header">
+          <input
+            type="text"
+            value={projectName}
+            onChange={(e) => setProjectName(e.target.value)}
+            className="project-name-input"
+          />
+          <button className="project-menu-button" onClick={() => setShowProjectMenu(!showProjectMenu)}>
+            📁 Projects
+          </button>
+          {showProjectMenu && (
+            <div className="project-menu">
+              <button onClick={handleNewProject} className="project-menu-item">
+                📄 New Project
+              </button>
+              <button onClick={handleLoadExample} className="project-menu-item">
+                📋 Load Example
+              </button>
+              <button onClick={handleSaveProject} className="project-menu-item">
+                💾 Save Project
+              </button>
+              <div className="project-menu-divider" />
+              <div className="project-menu-label">Saved Projects:</div>
+              {savedProjects.length === 0 ? (
+                <div className="project-menu-empty">No saved projects</div>
+              ) : (
+                savedProjects.map((project) => (
+                  <div key={project.name} className="project-menu-saved">
+                    <button
+                      onClick={() => handleLoadProject(project)}
+                      className="project-menu-load"
+                    >
+                      {project.name}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteProject(project.name)}
+                      className="project-menu-delete"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
         <div className="tabs">
           <button
             className={`tab ${activeTab === 'json' ? 'active' : ''}`}
@@ -190,6 +300,17 @@ function App() {
           >
             GUI Editor
           </button>
+          {activeTab === 'json' && (
+            <a
+              href="https://github.com/anthropics/claude-code"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="manual-link"
+              title="View JSON format documentation"
+            >
+              Manual
+            </a>
+          )}
         </div>
         {activeTab === 'json' ? (
           <JSONEditor
@@ -205,6 +326,11 @@ function App() {
           />
         )}
         <div className="button-row">
+          {activeTab === 'json' && (
+            <button className="format-button" onClick={handleFormatJSON}>
+              Format JSON
+            </button>
+          )}
           <button className="download-button" onClick={handleDownloadJSON}>
             💾 Download JSON
           </button>
