@@ -142,6 +142,32 @@ function App() {
     return () => clearTimeout(timer);
   }, [jsonText]);
 
+  // Close project menu on ESC key or click outside
+  useEffect(() => {
+    if (!showProjectMenu) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowProjectMenu(false);
+      }
+    };
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.project-header')) {
+        setShowProjectMenu(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showProjectMenu]);
+
   const handlePositioningErrors = (errors: string[]) => {
     setPositioningErrors(errors);
   };
