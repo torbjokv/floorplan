@@ -15,7 +15,6 @@ const defaultJSON = `{
     {
       "name": "Kitchen",
       "attachTo": "Living Room:top-right",
-      "offset": [500, 0],
       "width": 4000,
       "depth": 3000
     },
@@ -24,21 +23,18 @@ const defaultJSON = `{
       "width": 3000,
       "depth": 2000,
       "attachTo": "Living Room:bottom-left",
-      "offset": [0, 500],
       "addition": [
         {
           "name": "1",
           "width": 1000,
           "depth": 1000,
-          "attachTo": "parent:bottom-left",
-          "offset": [0, 0]
+          "attachTo": "parent:bottom-left"
         },
         {
           "name": "2",
           "width": 500,
           "depth": 500,
-          "attachTo": "1:bottom-left",
-          "offset": [0, 0]
+          "attachTo": "1:bottom-left"
         }
       ]
     }
