@@ -369,3 +369,11 @@
   border-color: #646cff;
   background-color: #424242;
 }
+
+.form-grid-three {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 15px;
+  margin-bottom: 10px;
+  align-items: start;
+}

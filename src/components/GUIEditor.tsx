@@ -173,22 +173,8 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
   return (
     <div className="gui-editor">
       <div className="gui-section">
-        <h3>Grid Settings</h3>
-        <div className="form-row">
-          <label>
-            Grid Step (mm):
-            <input
-              type="number"
-              value={localData.grid_step}
-              onChange={(e) => updateGridStep(Number(e.target.value))}
-            />
-          </label>
-        </div>
-      </div>
-
-      <div className="gui-section">
         <div className="section-header">
-          <h3>Rooms</h3>
+          <h3>🏠 Rooms</h3>
           <button onClick={addRoom} className="add-button">+ Add Room</button>
         </div>
         {localData.rooms.map((room, index) => (
@@ -202,7 +188,7 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
               />
               <button onClick={() => deleteRoom(index)} className="delete-button">Delete</button>
             </div>
-            <div className="form-grid">
+            <div className="form-grid-three">
               <label>
                 Width (mm):
                 <input
@@ -219,6 +205,13 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
                   onChange={(e) => updateRoom(index, { ...room, depth: Number(e.target.value) })}
                 />
               </label>
+              <div>
+                <label className="section-label">My Anchor:</label>
+                <AnchorSelector
+                  value={room.anchor}
+                  onChange={(anchor) => updateRoom(index, { ...room, anchor })}
+                />
+              </div>
             </div>
 
             {/* Attach To section */}
@@ -259,15 +252,6 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
                 )}
               </div>
 
-              {room.attachTo && (
-                <div>
-                  <label className="section-label">My Anchor Point:</label>
-                  <AnchorSelector
-                    value={room.anchor}
-                    onChange={(anchor) => updateRoom(index, { ...room, anchor })}
-                  />
-                </div>
-              )}
             </div>
 
             {/* Collapsible x, y section */}
@@ -385,7 +369,7 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
 
       <div className="gui-section">
         <div className="section-header">
-          <h3>Doors</h3>
+          <h3>🚪 Doors</h3>
           <button onClick={addDoor} className="add-button">+ Add Door</button>
         </div>
         {(localData.doors || []).map((door, index) => (
@@ -463,7 +447,7 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
 
       <div className="gui-section">
         <div className="section-header">
-          <h3>Windows</h3>
+          <h3>🪟 Windows</h3>
           <button onClick={addWindow} className="add-button">+ Add Window</button>
         </div>
         {(localData.windows || []).map((window, index) => (
@@ -523,6 +507,20 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="gui-section">
+        <h3>📐 Grid Settings</h3>
+        <div className="form-row">
+          <label>
+            Grid Step (mm):
+            <input
+              type="number"
+              value={localData.grid_step}
+              onChange={(e) => updateGridStep(Number(e.target.value))}
+            />
+          </label>
+        </div>
       </div>
     </div>
   );
