@@ -227,18 +227,24 @@ function App() {
     }
   };
 
-  const handleSaveProject = () => {
-    const newProject: SavedProject = {
-      name: projectName,
-      json: jsonText,
-      timestamp: Date.now(),
-    };
-    const updated = [newProject, ...savedProjects.filter(p => p.name !== projectName)];
-    setSavedProjects(updated);
-    localStorage.setItem('floorplan_projects', JSON.stringify(updated));
-    setShowUpdateAnimation(true);
-    setTimeout(() => setShowUpdateAnimation(false), 1000);
-  };
+  // Auto-save whenever jsonText or projectName changes
+  useEffect(() => {
+    // Don't save if project name is empty or it's the default example
+    if (!projectName || projectName === 'Example Floorplan') return;
+
+    const timer = setTimeout(() => {
+      const newProject: SavedProject = {
+        name: projectName,
+        json: jsonText,
+        timestamp: Date.now(),
+      };
+      const updated = [newProject, ...savedProjects.filter(p => p.name !== projectName)];
+      setSavedProjects(updated);
+      localStorage.setItem('floorplan_projects', JSON.stringify(updated));
+    }, 1000); // Debounce 1s
+
+    return () => clearTimeout(timer);
+  }, [jsonText, projectName]);
 
   const handleLoadProject = (project: SavedProject) => {
     setProjectName(project.name);
@@ -284,9 +290,6 @@ function App() {
               </button>
               <button onClick={handleLoadExample} className="project-menu-item">
                 📋 Load Example
-              </button>
-              <button onClick={handleSaveProject} className="project-menu-item">
-                💾 Save Project
               </button>
               <div className="project-menu-divider" />
               <div className="project-menu-label">Saved Projects:</div>
