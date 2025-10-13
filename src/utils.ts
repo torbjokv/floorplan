@@ -61,8 +61,8 @@ export function resolveRoomPositions(rooms: Room[]): PositioningResult {
 
       // attachTo has priority over x/y
       if (room.attachTo) {
-        const [refRoomName, refCorner] = room.attachTo.split(':') as [string, Anchor];
-        const refRoom = roomMap[refRoomName];
+        const [refRoomId, refCorner] = room.attachTo.split(':') as [string, Anchor];
+        const refRoom = roomMap[refRoomId];
         if (!refRoom) continue;
 
         const attachPos = getCorner(refRoom, refCorner);
@@ -72,7 +72,7 @@ export function resolveRoomPositions(rooms: Room[]): PositioningResult {
         const x = attachPos.x + offset[0] + anchorAdjust.x;
         const y = attachPos.y + offset[1] + anchorAdjust.y;
 
-        roomMap[room.name] = { ...room, x, y } as ResolvedRoom;
+        roomMap[room.id] = { ...room, x, y } as ResolvedRoom;
         unresolved.splice(i, 1);
         continue;
       }
@@ -80,15 +80,16 @@ export function resolveRoomPositions(rooms: Room[]): PositioningResult {
       // Use absolute positioning with defaults
       const x = room.x ?? 0; // Default to 0
       const y = room.y ?? 0; // Default to 0
-      roomMap[room.name] = { ...room, x, y } as ResolvedRoom;
+      roomMap[room.id] = { ...room, x, y } as ResolvedRoom;
       unresolved.splice(i, 1);
     }
   }
 
   if (unresolved.length) {
     unresolved.forEach(room => {
-      const refRoomName = room.attachTo?.split(':')[0];
-      errors.push(`Room "${room.name}" could not be positioned. Referenced room "${refRoomName}" not found or circular dependency detected.`);
+      const refRoomId = room.attachTo?.split(':')[0];
+      const displayName = room.name || room.id;
+      errors.push(`Room "${displayName}" could not be positioned. Referenced room "${refRoomId}" not found or circular dependency detected.`);
     });
   }
 
@@ -111,13 +112,13 @@ export function resolveCompositeRoom(room: ResolvedRoom): ResolvedPart[] {
 
       if (!part.attachTo) continue;
 
-      const [refName, refCorner] = part.attachTo.split(':') as [string, Anchor];
+      const [refId, refCorner] = part.attachTo.split(':') as [string, Anchor];
 
       let refRoom: ResolvedRoom | ResolvedPart;
-      if (refName === 'parent') {
+      if (refId === 'parent') {
         refRoom = room;
       } else {
-        const found = partMap[refName];
+        const found = partMap[refId];
         if (!found) continue;
         refRoom = found;
       }
@@ -130,7 +131,7 @@ export function resolveCompositeRoom(room: ResolvedRoom): ResolvedPart[] {
       const y = attachPos.y + offset[1] + anchorAdjust.y;
 
       const resolved = { ...part, x, y };
-      partMap[part.name] = resolved;
+      partMap[part.id] = resolved;
       parts.push(resolved);
       unresolved.splice(i, 1);
     }

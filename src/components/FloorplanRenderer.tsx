@@ -239,7 +239,7 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
       }
 
       return (
-        <g key={room.name}>
+        <g key={room.id}>
           {/* Layer 1: All rectangles WITH borders */}
           <rect
             x={mm(room.x)}
@@ -284,7 +284,7 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
             textAnchor="middle"
             dominantBaseline="middle"
           >
-            {room.name}
+            {room.name || room.id}
           </text>
         </g>
       );
@@ -292,7 +292,7 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
 
     // Simple room without parts
     return (
-      <g key={room.name}>
+      <g key={room.id}>
         <rect
           x={mm(room.x)}
           y={mm(room.y)}
@@ -311,15 +311,15 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
           textAnchor="middle"
           dominantBaseline="middle"
         >
-          {room.name}
+          {room.name || room.id}
         </text>
       </g>
     );
   };
 
   const renderDoor = (door: Door, index: number) => {
-    const [roomName, wallStr = 'left'] = door.room.split(':') as [string, WallPosition];
-    const room = roomMap[roomName];
+    const [roomId, wallStr = 'left'] = door.room.split(':') as [string, WallPosition];
+    const room = roomMap[roomId];
     if (!room) return null;
 
     const wall = wallStr as WallPosition;
@@ -480,8 +480,8 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
   };
 
   const renderWindow = (win: Window, index: number) => {
-    const [roomName, wallStr = 'top'] = win.room.split(':') as [string, WallPosition];
-    const room = roomMap[roomName];
+    const [roomId, wallStr = 'top'] = win.room.split(':') as [string, WallPosition];
+    const room = roomMap[roomId];
     if (!room) return null;
 
     const wall = wallStr as WallPosition;
@@ -564,7 +564,7 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
         if (obj.type === 'circle') {
           const radius = mm(obj.radius || 500);
           return (
-            <g key={`${room.name}-obj-${idx}`}>
+            <g key={`${room.id}-obj-${idx}`}>
               <circle
                 cx={mm(absX)}
                 cy={mm(absY)}
@@ -623,7 +623,7 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
           const centerY = rectY + h / 2;
 
           return (
-            <g key={`${room.name}-obj-${idx}`}>
+            <g key={`${room.id}-obj-${idx}`}>
               <rect
                 x={rectX}
                 y={rectY}

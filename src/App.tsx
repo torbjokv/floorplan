@@ -9,46 +9,51 @@ const defaultJSON = `{
   "grid_step": 1000,
   "rooms": [
     {
+      "id": "livingroom1",
       "name": "Living Room",
       "width": 4000,
       "depth": 3000
     },
     {
+      "id": "kitchen1",
       "name": "Kitchen",
-      "attachTo": "Living Room:top-right",
+      "attachTo": "livingroom1:top-right",
       "width": 4000,
       "depth": 3000
     },
     {
+      "id": "composite1",
       "name": "Composite Room",
       "width": 3000,
       "depth": 2000,
-      "attachTo": "Living Room:bottom-left",
+      "attachTo": "livingroom1:bottom-left",
       "parts": [
         {
+          "id": "part1",
           "name": "1",
           "width": 1000,
           "depth": 1000,
           "attachTo": "parent:bottom-left"
         },
         {
+          "id": "part2",
           "name": "2",
           "width": 500,
           "depth": 500,
-          "attachTo": "1:bottom-left"
+          "attachTo": "part1:bottom-left"
         }
       ]
     }
   ],
   "doors": [
     {
-      "room": "Living Room:bottom",
+      "room": "livingroom1:bottom",
       "offset": 1000,
       "width": 800,
       "swing": "inwards-right"
     },
     {
-      "room": "Kitchen:left",
+      "room": "kitchen1:left",
       "offset": 1000,
       "width": 800,
       "swing": "inwards-left"
@@ -56,12 +61,12 @@ const defaultJSON = `{
   ],
   "windows": [
     {
-      "room": "Kitchen:top",
+      "room": "kitchen1:top",
       "offset": 1000,
       "width": 1200
     },
     {
-      "room": "Living Room:top",
+      "room": "livingroom1:top",
       "offset": 1000,
       "width": 1200
     }
