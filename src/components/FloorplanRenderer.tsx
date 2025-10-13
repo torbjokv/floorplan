@@ -43,6 +43,58 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
         maxX = Math.max(maxX, part.x + part.width);
         maxY = Math.max(maxY, part.y + part.depth);
       });
+
+      // Check room objects bounds
+      if (room.objects) {
+        room.objects.forEach(obj => {
+          const roomAnchor = obj.roomAnchor || 'top-left';
+          const roomCorner = getCorner(room, roomAnchor);
+          const absX = roomCorner.x + obj.x;
+          const absY = roomCorner.y + obj.y;
+
+          if (obj.type === 'circle') {
+            const radius = obj.radius || 500;
+            minX = Math.min(minX, absX - radius);
+            minY = Math.min(minY, absY - radius);
+            maxX = Math.max(maxX, absX + radius);
+            maxY = Math.max(maxY, absY + radius);
+          } else {
+            // Square - calculate bounds including anchor offset
+            const width = obj.width || 1000;
+            const height = obj.height || 1000;
+            const anchor = obj.anchor || 'top-left';
+
+            let offsetX = 0;
+            let offsetY = 0;
+
+            switch (anchor) {
+              case 'top-left':
+                offsetX = 0;
+                offsetY = 0;
+                break;
+              case 'top-right':
+                offsetX = -width;
+                offsetY = 0;
+                break;
+              case 'bottom-left':
+                offsetX = 0;
+                offsetY = -height;
+                break;
+              case 'bottom-right':
+                offsetX = -width;
+                offsetY = -height;
+                break;
+            }
+
+            const objX = absX + offsetX;
+            const objY = absY + offsetY;
+            minX = Math.min(minX, objX);
+            minY = Math.min(minY, objY);
+            maxX = Math.max(maxX, objX + width);
+            maxY = Math.max(maxY, objY + height);
+          }
+        });
+      }
     });
 
     // Add padding (10% on each side)
