@@ -19,7 +19,8 @@ export interface RoomObject {
   color?: string;
   name?: string;
   text?: string; // Optional text in center
-  anchor?: Anchor; // For squares only
+  anchor?: Anchor; // For squares only - which corner of the object is the anchor point
+  roomAnchor?: Anchor; // Which corner of the room the x,y coordinates reference
 }
 
 export interface Room {

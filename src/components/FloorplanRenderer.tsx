@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
-import type { FloorplanData, ResolvedRoom, Door, Window, WallPosition } from '../types';
-import { mm, resolveRoomPositions, resolveCompositeRoom } from '../utils';
+import type { FloorplanData, ResolvedRoom, Door, Window, WallPosition, Anchor } from '../types';
+import { mm, resolveRoomPositions, resolveCompositeRoom, getCorner } from '../utils';
 
 interface FloorplanRendererProps {
   data: FloorplanData;
@@ -235,8 +235,11 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
 
           {/* Room objects */}
           {room.objects?.map((obj, idx) => {
-            const absX = room.x + obj.x;
-            const absY = room.y + obj.y;
+            // Calculate base position using roomAnchor
+            const roomAnchor = obj.roomAnchor || 'top-left';
+            const roomCorner = getCorner(room, roomAnchor);
+            const absX = roomCorner.x + obj.x;
+            const absY = roomCorner.y + obj.y;
             const color = obj.color || '#888';
 
             if (obj.type === 'circle') {
@@ -258,10 +261,7 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
                       fontSize="12"
                       textAnchor="middle"
                       dominantBaseline="middle"
-                      fill="#fff"
-                      stroke="#000"
-                      strokeWidth="0.5"
-                      paintOrder="stroke"
+                      fill="#000"
                     >
                       {obj.text}
                     </text>
@@ -321,10 +321,7 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
                       fontSize="12"
                       textAnchor="middle"
                       dominantBaseline="middle"
-                      fill="#fff"
-                      stroke="#000"
-                      strokeWidth="0.5"
-                      paintOrder="stroke"
+                      fill="#000"
                     >
                       {obj.text}
                     </text>
@@ -363,8 +360,11 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
 
         {/* Room objects */}
         {room.objects?.map((obj, idx) => {
-          const absX = room.x + obj.x;
-          const absY = room.y + obj.y;
+          // Calculate base position using roomAnchor
+          const roomAnchor = obj.roomAnchor || 'top-left';
+          const roomCorner = getCorner(room, roomAnchor);
+          const absX = roomCorner.x + obj.x;
+          const absY = roomCorner.y + obj.y;
           const color = obj.color || '#888';
 
           if (obj.type === 'circle') {
@@ -386,10 +386,7 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
                     fontSize="12"
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fill="#fff"
-                    stroke="#000"
-                    strokeWidth="0.5"
-                    paintOrder="stroke"
+                    fill="#000"
                   >
                     {obj.text}
                   </text>
@@ -449,10 +446,7 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
                     fontSize="12"
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fill="#fff"
-                    stroke="#000"
-                    strokeWidth="0.5"
-                    paintOrder="stroke"
+                    fill="#000"
                   >
                     {obj.text}
                   </text>
