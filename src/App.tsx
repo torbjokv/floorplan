@@ -69,17 +69,29 @@ const defaultJSON = `{
 }`;
 
 interface SavedProject {
+  id: string;
   name: string;
   json: string;
   timestamp: number;
 }
 
+// Generate a random project ID
+function generateProjectId(): string {
+  return 'proj_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
+
 function App() {
   const [jsonText, setJsonText] = useState(() => {
-    // Try to load JSON from URL hash
+    // Try to load JSON from URL hash (format: #name=ProjectName&data=jsonData)
     const hash = window.location.hash.slice(1);
     if (hash) {
       try {
+        const params = new URLSearchParams(hash);
+        const data = params.get('data');
+        if (data) {
+          return decodeURIComponent(data);
+        }
+        // Fallback: old format (just JSON in hash)
         return decodeURIComponent(hash);
       } catch {
         return defaultJSON;
@@ -91,6 +103,12 @@ function App() {
     const hash = window.location.hash.slice(1);
     if (hash) {
       try {
+        const params = new URLSearchParams(hash);
+        const data = params.get('data');
+        if (data) {
+          return JSON.parse(decodeURIComponent(data));
+        }
+        // Fallback: old format
         return JSON.parse(decodeURIComponent(hash));
       } catch {
         return JSON.parse(defaultJSON);
@@ -110,7 +128,6 @@ function App() {
   const [showUpdateAnimation, setShowUpdateAnimation] = useState(false);
   const [showCopyNotification, setShowCopyNotification] = useState(false);
   const [activeTab, setActiveTab] = useState<'json' | 'gui'>('gui');
-  const [projectName, setProjectName] = useState<string>('Untitled Project');
   const [savedProjects, setSavedProjects] = useState<SavedProject[]>(() => {
     try {
       const saved = localStorage.getItem('floorplan_projects');
@@ -119,6 +136,36 @@ function App() {
       return [];
     }
   });
+  const [projectName, setProjectName] = useState<string>(() => {
+    const hash = window.location.hash.slice(1);
+    if (hash) {
+      try {
+        const params = new URLSearchParams(hash);
+        const name = params.get('name');
+        if (name) {
+          const decodedName = decodeURIComponent(name);
+          // Check if a project with this name already exists
+          const saved = localStorage.getItem('floorplan_projects');
+          const projects: SavedProject[] = saved ? JSON.parse(saved) : [];
+          const existingNames = new Set(projects.map(p => p.name));
+
+          if (existingNames.has(decodedName)) {
+            // Find next available number
+            let num = 2;
+            while (existingNames.has(`${decodedName} ${num}`)) {
+              num++;
+            }
+            return `${decodedName} ${num}`;
+          }
+          return decodedName;
+        }
+      } catch {
+        // Ignore
+      }
+    }
+    return 'Untitled Project';
+  });
+  const [projectId, setProjectId] = useState<string>(() => generateProjectId());
   const [showProjectMenu, setShowProjectMenu] = useState(false);
 
   // Auto-update on JSON changes with debounce
@@ -132,8 +179,11 @@ function App() {
         setShowUpdateAnimation(true);
         setTimeout(() => setShowUpdateAnimation(false), 1000);
 
-        // Update URL hash with encoded JSON
-        window.history.replaceState(null, '', '#' + encodeURIComponent(jsonText));
+        // Update URL hash with project name and encoded JSON
+        const params = new URLSearchParams();
+        params.set('name', encodeURIComponent(projectName));
+        params.set('data', encodeURIComponent(jsonText));
+        window.history.replaceState(null, '', '#' + params.toString());
       } catch (e) {
         setJsonError((e as Error).message);
       }
@@ -234,37 +284,42 @@ function App() {
 
     const timer = setTimeout(() => {
       const newProject: SavedProject = {
+        id: projectId,
         name: projectName,
         json: jsonText,
         timestamp: Date.now(),
       };
-      const updated = [newProject, ...savedProjects.filter(p => p.name !== projectName)];
+      // Update by ID, not name
+      const updated = [newProject, ...savedProjects.filter(p => p.id !== projectId)];
       setSavedProjects(updated);
       localStorage.setItem('floorplan_projects', JSON.stringify(updated));
     }, 1000); // Debounce 1s
 
     return () => clearTimeout(timer);
-  }, [jsonText, projectName]);
+  }, [jsonText, projectName, projectId]);
 
   const handleLoadProject = (project: SavedProject) => {
+    setProjectId(project.id);
     setProjectName(project.name);
     setJsonText(project.json);
     setShowProjectMenu(false);
   };
 
-  const handleDeleteProject = (projectName: string) => {
-    const updated = savedProjects.filter(p => p.name !== projectName);
+  const handleDeleteProject = (projectId: string) => {
+    const updated = savedProjects.filter(p => p.id !== projectId);
     setSavedProjects(updated);
     localStorage.setItem('floorplan_projects', JSON.stringify(updated));
   };
 
   const handleNewProject = () => {
+    setProjectId(generateProjectId());
     setProjectName('Untitled Project');
     setJsonText(defaultJSON);
     setShowProjectMenu(false);
   };
 
   const handleLoadExample = () => {
+    setProjectId(generateProjectId());
     setProjectName('Example Floorplan');
     setJsonText(defaultJSON);
     setShowProjectMenu(false);
@@ -305,7 +360,7 @@ function App() {
                       {project.name}
                     </button>
                     <button
-                      onClick={() => handleDeleteProject(project.name)}
+                      onClick={() => handleDeleteProject(project.id)}
                       className="project-menu-delete"
                     >
                       ×
