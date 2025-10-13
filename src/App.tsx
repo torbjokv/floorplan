@@ -131,7 +131,28 @@ function App() {
   const [savedProjects, setSavedProjects] = useState<SavedProject[]>(() => {
     try {
       const saved = localStorage.getItem('floorplan_projects');
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+
+      const projects: SavedProject[] = JSON.parse(saved);
+      // Migrate old projects without IDs
+      let needsMigration = false;
+      const migrated = projects.map(p => {
+        if (!p.id) {
+          needsMigration = true;
+          return {
+            ...p,
+            id: generateProjectId()
+          };
+        }
+        return p;
+      });
+
+      // Save migrated data back to localStorage
+      if (needsMigration) {
+        localStorage.setItem('floorplan_projects', JSON.stringify(migrated));
+      }
+
+      return migrated;
     } catch {
       return [];
     }
