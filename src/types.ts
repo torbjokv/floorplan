@@ -1,7 +1,8 @@
 export type Anchor = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
 export interface RoomPart {
-  name: string;
+  id: string;
+  name?: string; // Display name (optional)
   width: number;
   depth: number;
   anchor?: Anchor;
@@ -24,13 +25,14 @@ export interface RoomObject {
 }
 
 export interface Room {
-  name: string;
+  id: string; // Required unique identifier (e.g., "livingroom1", "kitchen1")
+  name?: string; // Optional display name
   width: number;
   depth: number;
   x?: number;
   y?: number;
   anchor?: Anchor;
-  attachTo?: string;
+  attachTo?: string; // Format: "roomId:corner" e.g., "livingroom1:top-right"
   offset?: [number, number];
   parts?: RoomPart[];
   objects?: RoomObject[];
