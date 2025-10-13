@@ -49,8 +49,15 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
         room.objects.forEach(obj => {
           const roomAnchor = obj.roomAnchor || 'top-left';
           const roomCorner = getCorner(room, roomAnchor);
-          const absX = roomCorner.x + obj.x;
-          const absY = roomCorner.y + obj.y;
+
+          // Adjust x,y based on roomAnchor direction
+          let xDir = 1;
+          let yDir = 1;
+          if (roomAnchor.includes('right')) xDir = -1;
+          if (roomAnchor.includes('bottom')) yDir = -1;
+
+          const absX = roomCorner.x + (obj.x * xDir);
+          const absY = roomCorner.y + (obj.y * yDir);
 
           if (obj.type === 'circle') {
             const radius = obj.radius || 500;
@@ -290,8 +297,17 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
             // Calculate base position using roomAnchor
             const roomAnchor = obj.roomAnchor || 'top-left';
             const roomCorner = getCorner(room, roomAnchor);
-            const absX = roomCorner.x + obj.x;
-            const absY = roomCorner.y + obj.y;
+
+            // Adjust x,y based on roomAnchor direction
+            // For right anchors, positive x goes left (inward)
+            // For bottom anchors, positive y goes up (inward)
+            let xDir = 1;
+            let yDir = 1;
+            if (roomAnchor.includes('right')) xDir = -1;
+            if (roomAnchor.includes('bottom')) yDir = -1;
+
+            const absX = roomCorner.x + (obj.x * xDir);
+            const absY = roomCorner.y + (obj.y * yDir);
             const color = obj.color || '#888';
 
             if (obj.type === 'circle') {
@@ -417,8 +433,17 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
           // Calculate base position using roomAnchor
           const roomAnchor = obj.roomAnchor || 'top-left';
           const roomCorner = getCorner(room, roomAnchor);
-          const absX = roomCorner.x + obj.x;
-          const absY = roomCorner.y + obj.y;
+
+          // Adjust x,y based on roomAnchor direction
+          // For right anchors, positive x goes left (inward)
+          // For bottom anchors, positive y goes up (inward)
+          let xDir = 1;
+          let yDir = 1;
+          if (roomAnchor.includes('right')) xDir = -1;
+          if (roomAnchor.includes('bottom')) yDir = -1;
+
+          const absX = roomCorner.x + (obj.x * xDir);
+          const absY = roomCorner.y + (obj.y * yDir);
           const color = obj.color || '#888';
 
           if (obj.type === 'circle') {

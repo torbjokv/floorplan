@@ -1,0 +1,25 @@
+{
+  "grid_step": 1000,
+  "rooms": [
+    {
+      "name": "Test Room",
+      "x": 0,
+      "y": 0,
+      "width": 5000,
+      "depth": 3000,
+      "objects": [
+        {
+          "type": "square",
+          "x": 500,
+          "y": 500,
+          "width": 800,
+          "height": 800,
+          "color": "#ff0000",
+          "text": "TL-BR",
+          "anchor": "top-left",
+          "roomAnchor": "bottom-right"
+        }
+      ]
+    }
+  ]
+}
