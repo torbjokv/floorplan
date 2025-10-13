@@ -269,39 +269,41 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
                 </g>
               );
             } else {
-              // Square - apply anchor adjustment
-              const w = mm(obj.width || 1000);
-              const h = mm(obj.height || 1000);
+              // Square - apply anchor adjustment in millimeters before conversion
+              const width = obj.width || 1000;
+              const height = obj.height || 1000;
               const anchor = obj.anchor || 'top-left';
 
-              // Calculate position based on anchor
-              let rectX = mm(absX);
-              let rectY = mm(absY);
-              let centerX = mm(absX);
-              let centerY = mm(absY);
+              // Calculate the anchor offset in millimeters
+              let offsetX = 0;
+              let offsetY = 0;
 
               switch (anchor) {
                 case 'top-left':
-                  centerX = rectX + w / 2;
-                  centerY = rectY + h / 2;
+                  offsetX = 0;
+                  offsetY = 0;
                   break;
                 case 'top-right':
-                  rectX = rectX - w;
-                  centerX = rectX + w / 2;
-                  centerY = rectY + h / 2;
+                  offsetX = -width;
+                  offsetY = 0;
                   break;
                 case 'bottom-left':
-                  rectY = rectY - h;
-                  centerX = rectX + w / 2;
-                  centerY = rectY + h / 2;
+                  offsetX = 0;
+                  offsetY = -height;
                   break;
                 case 'bottom-right':
-                  rectX = rectX - w;
-                  rectY = rectY - h;
-                  centerX = rectX + w / 2;
-                  centerY = rectY + h / 2;
+                  offsetX = -width;
+                  offsetY = -height;
                   break;
               }
+
+              // Apply offset and convert to screen coordinates
+              const rectX = mm(absX + offsetX);
+              const rectY = mm(absY + offsetY);
+              const w = mm(width);
+              const h = mm(height);
+              const centerX = rectX + w / 2;
+              const centerY = rectY + h / 2;
 
               return (
                 <g key={`obj-${idx}`}>
@@ -394,39 +396,41 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
               </g>
             );
           } else {
-            // Square - apply anchor adjustment
-            const w = mm(obj.width || 1000);
-            const h = mm(obj.height || 1000);
+            // Square - apply anchor adjustment in millimeters before conversion
+            const width = obj.width || 1000;
+            const height = obj.height || 1000;
             const anchor = obj.anchor || 'top-left';
 
-            // Calculate position based on anchor
-            let rectX = mm(absX);
-            let rectY = mm(absY);
-            let centerX = mm(absX);
-            let centerY = mm(absY);
+            // Calculate the anchor offset in millimeters
+            let offsetX = 0;
+            let offsetY = 0;
 
             switch (anchor) {
               case 'top-left':
-                centerX = rectX + w / 2;
-                centerY = rectY + h / 2;
+                offsetX = 0;
+                offsetY = 0;
                 break;
               case 'top-right':
-                rectX = rectX - w;
-                centerX = rectX + w / 2;
-                centerY = rectY + h / 2;
+                offsetX = -width;
+                offsetY = 0;
                 break;
               case 'bottom-left':
-                rectY = rectY - h;
-                centerX = rectX + w / 2;
-                centerY = rectY + h / 2;
+                offsetX = 0;
+                offsetY = -height;
                 break;
               case 'bottom-right':
-                rectX = rectX - w;
-                rectY = rectY - h;
-                centerX = rectX + w / 2;
-                centerY = rectY + h / 2;
+                offsetX = -width;
+                offsetY = -height;
                 break;
             }
+
+            // Apply offset and convert to screen coordinates
+            const rectX = mm(absX + offsetX);
+            const rectY = mm(absY + offsetY);
+            const w = mm(width);
+            const h = mm(height);
+            const centerX = rectX + w / 2;
+            const centerY = rectY + h / 2;
 
             return (
               <g key={`obj-${idx}`}>

@@ -374,7 +374,7 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
                   {obj.type === 'square' && (
                     <>
                       <div style={{ marginTop: '10px' }}>
-                        <label className="section-label">My Anchor Point:</label>
+                        <label className="section-label">Object Anchor Point:</label>
                         <AnchorSelector
                           value={obj.anchor}
                           onChange={(anchor) => updateRoomObject(index, objIndex, { ...obj, anchor })}
