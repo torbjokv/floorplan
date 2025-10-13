@@ -50,14 +50,9 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
           const roomAnchor = obj.roomAnchor || 'top-left';
           const roomCorner = getCorner(room, roomAnchor);
 
-          // Adjust x,y based on roomAnchor direction
-          let xDir = 1;
-          let yDir = 1;
-          if (roomAnchor.includes('right')) xDir = -1;
-          if (roomAnchor.includes('bottom')) yDir = -1;
-
-          const absX = roomCorner.x + (obj.x * xDir);
-          const absY = roomCorner.y + (obj.y * yDir);
+          // Direct addition - no direction inversion
+          const absX = roomCorner.x + obj.x;
+          const absY = roomCorner.y + obj.y;
 
           if (obj.type === 'circle') {
             const radius = obj.radius || 500;
@@ -291,115 +286,6 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
           >
             {room.name}
           </text>
-
-          {/* Room objects */}
-          {room.objects?.map((obj, idx) => {
-            // Calculate base position using roomAnchor
-            const roomAnchor = obj.roomAnchor || 'top-left';
-            const roomCorner = getCorner(room, roomAnchor);
-
-            // Adjust x,y based on roomAnchor direction
-            // For right anchors, positive x goes left (inward)
-            // For bottom anchors, positive y goes up (inward)
-            let xDir = 1;
-            let yDir = 1;
-            if (roomAnchor.includes('right')) xDir = -1;
-            if (roomAnchor.includes('bottom')) yDir = -1;
-
-            const absX = roomCorner.x + (obj.x * xDir);
-            const absY = roomCorner.y + (obj.y * yDir);
-            const color = obj.color || '#888';
-
-            if (obj.type === 'circle') {
-              const radius = mm(obj.radius || 500);
-              return (
-                <g key={`obj-${idx}`}>
-                  <circle
-                    cx={mm(absX)}
-                    cy={mm(absY)}
-                    r={radius}
-                    fill={color}
-                    stroke="#333"
-                    strokeWidth="1"
-                  />
-                  {obj.text && (
-                    <text
-                      x={mm(absX)}
-                      y={mm(absY)}
-                      fontSize="12"
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fill="#000"
-                    >
-                      {obj.text}
-                    </text>
-                  )}
-                </g>
-              );
-            } else {
-              // Square - apply anchor adjustment in millimeters before conversion
-              const width = obj.width || 1000;
-              const height = obj.height || 1000;
-              const anchor = obj.anchor || 'top-left';
-
-              // Calculate the anchor offset in millimeters
-              let offsetX = 0;
-              let offsetY = 0;
-
-              switch (anchor) {
-                case 'top-left':
-                  offsetX = 0;
-                  offsetY = 0;
-                  break;
-                case 'top-right':
-                  offsetX = -width;
-                  offsetY = 0;
-                  break;
-                case 'bottom-left':
-                  offsetX = 0;
-                  offsetY = -height;
-                  break;
-                case 'bottom-right':
-                  offsetX = -width;
-                  offsetY = -height;
-                  break;
-              }
-
-              // Apply offset and convert to screen coordinates
-              const rectX = mm(absX + offsetX);
-              const rectY = mm(absY + offsetY);
-              const w = mm(width);
-              const h = mm(height);
-              const centerX = rectX + w / 2;
-              const centerY = rectY + h / 2;
-
-              return (
-                <g key={`obj-${idx}`}>
-                  <rect
-                    x={rectX}
-                    y={rectY}
-                    width={w}
-                    height={h}
-                    fill={color}
-                    stroke="#333"
-                    strokeWidth="1"
-                  />
-                  {obj.text && (
-                    <text
-                      x={centerX}
-                      y={centerY}
-                      fontSize="12"
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fill="#000"
-                    >
-                      {obj.text}
-                    </text>
-                  )}
-                </g>
-              );
-            }
-          })}
         </g>
       );
     }
@@ -427,115 +313,6 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
         >
           {room.name}
         </text>
-
-        {/* Room objects */}
-        {room.objects?.map((obj, idx) => {
-          // Calculate base position using roomAnchor
-          const roomAnchor = obj.roomAnchor || 'top-left';
-          const roomCorner = getCorner(room, roomAnchor);
-
-          // Adjust x,y based on roomAnchor direction
-          // For right anchors, positive x goes left (inward)
-          // For bottom anchors, positive y goes up (inward)
-          let xDir = 1;
-          let yDir = 1;
-          if (roomAnchor.includes('right')) xDir = -1;
-          if (roomAnchor.includes('bottom')) yDir = -1;
-
-          const absX = roomCorner.x + (obj.x * xDir);
-          const absY = roomCorner.y + (obj.y * yDir);
-          const color = obj.color || '#888';
-
-          if (obj.type === 'circle') {
-            const radius = mm(obj.radius || 500);
-            return (
-              <g key={`obj-${idx}`}>
-                <circle
-                  cx={mm(absX)}
-                  cy={mm(absY)}
-                  r={radius}
-                  fill={color}
-                  stroke="#333"
-                  strokeWidth="1"
-                />
-                {obj.text && (
-                  <text
-                    x={mm(absX)}
-                    y={mm(absY)}
-                    fontSize="12"
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fill="#000"
-                  >
-                    {obj.text}
-                  </text>
-                )}
-              </g>
-            );
-          } else {
-            // Square - apply anchor adjustment in millimeters before conversion
-            const width = obj.width || 1000;
-            const height = obj.height || 1000;
-            const anchor = obj.anchor || 'top-left';
-
-            // Calculate the anchor offset in millimeters
-            let offsetX = 0;
-            let offsetY = 0;
-
-            switch (anchor) {
-              case 'top-left':
-                offsetX = 0;
-                offsetY = 0;
-                break;
-              case 'top-right':
-                offsetX = -width;
-                offsetY = 0;
-                break;
-              case 'bottom-left':
-                offsetX = 0;
-                offsetY = -height;
-                break;
-              case 'bottom-right':
-                offsetX = -width;
-                offsetY = -height;
-                break;
-            }
-
-            // Apply offset and convert to screen coordinates
-            const rectX = mm(absX + offsetX);
-            const rectY = mm(absY + offsetY);
-            const w = mm(width);
-            const h = mm(height);
-            const centerX = rectX + w / 2;
-            const centerY = rectY + h / 2;
-
-            return (
-              <g key={`obj-${idx}`}>
-                <rect
-                  x={rectX}
-                  y={rectY}
-                  width={w}
-                  height={h}
-                  fill={color}
-                  stroke="#333"
-                  strokeWidth="1"
-                />
-                {obj.text && (
-                  <text
-                    x={centerX}
-                    y={centerY}
-                    fontSize="12"
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fill="#000"
-                  >
-                    {obj.text}
-                  </text>
-                )}
-              </g>
-            );
-          }
-        })}
       </g>
     );
   };
@@ -774,6 +551,107 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
   // Convert bounds to screen coordinates
   const viewBox = `${mm(bounds.x)} ${mm(bounds.y)} ${mm(bounds.width)} ${mm(bounds.depth)}`;
 
+  // Render all room objects separately so they appear on top of all rooms
+  const renderAllRoomObjects = () => {
+    return Object.values(roomMap).map(room =>
+      room.objects?.map((obj, idx) => {
+        const roomAnchor = obj.roomAnchor || 'top-left';
+        const roomCorner = getCorner(room, roomAnchor);
+        const absX = roomCorner.x + obj.x;
+        const absY = roomCorner.y + obj.y;
+        const color = obj.color || '#888';
+
+        if (obj.type === 'circle') {
+          const radius = mm(obj.radius || 500);
+          return (
+            <g key={`${room.name}-obj-${idx}`}>
+              <circle
+                cx={mm(absX)}
+                cy={mm(absY)}
+                r={radius}
+                fill={color}
+                stroke="#333"
+                strokeWidth="1"
+              />
+              {obj.text && (
+                <text
+                  x={mm(absX)}
+                  y={mm(absY)}
+                  fontSize="12"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill="#000"
+                >
+                  {obj.text}
+                </text>
+              )}
+            </g>
+          );
+        } else {
+          // Square
+          const width = obj.width || 1000;
+          const height = obj.height || 1000;
+          const anchor = obj.anchor || 'top-left';
+
+          let offsetX = 0;
+          let offsetY = 0;
+
+          switch (anchor) {
+            case 'top-left':
+              offsetX = 0;
+              offsetY = 0;
+              break;
+            case 'top-right':
+              offsetX = -width;
+              offsetY = 0;
+              break;
+            case 'bottom-left':
+              offsetX = 0;
+              offsetY = -height;
+              break;
+            case 'bottom-right':
+              offsetX = -width;
+              offsetY = -height;
+              break;
+          }
+
+          const rectX = mm(absX + offsetX);
+          const rectY = mm(absY + offsetY);
+          const w = mm(width);
+          const h = mm(height);
+          const centerX = rectX + w / 2;
+          const centerY = rectY + h / 2;
+
+          return (
+            <g key={`${room.name}-obj-${idx}`}>
+              <rect
+                x={rectX}
+                y={rectY}
+                width={w}
+                height={h}
+                fill={color}
+                stroke="#333"
+                strokeWidth="1"
+              />
+              {obj.text && (
+                <text
+                  x={centerX}
+                  y={centerY}
+                  fontSize="12"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill="#000"
+                >
+                  {obj.text}
+                </text>
+              )}
+            </g>
+          );
+        }
+      })
+    );
+  };
+
   return (
     <div className="preview-container">
       <h2>🏠 SVG Preview</h2>
@@ -785,7 +663,7 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
         {/* Grid */}
         {renderGrid()}
 
-        {/* Rooms */}
+        {/* Rooms (without objects) */}
         {Object.values(roomMap).map(renderRoom)}
 
         {/* Doors */}
@@ -793,6 +671,9 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
 
         {/* Windows */}
         {data.windows?.map(renderWindow)}
+
+        {/* All room objects - rendered last so they appear on top */}
+        {renderAllRoomObjects()}
       </svg>
     </div>
   );
