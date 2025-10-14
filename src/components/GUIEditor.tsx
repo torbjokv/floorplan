@@ -381,37 +381,44 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
                         />
                       </label>
                     </div>
-                    <div style={{ marginTop: '10px' }}>
-                      <label className="section-label">My Anchor:</label>
-                      <AnchorSelector
-                        value={part.anchor}
-                        onChange={(anchor) => updateRoomPart(index, partIndex, { ...part, anchor })}
-                      />
+                    <div className="dimensions-layout" style={{ marginTop: '10px' }}>
+                      <div>
+                        <label className="section-label">My Anchor:</label>
+                        <AnchorSelector
+                          value={part.anchor}
+                          onChange={(anchor) => updateRoomPart(index, partIndex, { ...part, anchor })}
+                        />
+                      </div>
                     </div>
-                    <div style={{ marginTop: '10px' }}>
-                      <label className="section-label">Attach To:</label>
-                      <select
-                        value={part.attachTo?.split(':')[0] || 'parent'}
-                        onChange={(e) => {
-                          const currentAnchor = part.attachTo?.split(':')[1] || 'bottom-left';
-                          updateRoomPart(index, partIndex, { ...part, attachTo: `${e.target.value}:${currentAnchor}` });
-                        }}
-                        style={{ width: '100%', marginTop: '5px' }}
-                      >
-                        {partList.map((p) => (
-                          <option key={p.id} value={p.id}>{p.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div style={{ marginTop: '10px' }}>
-                      <label className="section-label">Attach To Corner:</label>
-                      <AnchorSelector
-                        value={(part.attachTo?.split(':')[1] as Anchor) || 'bottom-left'}
-                        onChange={(anchor) => {
-                          const refId = part.attachTo?.split(':')[0] || 'parent';
-                          updateRoomPart(index, partIndex, { ...part, attachTo: `${refId}:${anchor}` });
-                        }}
-                      />
+                    <div className="form-section" style={{ marginTop: '10px' }}>
+                      <label className="section-label">Positioning</label>
+                      <div className="form-grid">
+                        <label>
+                          Attach To:
+                          <select
+                            value={part.attachTo?.split(':')[0] || 'parent'}
+                            onChange={(e) => {
+                              const currentAnchor = part.attachTo?.split(':')[1] || 'bottom-left';
+                              updateRoomPart(index, partIndex, { ...part, attachTo: `${e.target.value}:${currentAnchor}` });
+                            }}
+                          >
+                            {partList.map((p) => (
+                              <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <div>
+                          <label className="section-label">Attach To Corner:</label>
+                          <AnchorSelector
+                            value={(part.attachTo?.split(':')[1] as Anchor) || 'bottom-left'}
+                            onChange={(anchor) => {
+                              const refId = part.attachTo?.split(':')[0] || 'parent';
+                              updateRoomPart(index, partIndex, { ...part, attachTo: `${refId}:${anchor}` });
+                            }}
+                          />
+                        </div>
+                      </div>
                     </div>
                     <div className="form-grid-small" style={{ marginTop: '10px' }}>
                       <label>
