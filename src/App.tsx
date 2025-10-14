@@ -518,7 +518,7 @@ function App() {
   };
 
   return (
-    <div className="app-container">
+    <div className={`app-container ${editorCollapsed ? 'show-grid' : ''}`}>
       <div className={`editor-section ${editorCollapsed ? 'collapsed' : ''}`}>
         <button
           className="collapse-toggle-btn"

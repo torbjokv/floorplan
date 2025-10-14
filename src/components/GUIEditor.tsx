@@ -349,17 +349,18 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
                 ];
                 return (
                   <div key={partIndex} className="object-card">
-                    <div className="object-header">
+                    <div className="card-header" style={{ marginBottom: '8px' }}>
                       <input
                         type="text"
                         value={part.name || part.id}
                         placeholder="Part name"
                         onChange={(e) => updateRoomPart(index, partIndex, { ...part, name: e.target.value })}
-                        style={{ flex: 1, padding: '4px 8px', fontSize: '13px' }}
+                        className="room-name-input"
+                        style={{ fontSize: '14px', padding: '6px 10px' }}
                       />
                       <button onClick={() => deleteRoomPart(index, partIndex)} className="delete-button-small">×</button>
                     </div>
-                    <div style={{ fontSize: '0.8em', color: '#999', marginBottom: '8px' }}>
+                    <div style={{ fontSize: '0.8em', color: '#999', marginBottom: '10px' }}>
                       ID: {part.id}
                     </div>
                     <div className="form-grid-small">
@@ -388,20 +389,19 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
                       />
                     </div>
                     <div style={{ marginTop: '10px' }}>
-                      <label>
-                        Attach To:
-                        <select
-                          value={part.attachTo?.split(':')[0] || 'parent'}
-                          onChange={(e) => {
-                            const currentAnchor = part.attachTo?.split(':')[1] || 'bottom-left';
-                            updateRoomPart(index, partIndex, { ...part, attachTo: `${e.target.value}:${currentAnchor}` });
-                          }}
-                        >
-                          {partList.map((p) => (
-                            <option key={p.id} value={p.id}>{p.name}</option>
-                          ))}
-                        </select>
-                      </label>
+                      <label className="section-label">Attach To:</label>
+                      <select
+                        value={part.attachTo?.split(':')[0] || 'parent'}
+                        onChange={(e) => {
+                          const currentAnchor = part.attachTo?.split(':')[1] || 'bottom-left';
+                          updateRoomPart(index, partIndex, { ...part, attachTo: `${e.target.value}:${currentAnchor}` });
+                        }}
+                        style={{ width: '100%', marginTop: '5px' }}
+                      >
+                        {partList.map((p) => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
                     </div>
                     <div style={{ marginTop: '10px' }}>
                       <label className="section-label">Attach To Corner:</label>
@@ -525,22 +525,13 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
                     </label>
                   </div>
                   {obj.type === 'square' && (
-                    <>
-                      <div style={{ marginTop: '10px' }}>
-                        <label className="section-label">Object Anchor Point:</label>
-                        <AnchorSelector
-                          value={obj.anchor}
-                          onChange={(anchor) => updateRoomObject(index, objIndex, { ...obj, anchor })}
-                        />
-                      </div>
-                      <div style={{ marginTop: '10px' }}>
-                        <label className="section-label">Room Anchor Point:</label>
-                        <AnchorSelector
-                          value={obj.roomAnchor}
-                          onChange={(roomAnchor) => updateRoomObject(index, objIndex, { ...obj, roomAnchor })}
-                        />
-                      </div>
-                    </>
+                    <div style={{ marginTop: '10px' }}>
+                      <label className="section-label">Anchor Point (both object and room):</label>
+                      <AnchorSelector
+                        value={obj.anchor || obj.roomAnchor}
+                        onChange={(anchor) => updateRoomObject(index, objIndex, { ...obj, anchor, roomAnchor: anchor })}
+                      />
+                    </div>
                   )}
                 </div>
               ))}
