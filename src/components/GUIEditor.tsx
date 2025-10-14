@@ -60,7 +60,6 @@ function AnchorSelector({ value, onChange }: { value?: Anchor; onChange: (anchor
 
 export function GUIEditor({ data, onChange }: GUIEditorProps) {
   const [localData, setLocalData] = useState<FloorplanData>(data);
-  const [expandedRooms, setExpandedRooms] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     setLocalData(data);
@@ -69,16 +68,6 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
   const updateData = (newData: FloorplanData) => {
     setLocalData(newData);
     onChange(newData);
-  };
-
-  const toggleRoomExpanded = (index: number) => {
-    const newExpanded = new Set(expandedRooms);
-    if (newExpanded.has(index)) {
-      newExpanded.delete(index);
-    } else {
-      newExpanded.add(index);
-    }
-    setExpandedRooms(newExpanded);
   };
 
   const updateGridStep = (gridStep: number) => {
