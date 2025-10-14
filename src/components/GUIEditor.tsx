@@ -168,8 +168,8 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
     const room = localData.rooms[roomIndex];
     const newObject: RoomObject = {
       type: 'square',
-      x: room.width / 2,
-      y: room.depth / 2,
+      x: 0,
+      y: 0,
       width: DEFAULT_OBJECT_SIZE,
       height: DEFAULT_OBJECT_SIZE,
       color: DEFAULT_OBJECT_COLOR,
