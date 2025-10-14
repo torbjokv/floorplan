@@ -29,7 +29,7 @@
 
 .collapse-toggle-btn {
   position: fixed;
-  left: calc(450px + 20px - 16px); /* editor width + padding - overlap */
+  left: calc(20px + 450px); /* padding + editor width */
   top: 50%;
   transform: translateY(-50%);
   z-index: 100;
@@ -48,9 +48,8 @@
   box-shadow: 4px 0 12px rgba(0, 0, 0, 0.5);
 }
 
-.editor-section.collapsed + div .collapse-toggle-btn,
 .editor-section.collapsed .collapse-toggle-btn {
-  left: calc(50px + 20px - 16px); /* collapsed width + padding - overlap */
+  left: calc(20px + 50px); /* padding + collapsed width */
 }
 
 .collapse-toggle-btn:hover {
