@@ -4,10 +4,10 @@
   padding: 20px;
   height: 100vh;
   box-sizing: border-box;
-  background-color: #f5f5f5;
+  background-color: #e8e8e8;
   background-image:
-    linear-gradient(#e0e0e0 1px, transparent 1px),
-    linear-gradient(90deg, #e0e0e0 1px, transparent 1px);
+    linear-gradient(#d0d0d0 1px, transparent 1px),
+    linear-gradient(90deg, #d0d0d0 1px, transparent 1px);
   background-size: 20px 20px;
 }
 
@@ -28,8 +28,8 @@
 }
 
 .collapse-toggle-btn {
-  position: absolute;
-  right: -16px;
+  position: fixed;
+  left: calc(450px + 20px - 16px); /* editor width + padding - overlap */
   top: 50%;
   transform: translateY(-50%);
   z-index: 100;
@@ -48,9 +48,13 @@
   box-shadow: 4px 0 12px rgba(0, 0, 0, 0.5);
 }
 
+.editor-section.collapsed + div .collapse-toggle-btn,
+.editor-section.collapsed .collapse-toggle-btn {
+  left: calc(50px + 20px - 16px); /* collapsed width + padding - overlap */
+}
+
 .collapse-toggle-btn:hover {
   background: linear-gradient(135deg, #535bf2 0%, #4249d6 100%);
-  right: -18px;
   width: 36px;
   box-shadow: 6px 0 16px rgba(100, 108, 255, 0.6);
 }
