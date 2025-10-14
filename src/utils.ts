@@ -59,41 +59,31 @@ export function resolveRoomPositions(rooms: Room[]): PositioningResult {
     for (let i = unresolved.length - 1; i >= 0; i--) {
       const room = unresolved[i];
 
-      // attachTo has priority over x/y
-      if (room.attachTo) {
-        const [refRoomId, refCorner] = room.attachTo.split(':') as [string, Anchor];
+      const [refRoomId, refCorner] = room.attachTo.split(':') as [string, Anchor];
 
-        // Handle special "foundation" reference (virtual point at 0,0)
-        if (refRoomId === 'foundation') {
-          const offset = room.offset || [0, 0];
-          const anchor = room.anchor || 'top-left';
-          const anchorAdjust = getAnchorAdjustment(anchor, room.width, room.depth);
-          const x = offset[0] + anchorAdjust.x;
-          const y = offset[1] + anchorAdjust.y;
-
-          roomMap[room.id] = { ...room, x, y } as ResolvedRoom;
-          unresolved.splice(i, 1);
-          continue;
-        }
-
-        const refRoom = roomMap[refRoomId];
-        if (!refRoom) continue;
-
-        const attachPos = getCorner(refRoom, refCorner);
+      // Handle special "zeropoint" reference (virtual point at 0,0)
+      if (refRoomId === 'zeropoint') {
         const offset = room.offset || [0, 0];
-        const anchor = room.anchor || 'top-left'; // Default to top-left
+        const anchor = room.anchor || 'top-left';
         const anchorAdjust = getAnchorAdjustment(anchor, room.width, room.depth);
-        const x = attachPos.x + offset[0] + anchorAdjust.x;
-        const y = attachPos.y + offset[1] + anchorAdjust.y;
+        const x = offset[0] + anchorAdjust.x;
+        const y = offset[1] + anchorAdjust.y;
 
         roomMap[room.id] = { ...room, x, y } as ResolvedRoom;
         unresolved.splice(i, 1);
         continue;
       }
 
-      // Use absolute positioning with defaults
-      const x = room.x ?? 0; // Default to 0
-      const y = room.y ?? 0; // Default to 0
+      const refRoom = roomMap[refRoomId];
+      if (!refRoom) continue;
+
+      const attachPos = getCorner(refRoom, refCorner);
+      const offset = room.offset || [0, 0];
+      const anchor = room.anchor || 'top-left'; // Default to top-left
+      const anchorAdjust = getAnchorAdjustment(anchor, room.width, room.depth);
+      const x = attachPos.x + offset[0] + anchorAdjust.x;
+      const y = attachPos.y + offset[1] + anchorAdjust.y;
+
       roomMap[room.id] = { ...room, x, y } as ResolvedRoom;
       unresolved.splice(i, 1);
     }
@@ -107,13 +97,13 @@ export function resolveRoomPositions(rooms: Room[]): PositioningResult {
     });
   }
 
-  // Validate that at least one room is connected to foundation stone
-  const hasFoundationConnection = rooms.some(room =>
-    room.attachTo?.split(':')[0] === 'foundation' || (!room.attachTo && (room.x !== undefined || room.y !== undefined))
+  // Validate that at least one room is connected to Zero Point
+  const hasZeroPointConnection = rooms.some(room =>
+    room.attachTo?.split(':')[0] === 'zeropoint'
   );
 
-  if (rooms.length > 0 && !hasFoundationConnection) {
-    errors.push('Warning: At least one room should be connected to Foundation Stone (0,0) to anchor the floorplan.');
+  if (rooms.length > 0 && !hasZeroPointConnection) {
+    errors.push('Error: At least one room must be connected to Zero Point (0,0) to anchor the floorplan.');
   }
 
   return { roomMap, errors };

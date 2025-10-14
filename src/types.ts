@@ -29,11 +29,9 @@ export interface Room {
   name?: string; // Optional display name
   width: number;
   depth: number;
-  x?: number;
-  y?: number;
-  anchor?: Anchor;
-  attachTo?: string; // Format: "roomId:corner" e.g., "livingroom1:top-right"
-  offset?: [number, number];
+  anchor?: Anchor; // Which corner of this room attaches to the reference point (defaults to top-left)
+  attachTo: string; // Required. Format: "roomId:corner" or "zeropoint:top-left"
+  offset?: [number, number]; // Offset from the attachment point (defaults to [0, 0])
   parts?: RoomPart[];
   objects?: RoomObject[];
 }

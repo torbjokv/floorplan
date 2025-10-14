@@ -529,6 +529,51 @@
   background-color: #4249d6;
 }
 
+/* Error Panel - Always visible at bottom of preview */
+.error-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #2d2d2d;
+  border-top: 2px solid #ff4444;
+  padding: 12px 20px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10;
+  box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.error-message {
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.error-message:last-child {
+  margin-bottom: 0;
+}
+
+.error-message.json-error {
+  background-color: #4a1f1f;
+  color: #ff6b6b;
+  border-left: 4px solid #ff4444;
+}
+
+.error-message.positioning-error {
+  background-color: #4a1f1f;
+  color: #ff6b6b;
+  border-left: 4px solid #ff4444;
+}
+
+.error-message.positioning-warning {
+  background-color: #4a3a1f;
+  color: #ffa64d;
+  border-left: 4px solid #ff9800;
+}
+
 .copy-notification {
   position: absolute;
   top: 70px;

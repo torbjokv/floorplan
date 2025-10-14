@@ -14,13 +14,13 @@ A browser-based SVG floorplan designer for creating architectural floor plans th
 ### Core Functionality
 - **📝 Dual Editor** - JSON editor or visual GUI editor with form controls
 - **🔄 Real-Time Preview** - See changes instantly with automatic rendering (500ms debounce)
-- **🏛️ Foundation Stone System** - Unified positioning with virtual anchor point at (0,0)
+- **🏛️ Zero Point System** - Unified positioning with virtual anchor point at (0,0)
 - **🎯 Room ID System** - Stable references with unique IDs and optional display names
 - **🏗️ Composite Rooms** - Create L-shapes and complex layouts with room parts
 - **🎨 Room Objects** - Add decorative objects (squares/circles) with dual anchor system
 - **🚪 Doors** - Normal doors with swing arcs or opening-only type without blade
 - **🪟 Windows** - Wall-based window positioning with automatic rotation
-- **⚠️ Smart Error Handling** - Clear validation messages and Foundation Stone warnings
+- **⚠️ Smart Error Handling** - Clear validation messages and Zero Point warnings
 - **📐 Dynamic Grid** - Configurable grid overlay for precise measurements
 - **📏 Millimeter Precision** - All measurements in millimeters for architectural accuracy
 
@@ -69,9 +69,9 @@ npm run preview
 
 ## 📖 Usage
 
-### Basic Floor Plan with Foundation Stone
+### Basic Floor Plan with Zero Point
 
-Create a simple floor plan anchored to the Foundation Stone:
+Create a simple floor plan anchored to the Zero Point:
 
 ```json
 {
@@ -80,7 +80,7 @@ Create a simple floor plan anchored to the Foundation Stone:
     {
       "id": "livingroom1",
       "name": "Living Room",
-      "attachTo": "foundation:top-left",
+      "attachTo": "zeropoint:top-left",
       "width": 4000,
       "depth": 3000
     },
@@ -97,8 +97,8 @@ Create a simple floor plan anchored to the Foundation Stone:
 
 **Key Points:**
 - Rooms need unique `id` (required) and optional `name` (display name)
-- First room attaches to `"foundation:top-left"` (virtual anchor at 0,0)
-- Other rooms can attach to Foundation Stone or other rooms by ID
+- First room attaches to `"zeropoint:top-left"` (virtual anchor at 0,0)
+- Other rooms can attach to Zero Point or other rooms by ID
 
 ### Adding Doors and Windows
 
@@ -143,7 +143,7 @@ Build L-shaped or complex room layouts:
 {
   "id": "composite1",
   "name": "L-Shaped Room",
-  "attachTo": "foundation:top-left",
+  "attachTo": "zeropoint:top-left",
   "width": 3000,
   "depth": 2000,
   "parts": [
@@ -166,7 +166,7 @@ Add decorative objects like furniture:
 {
   "id": "livingroom1",
   "name": "Living Room",
-  "attachTo": "foundation:top-left",
+  "attachTo": "zeropoint:top-left",
   "width": 4000,
   "depth": 3000,
   "objects": [
@@ -199,9 +199,8 @@ Add decorative objects like furniture:
 | `name` | string | *optional* | Display name for the room |
 | `width` | number | **required** | Width in millimeters (x-axis) |
 | `depth` | number | **required** | Depth in millimeters (y-axis) |
-| `x`, `y` | number | 0 | Absolute coordinates (optional if using attachTo) |
-| `anchor` | string | "top-left" | Attachment corner: `"top-right"`, `"bottom-left"`, `"bottom-right"` |
-| `attachTo` | string | - | Reference: `"roomId:corner"` or `"foundation:corner"` (takes priority over x/y) |
+| `anchor` | string | "top-left" | Which corner of this room attaches to the reference point: `"top-left"`, `"top-right"`, `"bottom-left"`, `"bottom-right"` |
+| `attachTo` | string | **required** | Reference: `"roomId:corner"` or `"zeropoint:corner"` |
 | `offset` | [number, number] | [0, 0] | Position adjustment `[x, y]` |
 | `parts` | array | - | Sub-parts for composite rooms (each needs `id`) |
 | `objects` | array | - | Decorative objects (squares/circles) |
@@ -230,15 +229,15 @@ Windows have a fixed thickness of 100mm.
 
 ## 🎨 Positioning System
 
-### Foundation Stone (Recommended)
+### Zero Point (Recommended)
 
-Anchor the first room to the virtual Foundation Stone at (0,0):
+Anchor the first room to the virtual Zero Point at (0,0):
 
 ```json
 {
   "id": "livingroom1",
   "name": "Living Room",
-  "attachTo": "foundation:top-left",
+  "attachTo": "zeropoint:top-left",
   "width": 4000,
   "depth": 3000
 }
@@ -265,22 +264,7 @@ Attach rooms to other rooms using their IDs:
 
 **Offset**: Fine-tune position with `[x, y]` adjustments in millimeters
 
-### Absolute Positioning (Legacy)
-
-Still supported for direct coordinate placement:
-
-```json
-{
-  "id": "room1",
-  "name": "Room",
-  "x": 0,
-  "y": 0,
-  "width": 4000,
-  "depth": 3000
-}
-```
-
-Note: At least one room should connect to Foundation Stone for a stable floorplan.
+**Important**: At least one room must connect to Zero Point for a stable floorplan. The system will show an error if no rooms are anchored to Zero Point.
 
 ## 🏗️ Architecture
 
@@ -293,7 +277,7 @@ src/
 │   ├── JSONEditor.tsx          # JSON editor with line numbers and validation
 │   └── GUIEditor.tsx           # Visual form-based editor
 ├── types.ts                    # TypeScript type definitions
-├── utils.ts                    # Positioning logic with Foundation Stone
+├── utils.ts                    # Positioning logic with Zero Point
 └── App.tsx                     # Main app with project management
 ```
 
@@ -302,7 +286,7 @@ src/
 - **FloorplanRenderer**: Interactive SVG with click handlers, hover effects, and composite highlighting
 - **GUIEditor**: Visual form editor with dropdowns, anchor selectors, and object editor
 - **JSONEditor**: Text editor with line numbers, synchronized scrolling, and error overlay
-- **Positioning System**: Foundation Stone-based positioning with dependency resolution
+- **Positioning System**: Zero Point-based positioning with dependency resolution
 - **Project Management**: localStorage with auto-save, sharing, and read-only mode for shared projects
 
 ## 🛠️ Development

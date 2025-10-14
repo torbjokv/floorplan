@@ -105,7 +105,7 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
       name: roomName,
       width: DEFAULT_ROOM_SIZE,
       depth: DEFAULT_ROOM_SIZE,
-      attachTo: 'foundation:top-left',
+      attachTo: 'zeropoint:top-left',
     };
     // Add room at the beginning (on top)
     const updatedRooms = [newRoom, ...localData.rooms];
@@ -192,9 +192,9 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
   };
 
   // Get list of rooms for dropdowns (show name, use ID)
-  // Add Foundation Stone as first option
+  // Add Zero Point as first option
   const roomList = [
-    { id: 'foundation', name: '🏛️ Foundation Stone (0,0)' },
+    { id: 'zeropoint', name: '⚫ Zero Point (0,0)' },
     ...localData.rooms.map(r => ({ id: r.id, name: r.name || r.id }))
   ];
 
@@ -257,22 +257,17 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
                   <select
                     value={room.attachTo?.split(':')[0] || ''}
                     onChange={(e) => {
-                      if (e.target.value) {
-                        const currentAnchor = room.attachTo?.split(':')[1] || 'top-left';
-                        updateRoom(index, { ...room, attachTo: `${e.target.value}:${currentAnchor}`, x: undefined, y: undefined });
-                      } else {
-                        updateRoom(index, { ...room, attachTo: undefined });
-                      }
+                      const currentAnchor = room.attachTo?.split(':')[1] || 'top-left';
+                      updateRoom(index, { ...room, attachTo: `${e.target.value}:${currentAnchor}` });
                     }}
                   >
-                    <option value="">-- None (use x, y) --</option>
                     {roomList.filter((r) => r.id !== room.id).map((r) => (
                       <option key={r.id} value={r.id}>{r.name}</option>
                     ))}
                   </select>
                 </label>
 
-                {room.attachTo && room.attachTo.split(':')[0] !== 'foundation' && (
+                {room.attachTo && room.attachTo.split(':')[0] !== 'zeropoint' && (
                   <div>
                     <label className="section-label">Attach To Corner:</label>
                     <AnchorSelector
@@ -285,39 +280,32 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* Collapsible x, y section */}
-            <div className="collapsible-section">
-              <button
-                type="button"
-                className="collapse-toggle"
-                onClick={() => toggleRoomExpanded(index)}
-              >
-                {expandedRooms.has(index) ? '▼' : '▶'} Advanced (x, y coordinates)
-              </button>
-              {expandedRooms.has(index) && (
-                <div className="form-grid">
-                  <label>
-                    X Position:
-                    <input
-                      type="number"
-                      value={room.x ?? ''}
-                      placeholder="auto"
-                      onChange={(e) => updateRoom(index, { ...room, x: e.target.value ? Number(e.target.value) : undefined })}
-                    />
-                  </label>
-                  <label>
-                    Y Position:
-                    <input
-                      type="number"
-                      value={room.y ?? ''}
-                      placeholder="auto"
-                      onChange={(e) => updateRoom(index, { ...room, y: e.target.value ? Number(e.target.value) : undefined })}
-                    />
-                  </label>
-                </div>
-              )}
+              {/* Offset fields */}
+              <div className="form-grid" style={{ marginTop: '10px' }}>
+                <label>
+                  Offset X (mm):
+                  <input
+                    type="number"
+                    value={room.offset?.[0] ?? 0}
+                    onChange={(e) => {
+                      const newOffset: [number, number] = [Number(e.target.value), room.offset?.[1] ?? 0];
+                      updateRoom(index, { ...room, offset: newOffset });
+                    }}
+                  />
+                </label>
+                <label>
+                  Offset Y (mm):
+                  <input
+                    type="number"
+                    value={room.offset?.[1] ?? 0}
+                    onChange={(e) => {
+                      const newOffset: [number, number] = [room.offset?.[0] ?? 0, Number(e.target.value)];
+                      updateRoom(index, { ...room, offset: newOffset });
+                    }}
+                  />
+                </label>
+              </div>
             </div>
 
             {/* Room Objects */}

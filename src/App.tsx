@@ -11,7 +11,7 @@ const defaultJSON = `{
     {
       "id": "livingroom1",
       "name": "Living Room",
-      "attachTo": "foundation:top-left",
+      "attachTo": "zeropoint:top-left",
       "width": 4000,
       "depth": 3000
     },
@@ -616,6 +616,20 @@ function App() {
         <button className="download-svg-button" onClick={handleDownloadSVG}>
           📥 Download SVG
         </button>
+        {(positioningErrors.length > 0 || jsonError) && (
+          <div className="error-panel">
+            {jsonError && (
+              <div className="error-message json-error">
+                <strong>JSON Error:</strong> {jsonError}
+              </div>
+            )}
+            {positioningErrors.map((error, idx) => (
+              <div key={idx} className={`error-message ${error.startsWith('Error:') ? 'positioning-error' : 'positioning-warning'}`}>
+                {error}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
