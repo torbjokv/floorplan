@@ -4,10 +4,10 @@
   padding: 20px;
   height: 100vh;
   box-sizing: border-box;
-  background-color: #ffffff;
+  background-color: #f5f5f5;
   background-image:
-    linear-gradient(#eeeeee 1px, transparent 1px),
-    linear-gradient(90deg, #eeeeee 1px, transparent 1px);
+    linear-gradient(#e0e0e0 1px, transparent 1px),
+    linear-gradient(90deg, #e0e0e0 1px, transparent 1px);
   background-size: 20px 20px;
 }
 
