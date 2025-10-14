@@ -48,7 +48,7 @@
   box-shadow: 4px 0 12px rgba(0, 0, 0, 0.5);
 }
 
-.editor-section.collapsed .collapse-toggle-btn {
+.collapse-toggle-btn.collapsed {
   left: 4px; /* All the way to left edge */
   border-radius: 0 12px 12px 0;
 }

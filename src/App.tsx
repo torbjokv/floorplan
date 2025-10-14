@@ -521,7 +521,7 @@ function App() {
     <div className={`app-container ${editorCollapsed ? 'show-grid' : ''}`}>
       <div className={`editor-section ${editorCollapsed ? 'collapsed' : ''}`}>
         <button
-          className="collapse-toggle-btn"
+          className={`collapse-toggle-btn ${editorCollapsed ? 'collapsed' : ''}`}
           onClick={() => setEditorCollapsed(!editorCollapsed)}
           title={editorCollapsed ? "Expand editor" : "Collapse editor"}
         >
