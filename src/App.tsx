@@ -132,6 +132,7 @@ function App() {
   const [showUpdateAnimation, setShowUpdateAnimation] = useState(false);
   const [showCopyNotification, setShowCopyNotification] = useState(false);
   const [activeTab, setActiveTab] = useState<'json' | 'gui'>('gui');
+  const [editorCollapsed, setEditorCollapsed] = useState(false);
   const [savedProjects, setSavedProjects] = useState<SavedProject[]>(() => {
     try {
       const saved = localStorage.getItem('floorplan_projects');
@@ -294,6 +295,34 @@ function App() {
       const roomElement = document.querySelector(`[data-room-id="${roomId}"]`);
       if (roomElement) {
         roomElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+  };
+
+  const handleDoorClick = (doorIndex: number) => {
+    // Switch to GUI tab if not already there
+    if (activeTab !== 'gui') {
+      setActiveTab('gui');
+    }
+    // Wait for tab switch, then scroll to door
+    setTimeout(() => {
+      const doorElement = document.querySelector(`[data-door-index="${doorIndex}"]`);
+      if (doorElement) {
+        doorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+  };
+
+  const handleWindowClick = (windowIndex: number) => {
+    // Switch to GUI tab if not already there
+    if (activeTab !== 'gui') {
+      setActiveTab('gui');
+    }
+    // Wait for tab switch, then scroll to window
+    setTimeout(() => {
+      const windowElement = document.querySelector(`[data-window-index="${windowIndex}"]`);
+      if (windowElement) {
+        windowElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }, 100);
   };
@@ -490,7 +519,16 @@ function App() {
 
   return (
     <div className="app-container">
-      <div className="editor-section">
+      <div className={`editor-section ${editorCollapsed ? 'collapsed' : ''}`}>
+        <button
+          className="collapse-toggle-btn"
+          onClick={() => setEditorCollapsed(!editorCollapsed)}
+          title={editorCollapsed ? "Expand editor" : "Collapse editor"}
+        >
+          {editorCollapsed ? '▶' : '◀'}
+        </button>
+        {!editorCollapsed && (
+          <>
         <div className="tabs">
           <button
             className={`tab ${activeTab === 'gui' ? 'active' : ''}`}
@@ -531,6 +569,8 @@ function App() {
             🔗 Share
           </button>
         </div>
+        </>
+        )}
       </div>
       <div className="preview-section">
         <div className="project-header">
@@ -612,6 +652,8 @@ function App() {
           data={floorplanData}
           onPositioningErrors={handlePositioningErrors}
           onRoomClick={handleRoomClick}
+          onDoorClick={handleDoorClick}
+          onWindowClick={handleWindowClick}
         />
         <button className="download-svg-button" onClick={handleDownloadSVG}>
           📥 Download SVG

@@ -13,6 +13,8 @@ interface FloorplanRendererProps {
   data: FloorplanData;
   onPositioningErrors?: (errors: string[]) => void;
   onRoomClick?: (roomId: string) => void;
+  onDoorClick?: (doorIndex: number) => void;
+  onWindowClick?: (windowIndex: number) => void;
 }
 
 // Helper function to calculate anchor offset for objects
@@ -29,7 +31,7 @@ function getObjectAnchorOffset(anchor: Anchor, width: number, height: number): {
   }
 }
 
-export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick }: FloorplanRendererProps) {
+export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDoorClick, onWindowClick }: FloorplanRendererProps) {
   const gridStep = data.grid_step || 1000;
 
   // Memoize room resolution to avoid recalculating on every render
@@ -464,7 +466,12 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick }: Fl
     const doorType = door.type || 'normal';
 
     return (
-      <g key={`door-${index}`} className="door-group">
+      <g
+        key={`door-${index}`}
+        className="door-group"
+        onClick={() => onDoorClick?.(index)}
+        style={{ cursor: 'pointer' }}
+      >
         {/* Door rectangle (always shown) */}
         <rect
           x={x + doorRect.x}
@@ -545,7 +552,13 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick }: Fl
     const y = mm(posY);
 
     return (
-      <g key={`window-${index}`} className="window-group" transform={`translate(${x},${y}) rotate(${rotation})`}>
+      <g
+        key={`window-${index}`}
+        className="window-group"
+        transform={`translate(${x},${y}) rotate(${rotation})`}
+        onClick={() => onWindowClick?.(index)}
+        style={{ cursor: 'pointer' }}
+      >
         <rect
           x={rectX}
           y={rectY}

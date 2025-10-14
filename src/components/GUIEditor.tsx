@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { FloorplanData, Room, Door, Window, RoomObject, Anchor } from '../types';
+import type { FloorplanData, Room, Door, Window, RoomObject, RoomPart, Anchor } from '../types';
 import './GUIEditor.css';
 
 // Constants
@@ -191,6 +191,33 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
     updateRoom(roomIndex, { ...room, objects: newObjects });
   };
 
+  const addRoomPart = (roomIndex: number) => {
+    const room = localData.rooms[roomIndex];
+    const partName = `Part ${(room.parts || []).length + 1}`;
+    const newPart: RoomPart = {
+      id: generateRoomId(partName),
+      name: partName,
+      width: DEFAULT_ROOM_SIZE,
+      depth: DEFAULT_ROOM_SIZE,
+      attachTo: 'parent:bottom-left',
+    };
+    const newParts = [...(room.parts || []), newPart];
+    updateRoom(roomIndex, { ...room, parts: newParts });
+  };
+
+  const updateRoomPart = (roomIndex: number, partIndex: number, part: RoomPart) => {
+    const room = localData.rooms[roomIndex];
+    const newParts = [...(room.parts || [])];
+    newParts[partIndex] = part;
+    updateRoom(roomIndex, { ...room, parts: newParts });
+  };
+
+  const deleteRoomPart = (roomIndex: number, partIndex: number) => {
+    const room = localData.rooms[roomIndex];
+    const newParts = (room.parts || []).filter((_, i) => i !== partIndex);
+    updateRoom(roomIndex, { ...room, parts: newParts });
+  };
+
   // Get list of rooms for dropdowns (show name, use ID)
   // Add Zero Point as first option
   const roomList = [
@@ -308,6 +335,113 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
               </div>
             </div>
 
+            {/* Room Parts */}
+            <div className="objects-section">
+              <div className="section-header-small">
+                <span className="section-label">Room Parts (Composite Shapes)</span>
+                <button onClick={() => addRoomPart(index)} className="add-button-small">+ Add Part</button>
+              </div>
+              {(room.parts || []).map((part, partIndex) => {
+                // Build part list for attachTo dropdown (parent + other parts)
+                const partList = [
+                  { id: 'parent', name: '↑ Parent Room' },
+                  ...(room.parts || []).filter((_, i) => i !== partIndex).map(p => ({ id: p.id, name: p.name || p.id }))
+                ];
+                return (
+                  <div key={partIndex} className="object-card">
+                    <div className="object-header">
+                      <input
+                        type="text"
+                        value={part.name || part.id}
+                        placeholder="Part name"
+                        onChange={(e) => updateRoomPart(index, partIndex, { ...part, name: e.target.value })}
+                        style={{ flex: 1, padding: '4px 8px', fontSize: '13px' }}
+                      />
+                      <button onClick={() => deleteRoomPart(index, partIndex)} className="delete-button-small">×</button>
+                    </div>
+                    <div style={{ fontSize: '0.8em', color: '#999', marginBottom: '8px' }}>
+                      ID: {part.id}
+                    </div>
+                    <div className="form-grid-small">
+                      <label>
+                        Width (mm):
+                        <input
+                          type="number"
+                          value={part.width}
+                          onChange={(e) => updateRoomPart(index, partIndex, { ...part, width: Number(e.target.value) })}
+                        />
+                      </label>
+                      <label>
+                        Depth (mm):
+                        <input
+                          type="number"
+                          value={part.depth}
+                          onChange={(e) => updateRoomPart(index, partIndex, { ...part, depth: Number(e.target.value) })}
+                        />
+                      </label>
+                    </div>
+                    <div style={{ marginTop: '10px' }}>
+                      <label className="section-label">My Anchor:</label>
+                      <AnchorSelector
+                        value={part.anchor}
+                        onChange={(anchor) => updateRoomPart(index, partIndex, { ...part, anchor })}
+                      />
+                    </div>
+                    <div style={{ marginTop: '10px' }}>
+                      <label>
+                        Attach To:
+                        <select
+                          value={part.attachTo?.split(':')[0] || 'parent'}
+                          onChange={(e) => {
+                            const currentAnchor = part.attachTo?.split(':')[1] || 'bottom-left';
+                            updateRoomPart(index, partIndex, { ...part, attachTo: `${e.target.value}:${currentAnchor}` });
+                          }}
+                        >
+                          {partList.map((p) => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <div style={{ marginTop: '10px' }}>
+                      <label className="section-label">Attach To Corner:</label>
+                      <AnchorSelector
+                        value={(part.attachTo?.split(':')[1] as Anchor) || 'bottom-left'}
+                        onChange={(anchor) => {
+                          const refId = part.attachTo?.split(':')[0] || 'parent';
+                          updateRoomPart(index, partIndex, { ...part, attachTo: `${refId}:${anchor}` });
+                        }}
+                      />
+                    </div>
+                    <div className="form-grid-small" style={{ marginTop: '10px' }}>
+                      <label>
+                        Offset X (mm):
+                        <input
+                          type="number"
+                          value={part.offset?.[0] ?? 0}
+                          onChange={(e) => {
+                            const newOffset: [number, number] = [Number(e.target.value), part.offset?.[1] ?? 0];
+                            updateRoomPart(index, partIndex, { ...part, offset: newOffset });
+                          }}
+                        />
+                      </label>
+                      <label>
+                        Offset Y (mm):
+                        <input
+                          type="number"
+                          value={part.offset?.[1] ?? 0}
+                          onChange={(e) => {
+                            const newOffset: [number, number] = [part.offset?.[0] ?? 0, Number(e.target.value)];
+                            updateRoomPart(index, partIndex, { ...part, offset: newOffset });
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
             {/* Room Objects */}
             <div className="objects-section">
               <div className="section-header-small">
@@ -420,10 +554,12 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
           <h3>🚪 Doors</h3>
           <button onClick={addDoor} className="add-button">+ Add Door</button>
         </div>
-        {(localData.doors || []).map((door, index) => (
-          <div key={index} className="item-card">
+        {(localData.doors || []).map((door, index) => {
+          const roomName = localData.rooms.find(r => r.id === door.room.split(':')[0])?.name || door.room.split(':')[0];
+          return (
+          <div key={index} className="item-card" data-door-index={index}>
             <div className="card-header">
-              <span className="item-label">Door {index + 1}</span>
+              <span className="item-label">{roomName} - Door {index + 1}</span>
               <button onClick={() => deleteDoor(index)} className="delete-button">Delete</button>
             </div>
             <div className="form-grid">
@@ -502,7 +638,8 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
               )}
             </div>
           </div>
-        ))}
+        );
+        })}
       </div>
 
       <div className="gui-section">
@@ -510,10 +647,12 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
           <h3>🪟 Windows</h3>
           <button onClick={addWindow} className="add-button">+ Add Window</button>
         </div>
-        {(localData.windows || []).map((window, index) => (
-          <div key={index} className="item-card">
+        {(localData.windows || []).map((window, index) => {
+          const roomName = localData.rooms.find(r => r.id === window.room.split(':')[0])?.name || window.room.split(':')[0];
+          return (
+          <div key={index} className="item-card" data-window-index={index}>
             <div className="card-header">
-              <span className="item-label">Window {index + 1}</span>
+              <span className="item-label">{roomName} - Window {index + 1}</span>
               <button onClick={() => deleteWindow(index)} className="delete-button">Delete</button>
             </div>
             <div className="form-grid">
@@ -566,7 +705,8 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
               </label>
             </div>
           </div>
-        ))}
+        );
+        })}
       </div>
 
       <div className="gui-section">
