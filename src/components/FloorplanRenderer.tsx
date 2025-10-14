@@ -667,7 +667,6 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick }: Fl
 
   return (
     <div className="preview-container">
-      <h2>🏠 SVG Preview</h2>
       <svg
         className="floorplan-svg"
         viewBox={viewBox}
