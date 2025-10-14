@@ -11,14 +11,30 @@ A browser-based SVG floorplan designer for creating architectural floor plans th
 
 ## ✨ Features
 
-- **📝 JSON-Based Definition** - Define floor plans using a simple, intuitive JSON format
+### Core Functionality
+- **📝 Dual Editor** - JSON editor or visual GUI editor with form controls
 - **🔄 Real-Time Preview** - See changes instantly with automatic rendering (500ms debounce)
-- **🎯 Flexible Positioning** - Position rooms absolutely or relatively using anchor points
-- **🏗️ Composite Rooms** - Create complex shapes by combining rectangular sections
-- **🚪 Architectural Elements** - Add doors with swing arcs and windows
-- **⚠️ Smart Error Handling** - Get clear, actionable error messages for validation issues
+- **🏛️ Foundation Stone System** - Unified positioning with virtual anchor point at (0,0)
+- **🎯 Room ID System** - Stable references with unique IDs and optional display names
+- **🏗️ Composite Rooms** - Create L-shapes and complex layouts with room parts
+- **🎨 Room Objects** - Add decorative objects (squares/circles) with dual anchor system
+- **🚪 Doors** - Normal doors with swing arcs or opening-only type without blade
+- **🪟 Windows** - Wall-based window positioning with automatic rotation
+- **⚠️ Smart Error Handling** - Clear validation messages and Foundation Stone warnings
 - **📐 Dynamic Grid** - Configurable grid overlay for precise measurements
 - **📏 Millimeter Precision** - All measurements in millimeters for architectural accuracy
+
+### Interactive Features
+- **🖱️ Click-to-Edit** - Click rooms in SVG to jump to their configuration
+- **✨ Hover Effects** - Visual feedback on all elements (rooms, doors, windows, objects)
+- **🔗 Composite Highlighting** - Hover highlights all parts of composite rooms together
+
+### Project Management
+- **💾 Auto-Save** - Projects automatically saved to localStorage
+- **🔗 Share URLs** - Share projects with URL including project ID
+- **🔒 Read-Only Sharing** - Shared projects load as read-only (duplicate to edit)
+- **📁 Upload/Download** - Import and export JSON files
+- **📋 Duplicate** - Create copies of existing projects
 
 ## 🚀 Quick Start
 
@@ -53,29 +69,36 @@ npm run preview
 
 ## 📖 Usage
 
-### Basic Floor Plan
+### Basic Floor Plan with Foundation Stone
 
-Create a simple floor plan with two rooms:
+Create a simple floor plan anchored to the Foundation Stone:
 
 ```json
 {
   "grid_step": 1000,
   "rooms": [
     {
+      "id": "livingroom1",
       "name": "Living Room",
+      "attachTo": "foundation:top-left",
       "width": 4000,
       "depth": 3000
     },
     {
+      "id": "kitchen1",
       "name": "Kitchen",
-      "attachTo": "Living Room:top-right",
-      "offset": [500, 0],
+      "attachTo": "livingroom1:top-right",
       "width": 3000,
       "depth": 3000
     }
   ]
 }
 ```
+
+**Key Points:**
+- Rooms need unique `id` (required) and optional `name` (display name)
+- First room attaches to `"foundation:top-left"` (virtual anchor at 0,0)
+- Other rooms can attach to Foundation Stone or other rooms by ID
 
 ### Adding Doors and Windows
 
@@ -85,15 +108,22 @@ Create a simple floor plan with two rooms:
   "rooms": [...],
   "doors": [
     {
-      "room": "Living Room:bottom",
+      "room": "livingroom1:bottom",
       "offset": 1000,
       "width": 800,
-      "swing": "inwards-right"
+      "swing": "inwards-right",
+      "type": "normal"
+    },
+    {
+      "room": "kitchen1:left",
+      "offset": 500,
+      "width": 900,
+      "type": "opening"
     }
   ],
   "windows": [
     {
-      "room": "Kitchen:top",
+      "room": "kitchen1:top",
       "offset": 1000,
       "width": 1200
     }
@@ -101,18 +131,25 @@ Create a simple floor plan with two rooms:
 }
 ```
 
+**Door Types:**
+- `"normal"` - Shows door rectangle and swing arc (default)
+- `"opening"` - Shows only door rectangle (no swing arc)
+
 ### Creating Composite Rooms
 
 Build L-shaped or complex room layouts:
 
 ```json
 {
+  "id": "composite1",
   "name": "L-Shaped Room",
+  "attachTo": "foundation:top-left",
   "width": 3000,
   "depth": 2000,
-  "addition": [
+  "parts": [
     {
-      "name": "extension",
+      "id": "part1",
+      "name": "Extension",
       "width": 1000,
       "depth": 1500,
       "attachTo": "parent:bottom-left"
@@ -121,7 +158,36 @@ Build L-shaped or complex room layouts:
 }
 ```
 
-Note: The main room uses default `x: 0, y: 0`, and the extension uses default `anchor: "top-left"`.
+### Adding Room Objects
+
+Add decorative objects like furniture:
+
+```json
+{
+  "id": "livingroom1",
+  "name": "Living Room",
+  "attachTo": "foundation:top-left",
+  "width": 4000,
+  "depth": 3000,
+  "objects": [
+    {
+      "type": "square",
+      "x": 2000,
+      "y": 1500,
+      "width": 1000,
+      "height": 1000,
+      "anchor": "top-left",
+      "roomAnchor": "top-left",
+      "color": "#4caf50",
+      "text": "Table"
+    }
+  ]
+}
+```
+
+**Object Anchor System:**
+- `anchor` - Where on the object to position (top-left, top-right, bottom-left, bottom-right)
+- `roomAnchor` - Which room corner x,y is relative to
 
 ## 📚 JSON Schema Reference
 
@@ -129,14 +195,16 @@ Note: The main room uses default `x: 0, y: 0`, and the extension uses default `a
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `name` | string | required | Unique room identifier |
-| `width` | number | required | Width in millimeters (x-axis) |
-| `depth` | number | required | Depth in millimeters (y-axis) |
-| `x`, `y` | number | 0 | Absolute coordinates |
+| `id` | string | **required** | Unique room identifier (e.g., "livingroom1") |
+| `name` | string | *optional* | Display name for the room |
+| `width` | number | **required** | Width in millimeters (x-axis) |
+| `depth` | number | **required** | Depth in millimeters (y-axis) |
+| `x`, `y` | number | 0 | Absolute coordinates (optional if using attachTo) |
 | `anchor` | string | "top-left" | Attachment corner: `"top-right"`, `"bottom-left"`, `"bottom-right"` |
-| `attachTo` | string | - | Reference: `"RoomName:corner"` (takes priority over x/y) |
+| `attachTo` | string | - | Reference: `"roomId:corner"` or `"foundation:corner"` (takes priority over x/y) |
 | `offset` | [number, number] | [0, 0] | Position adjustment `[x, y]` |
-| `addition` | array | - | Sub-parts for composite rooms |
+| `parts` | array | - | Sub-parts for composite rooms (each needs `id`) |
+| `objects` | array | - | Decorative objects (squares/circles) |
 
 ### Door Properties
 
@@ -144,10 +212,11 @@ Doors have a fixed thickness of 100mm.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `room` | string | required | Room reference with wall: `"RoomName:wall"` where wall is `top`, `bottom`, `left`, or `right` |
-| `width` | number | required | Door width in mm |
+| `room` | string | **required** | Room ID with wall: `"roomId:wall"` where wall is `top`, `bottom`, `left`, or `right` |
+| `width` | number | **required** | Door width in mm |
 | `offset` | number | 0 | Distance along the wall from the wall's start in mm |
 | `swing` | string | "inwards-right" | `"inwards-left"`, `"inwards-right"`, `"outwards-left"`, or `"outwards-right"` |
+| `type` | string | "normal" | `"normal"` (with swing arc) or `"opening"` (without arc) |
 
 ### Window Properties
 
@@ -155,35 +224,38 @@ Windows have a fixed thickness of 100mm.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `room` | string | required | Room reference with wall: `"RoomName:wall"` where wall is `top`, `bottom`, `left`, or `right` |
-| `width` | number | required | Window width in mm |
+| `room` | string | **required** | Room ID with wall: `"roomId:wall"` where wall is `top`, `bottom`, `left`, or `right` |
+| `width` | number | **required** | Window width in mm |
 | `offset` | number | 0 | Distance along the wall from the wall's start in mm |
 
 ## 🎨 Positioning System
 
-### Absolute Positioning
+### Foundation Stone (Recommended)
 
-Place rooms at specific coordinates:
+Anchor the first room to the virtual Foundation Stone at (0,0):
 
 ```json
 {
-  "name": "Room1",
+  "id": "livingroom1",
+  "name": "Living Room",
+  "attachTo": "foundation:top-left",
   "width": 4000,
   "depth": 3000
 }
 ```
 
-Note: `x` and `y` default to `0` when not specified.
+**Key Feature**: No special "first room" logic - all rooms use the same positioning system!
 
-### Relative Positioning
+### Room-to-Room Positioning
 
-Attach rooms to other rooms using anchor points:
+Attach rooms to other rooms using their IDs:
 
 ```json
 {
-  "name": "Room2",
-  "attachTo": "Room1:top-right",
-  "offset": [500, 0],
+  "id": "kitchen1",
+  "name": "Kitchen",
+  "attachTo": "livingroom1:top-right",
+  "offset": [0, 0],
   "width": 3000,
   "depth": 3000
 }
@@ -193,7 +265,22 @@ Attach rooms to other rooms using anchor points:
 
 **Offset**: Fine-tune position with `[x, y]` adjustments in millimeters
 
-Note: If `anchor` is not specified, it defaults to `"top-left"`.
+### Absolute Positioning (Legacy)
+
+Still supported for direct coordinate placement:
+
+```json
+{
+  "id": "room1",
+  "name": "Room",
+  "x": 0,
+  "y": 0,
+  "width": 4000,
+  "depth": 3000
+}
+```
+
+Note: At least one room should connect to Foundation Stone for a stable floorplan.
 
 ## 🏗️ Architecture
 
@@ -202,19 +289,21 @@ Note: If `anchor` is not specified, it defaults to `"top-left"`.
 ```
 src/
 ├── components/
-│   ├── FloorplanRenderer.tsx  # SVG rendering engine
-│   └── JSONEditor.tsx          # JSON input editor with validation
+│   ├── FloorplanRenderer.tsx  # Interactive SVG rendering engine
+│   ├── JSONEditor.tsx          # JSON editor with line numbers and validation
+│   └── GUIEditor.tsx           # Visual form-based editor
 ├── types.ts                    # TypeScript type definitions
-├── utils.ts                    # Positioning logic and algorithms
-└── App.tsx                     # Main application component
+├── utils.ts                    # Positioning logic with Foundation Stone
+└── App.tsx                     # Main app with project management
 ```
 
 ### Key Components
 
-- **FloorplanRenderer**: Handles SVG rendering, grid overlay, and bounds calculation
-- **JSONEditor**: Manages JSON input, validation, and error display
-- **Positioning System**: Resolves room dependencies and calculates coordinates
-- **Error Handler**: Validates JSON and detects positioning issues
+- **FloorplanRenderer**: Interactive SVG with click handlers, hover effects, and composite highlighting
+- **GUIEditor**: Visual form editor with dropdowns, anchor selectors, and object editor
+- **JSONEditor**: Text editor with line numbers, synchronized scrolling, and error overlay
+- **Positioning System**: Foundation Stone-based positioning with dependency resolution
+- **Project Management**: localStorage with auto-save, sharing, and read-only mode for shared projects
 
 ## 🛠️ Development
 
