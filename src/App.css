@@ -18,11 +18,12 @@
   gap: 0;
   min-width: 450px;
   height: calc(100vh - 40px);
-  overflow: hidden;
+  overflow: visible; /* Allow button to show outside */
   position: relative;
   transition: all 0.3s ease;
   border-radius: 12px;
   margin-top: 20px;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .editor-section.collapsed {
@@ -31,8 +32,8 @@
 }
 
 .collapse-toggle-btn {
-  position: fixed;
-  left: calc(20px + 450px - 16px); /* padding + editor width - half button */
+  position: absolute;
+  right: -16px; /* Half button width outside editor */
   top: 50%;
   transform: translateY(-50%);
   z-index: 100;
@@ -51,8 +52,9 @@
   box-shadow: 4px 0 12px rgba(0, 0, 0, 0.5);
 }
 
-.collapse-toggle-btn.collapsed {
-  left: 4px; /* All the way to left edge */
+.editor-section.collapsed .collapse-toggle-btn {
+  left: 4px; /* All the way to left edge when collapsed */
+  right: auto;
   border-radius: 0 12px 12px 0;
 }
 
