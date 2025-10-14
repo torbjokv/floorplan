@@ -2,6 +2,7 @@
   display: flex;
   gap: 20px;
   padding: 20px;
+  padding-top: 0;
   height: 100vh;
   box-sizing: border-box;
   background-color: #e8e8e8;
@@ -14,12 +15,14 @@
 .editor-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
   min-width: 450px;
-  height: 100%;
+  height: calc(100vh - 40px);
   overflow: hidden;
   position: relative;
   transition: all 0.3s ease;
+  border-radius: 12px;
+  margin-top: 20px;
 }
 
 .editor-section.collapsed {
@@ -407,6 +410,8 @@
   overflow: hidden;
   position: relative;
   padding-top: 80px; /* Space for floating header */
+  margin-top: 20px;
+  border-radius: 12px;
 }
 
 .update-indicator {
@@ -511,7 +516,7 @@
   align-items: center;
   padding: 10px;
   background-color: #2d2d2d;
-  border-radius: 6px;
+  border-radius: 0 0 12px 12px;
 }
 
 .upload-button,
