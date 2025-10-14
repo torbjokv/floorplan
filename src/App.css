@@ -29,7 +29,7 @@
 
 .collapse-toggle-btn {
   position: fixed;
-  left: calc(20px + 450px); /* padding + editor width */
+  left: calc(20px + 450px - 16px); /* padding + editor width - half button */
   top: 50%;
   transform: translateY(-50%);
   z-index: 100;
@@ -38,7 +38,7 @@
   background: linear-gradient(135deg, #646cff 0%, #535bf2 100%);
   color: white;
   border: none;
-  border-radius: 0 12px 12px 0;
+  border-radius: 12px;
   cursor: pointer;
   font-size: 14px;
   display: flex;
@@ -49,7 +49,8 @@
 }
 
 .editor-section.collapsed .collapse-toggle-btn {
-  left: calc(20px + 50px); /* padding + collapsed width */
+  left: 4px; /* All the way to left edge */
+  border-radius: 0 12px 12px 0;
 }
 
 .collapse-toggle-btn:hover {
@@ -458,9 +459,8 @@
 }
 
 .floorplan-svg {
-  border: 1px solid #ccc;
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: none;
+  background: transparent;
   width: 100%;
   height: 100%;
   flex: 1;
