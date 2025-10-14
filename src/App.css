@@ -354,6 +354,24 @@
   position: relative;
 }
 
+.preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  flex-shrink: 0;
+}
+
+.preview-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #ffffff;
+}
+
+.preview-header .manual-link {
+  margin-left: auto;
+}
+
 .update-indicator {
   position: absolute;
   top: 20px;

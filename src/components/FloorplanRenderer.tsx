@@ -465,51 +465,26 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick }: Fl
 
     return (
       <g key={`door-${index}`} className="door-group">
+        {/* Door rectangle (always shown) */}
+        <rect
+          x={x + doorRect.x}
+          y={y + doorRect.y}
+          width={doorRect.width}
+          height={doorRect.height}
+          fill="saddlebrown"
+          stroke="#333"
+          strokeWidth="1"
+        />
+        {/* Door swing arc (only for normal doors) */}
         {doorType === 'normal' && (
-          <>
-            {/* Door rectangle */}
-            <rect
-              x={x + doorRect.x}
-              y={y + doorRect.y}
-              width={doorRect.width}
-              height={doorRect.height}
-              fill="saddlebrown"
-              stroke="#333"
-              strokeWidth="1"
-            />
-            {/* Door swing arc */}
-            <path
-              d={arcPath}
-              transform={`translate(${x},${y})`}
-              fill="none"
-              stroke="#333"
-              strokeWidth="1"
-              strokeDasharray="4,2"
-            />
-          </>
-        )}
-        {doorType === 'opening' && (
-          <>
-            {/* Just show opening lines on both sides */}
-            <line
-              x1={x + doorRect.x}
-              y1={y + doorRect.y}
-              x2={x + doorRect.x}
-              y2={y + doorRect.y + doorRect.height}
-              stroke="#666"
-              strokeWidth="2"
-              strokeDasharray="5,5"
-            />
-            <line
-              x1={x + doorRect.x + doorRect.width}
-              y1={y + doorRect.y}
-              x2={x + doorRect.x + doorRect.width}
-              y2={y + doorRect.y + doorRect.height}
-              stroke="#666"
-              strokeWidth="2"
-              strokeDasharray="5,5"
-            />
-          </>
+          <path
+            d={arcPath}
+            transform={`translate(${x},${y})`}
+            fill="none"
+            stroke="#333"
+            strokeWidth="1"
+            strokeDasharray="4,2"
+          />
         )}
       </g>
     );

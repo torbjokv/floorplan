@@ -562,15 +562,6 @@ function App() {
           >
             JSON Editor
           </button>
-          <a
-            href="https://github.com/torbjokv/floorplan"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="manual-link"
-            title="View JSON format documentation"
-          >
-            📖 Manual
-          </a>
         </div>
         {activeTab === 'json' ? (
           <JSONEditor
@@ -600,6 +591,18 @@ function App() {
         </div>
       </div>
       <div className="preview-section">
+        <div className="preview-header">
+          <h2>SVG Preview</h2>
+          <a
+            href="https://github.com/torbjokv/floorplan"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="manual-link"
+            title="View JSON format documentation"
+          >
+            📖 Manual
+          </a>
+        </div>
         {showUpdateAnimation && (
           <div className="update-indicator">
             ✓ Updated
