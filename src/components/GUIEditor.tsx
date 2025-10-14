@@ -222,8 +222,8 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
           <button onClick={addRoom} className="add-button">+ Add Room</button>
         </div>
         {localData.rooms.map((room, index) => (
-          <div key={room.id} className="item-card" data-room-id={room.id}>
-            <div className="card-header">
+          <div key={room.id} className="item-card">
+            <div className="card-header" data-room-id={room.id}>
               <input
                 type="text"
                 value={room.name || room.id}
