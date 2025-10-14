@@ -86,38 +86,36 @@ function generateProjectId(): string {
   return 'proj_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
+// Parse JSON data from URL hash
+function parseHashData(): string | null {
+  const hash = window.location.hash.slice(1);
+  if (!hash) return null;
+
+  try {
+    const params = new URLSearchParams(hash);
+    const data = params.get('data');
+    if (data) {
+      return decodeURIComponent(data);
+    }
+    // Fallback: old format (just JSON in hash)
+    return decodeURIComponent(hash);
+  } catch {
+    return null;
+  }
+}
+
 function App() {
   const [jsonText, setJsonText] = useState(() => {
-    // Try to load JSON from URL hash (format: #id=projectId&name=ProjectName&data=jsonData)
-    const hash = window.location.hash.slice(1);
-    if (hash) {
-      try {
-        const params = new URLSearchParams(hash);
-        const data = params.get('data');
-        if (data) {
-          return decodeURIComponent(data);
-        }
-        // Fallback: old format (just JSON in hash)
-        return decodeURIComponent(hash);
-      } catch {
-        return defaultJSON;
-      }
-    }
-    return defaultJSON;
+    return parseHashData() || defaultJSON;
   });
+
   const [floorplanData, setFloorplanData] = useState<FloorplanData>(() => {
-    const hash = window.location.hash.slice(1);
-    if (hash) {
+    const hashData = parseHashData();
+    if (hashData) {
       try {
-        const params = new URLSearchParams(hash);
-        const data = params.get('data');
-        if (data) {
-          return JSON.parse(decodeURIComponent(data));
-        }
-        // Fallback: old format
-        return JSON.parse(decodeURIComponent(hash));
+        return JSON.parse(hashData);
       } catch {
-        return JSON.parse(defaultJSON);
+        // Fall through to default
       }
     }
     try {

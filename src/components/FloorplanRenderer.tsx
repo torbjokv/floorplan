@@ -2,10 +2,31 @@ import { useEffect, useMemo } from 'react';
 import type { FloorplanData, ResolvedRoom, Door, Window, WallPosition, Anchor } from '../types';
 import { mm, resolveRoomPositions, resolveCompositeRoom, getCorner } from '../utils';
 
+// Constants
+const DOOR_THICKNESS = 100; // mm
+const WINDOW_THICKNESS = 100; // mm
+const BOUNDS_PADDING_PERCENTAGE = 0.1; // 10% padding on each side
+const DEFAULT_OBJECT_SIZE = 1000; // mm
+const DEFAULT_OBJECT_RADIUS = 500; // mm
+
 interface FloorplanRendererProps {
   data: FloorplanData;
   onPositioningErrors?: (errors: string[]) => void;
   onRoomClick?: (roomId: string) => void;
+}
+
+// Helper function to calculate anchor offset for objects
+function getObjectAnchorOffset(anchor: Anchor, width: number, height: number): { x: number; y: number } {
+  switch (anchor) {
+    case 'top-left':
+      return { x: 0, y: 0 };
+    case 'top-right':
+      return { x: -width, y: 0 };
+    case 'bottom-left':
+      return { x: 0, y: -height };
+    case 'bottom-right':
+      return { x: -width, y: -height };
+  }
 }
 
 export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick }: FloorplanRendererProps) {
@@ -56,41 +77,20 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick }: Fl
           const absY = roomCorner.y + obj.y;
 
           if (obj.type === 'circle') {
-            const radius = obj.radius || 500;
+            const radius = obj.radius || DEFAULT_OBJECT_RADIUS;
             minX = Math.min(minX, absX - radius);
             minY = Math.min(minY, absY - radius);
             maxX = Math.max(maxX, absX + radius);
             maxY = Math.max(maxY, absY + radius);
           } else {
             // Square - calculate bounds including anchor offset
-            const width = obj.width || 1000;
-            const height = obj.height || 1000;
+            const width = obj.width || DEFAULT_OBJECT_SIZE;
+            const height = obj.height || DEFAULT_OBJECT_SIZE;
             const anchor = obj.anchor || 'top-left';
+            const offset = getObjectAnchorOffset(anchor, width, height);
 
-            let offsetX = 0;
-            let offsetY = 0;
-
-            switch (anchor) {
-              case 'top-left':
-                offsetX = 0;
-                offsetY = 0;
-                break;
-              case 'top-right':
-                offsetX = -width;
-                offsetY = 0;
-                break;
-              case 'bottom-left':
-                offsetX = 0;
-                offsetY = -height;
-                break;
-              case 'bottom-right':
-                offsetX = -width;
-                offsetY = -height;
-                break;
-            }
-
-            const objX = absX + offsetX;
-            const objY = absY + offsetY;
+            const objX = absX + offset.x;
+            const objY = absY + offset.y;
             minX = Math.min(minX, objX);
             minY = Math.min(minY, objY);
             maxX = Math.max(maxX, objX + width);
@@ -100,10 +100,10 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick }: Fl
       }
     });
 
-    // Add padding (10% on each side)
+    // Add padding
     const width = maxX - minX;
     const depth = maxY - minY;
-    const padding = Math.max(width, depth) * 0.1;
+    const padding = Math.max(width, depth) * BOUNDS_PADDING_PERCENTAGE;
 
     return {
       x: minX - padding,
@@ -333,7 +333,7 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick }: Fl
     const offset = mm(door.offset ?? 0);
     const swing = door.swing || 'inwards-right';
     const w = mm(door.width);
-    const d = mm(100); // Fixed door thickness: 100mm
+    const d = mm(DOOR_THICKNESS);
 
     // Determine if door swings inwards or outwards, and left or right
     const isInwards = swing.startsWith('inwards');
@@ -498,7 +498,7 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick }: Fl
     const wall = wallStr as WallPosition;
     const offset = win.offset ?? 0;
     const w = mm(win.width);
-    const d = mm(100); // Fixed window thickness: 100mm
+    const d = mm(WINDOW_THICKNESS);
 
     // Calculate position and rotation based on wall
     let posX: number, posY: number, rotation: number;
@@ -573,7 +573,7 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick }: Fl
         const color = obj.color || '#888';
 
         if (obj.type === 'circle') {
-          const radius = mm(obj.radius || 500);
+          const radius = mm(obj.radius || DEFAULT_OBJECT_RADIUS);
           return (
             <g key={`${room.id}-obj-${idx}`}>
               <circle
@@ -601,34 +601,13 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick }: Fl
           );
         } else {
           // Square
-          const width = obj.width || 1000;
-          const height = obj.height || 1000;
+          const width = obj.width || DEFAULT_OBJECT_SIZE;
+          const height = obj.height || DEFAULT_OBJECT_SIZE;
           const anchor = obj.anchor || 'top-left';
+          const offset = getObjectAnchorOffset(anchor, width, height);
 
-          let offsetX = 0;
-          let offsetY = 0;
-
-          switch (anchor) {
-            case 'top-left':
-              offsetX = 0;
-              offsetY = 0;
-              break;
-            case 'top-right':
-              offsetX = -width;
-              offsetY = 0;
-              break;
-            case 'bottom-left':
-              offsetX = 0;
-              offsetY = -height;
-              break;
-            case 'bottom-right':
-              offsetX = -width;
-              offsetY = -height;
-              break;
-          }
-
-          const rectX = mm(absX + offsetX);
-          const rectY = mm(absY + offsetY);
+          const rectX = mm(absX + offset.x);
+          const rectY = mm(absY + offset.y);
           const w = mm(width);
           const h = mm(height);
           const centerX = rectX + w / 2;

@@ -2,6 +2,15 @@ import { useState, useEffect } from 'react';
 import type { FloorplanData, Room, Door, Window, RoomObject, Anchor } from '../types';
 import './GUIEditor.css';
 
+// Constants
+const DEFAULT_ROOM_SIZE = 3000; // mm
+const DEFAULT_DOOR_WIDTH = 800; // mm
+const DEFAULT_DOOR_OFFSET = 1000; // mm
+const DEFAULT_WINDOW_WIDTH = 1200; // mm
+const DEFAULT_WINDOW_OFFSET = 1000; // mm
+const DEFAULT_OBJECT_SIZE = 1000; // mm
+const DEFAULT_OBJECT_COLOR = '#888888';
+
 interface GUIEditorProps {
   data: FloorplanData;
   onChange: (data: FloorplanData) => void;
@@ -94,8 +103,8 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
     const newRoom: Room = {
       id: generateRoomId(roomName),
       name: roomName,
-      width: 3000,
-      depth: 3000,
+      width: DEFAULT_ROOM_SIZE,
+      depth: DEFAULT_ROOM_SIZE,
       attachTo: 'foundation:top-left',
     };
     // Add room at the beginning (on top)
@@ -117,8 +126,8 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
   const addDoor = () => {
     const newDoor: Door = {
       room: localData.rooms[0]?.id ? `${localData.rooms[0].id}:bottom` : 'room1:bottom',
-      offset: 1000,
-      width: 800,
+      offset: DEFAULT_DOOR_OFFSET,
+      width: DEFAULT_DOOR_WIDTH,
       swing: 'inwards-right',
     };
     updateData({ ...localData, doors: [...(localData.doors || []), newDoor] });
@@ -138,8 +147,8 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
   const addWindow = () => {
     const newWindow: Window = {
       room: localData.rooms[0]?.id ? `${localData.rooms[0].id}:top` : 'room1:top',
-      offset: 1000,
-      width: 1200,
+      offset: DEFAULT_WINDOW_OFFSET,
+      width: DEFAULT_WINDOW_WIDTH,
     };
     updateData({ ...localData, windows: [...(localData.windows || []), newWindow] });
   };
@@ -161,9 +170,9 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
       type: 'square',
       x: room.width / 2,
       y: room.depth / 2,
-      width: 1000,
-      height: 1000,
-      color: '#888888',
+      width: DEFAULT_OBJECT_SIZE,
+      height: DEFAULT_OBJECT_SIZE,
+      color: DEFAULT_OBJECT_COLOR,
     };
     const newObjects = [...(room.objects || []), newObject];
     updateRoom(roomIndex, { ...room, objects: newObjects });
