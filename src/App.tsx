@@ -493,6 +493,48 @@ function App() {
   return (
     <div className="app-container">
       <div className="editor-section">
+        <div className="tabs">
+          <button
+            className={`tab ${activeTab === 'gui' ? 'active' : ''}`}
+            onClick={() => setActiveTab('gui')}
+          >
+            GUI Editor
+          </button>
+          <button
+            className={`tab ${activeTab === 'json' ? 'active' : ''}`}
+            onClick={() => setActiveTab('json')}
+          >
+            JSON Editor
+          </button>
+        </div>
+        {activeTab === 'json' ? (
+          <JSONEditor
+            value={jsonText}
+            onChange={setJsonText}
+            error={jsonError}
+            warnings={positioningErrors}
+          />
+        ) : (
+          <GUIEditor
+            data={floorplanData}
+            onChange={handleGUIChange}
+          />
+        )}
+        <div className="button-row">
+          {activeTab === 'json' && (
+            <button className="format-button" onClick={handleFormatJSON}>
+              Format JSON
+            </button>
+          )}
+          <button className="download-button" onClick={handleDownloadJSON}>
+            💾 Download JSON
+          </button>
+          <button className="share-button" onClick={handleShare}>
+            🔗 Share
+          </button>
+        </div>
+      </div>
+      <div className="preview-section">
         <div className="project-header">
           <input
             type="text"
@@ -503,6 +545,15 @@ function App() {
           <button className="project-menu-button" onClick={() => setShowProjectMenu(!showProjectMenu)}>
             📁 Projects
           </button>
+          <a
+            href="https://github.com/torbjokv/floorplan"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="manual-link"
+            title="View JSON format documentation"
+          >
+            📖 Manual
+          </a>
           {showProjectMenu && (
             <div className="project-menu">
               <button onClick={handleNewProject} className="project-menu-item">
@@ -548,60 +599,6 @@ function App() {
               )}
             </div>
           )}
-        </div>
-        <div className="tabs">
-          <button
-            className={`tab ${activeTab === 'gui' ? 'active' : ''}`}
-            onClick={() => setActiveTab('gui')}
-          >
-            GUI Editor
-          </button>
-          <button
-            className={`tab ${activeTab === 'json' ? 'active' : ''}`}
-            onClick={() => setActiveTab('json')}
-          >
-            JSON Editor
-          </button>
-        </div>
-        {activeTab === 'json' ? (
-          <JSONEditor
-            value={jsonText}
-            onChange={setJsonText}
-            error={jsonError}
-            warnings={positioningErrors}
-          />
-        ) : (
-          <GUIEditor
-            data={floorplanData}
-            onChange={handleGUIChange}
-          />
-        )}
-        <div className="button-row">
-          {activeTab === 'json' && (
-            <button className="format-button" onClick={handleFormatJSON}>
-              Format JSON
-            </button>
-          )}
-          <button className="download-button" onClick={handleDownloadJSON}>
-            💾 Download JSON
-          </button>
-          <button className="share-button" onClick={handleShare}>
-            🔗 Share
-          </button>
-        </div>
-      </div>
-      <div className="preview-section">
-        <div className="preview-header">
-          <h2>SVG Preview</h2>
-          <a
-            href="https://github.com/torbjokv/floorplan"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="manual-link"
-            title="View JSON format documentation"
-          >
-            📖 Manual
-          </a>
         </div>
         {showUpdateAnimation && (
           <div className="update-indicator">
