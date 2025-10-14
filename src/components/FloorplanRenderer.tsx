@@ -5,9 +5,10 @@ import { mm, resolveRoomPositions, resolveCompositeRoom, getCorner } from '../ut
 interface FloorplanRendererProps {
   data: FloorplanData;
   onPositioningErrors?: (errors: string[]) => void;
+  onRoomClick?: (roomId: string) => void;
 }
 
-export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRendererProps) {
+export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick }: FloorplanRendererProps) {
   const gridStep = data.grid_step || 1000;
 
   // Memoize room resolution to avoid recalculating on every render
@@ -239,9 +240,10 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
       }
 
       return (
-        <g key={room.id}>
+        <g key={room.id} className="composite-room" data-room-id={room.id}>
           {/* Layer 1: All rectangles WITH borders */}
           <rect
+            className="room-rect composite-part"
             x={mm(room.x)}
             y={mm(room.y)}
             width={mm(room.width)}
@@ -249,9 +251,11 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
             fill="#e0ebe8"
             stroke="black"
             strokeWidth="2"
+            onClick={() => onRoomClick?.(room.id)}
           />
           {parts.map((part, idx) => (
             <rect
+              className="room-rect composite-part"
               key={`border-${idx}`}
               x={mm(part.x)}
               y={mm(part.y)}
@@ -260,6 +264,7 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
               fill="#e0ebe8"
               stroke="black"
               strokeWidth="2"
+              onClick={() => onRoomClick?.(room.id)}
             />
           ))}
 
@@ -294,6 +299,7 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
     return (
       <g key={room.id}>
         <rect
+          className="room-rect"
           x={mm(room.x)}
           y={mm(room.y)}
           width={mm(room.width)}
@@ -301,6 +307,7 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
           fill="#e0ebe8"
           stroke="black"
           strokeWidth="2"
+          onClick={() => onRoomClick?.(room.id)}
         />
 
         {/* Room label */}
@@ -454,27 +461,56 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
         return null;
     }
 
+    const doorType = door.type || 'normal';
+
     return (
-      <g key={`door-${index}`}>
-        {/* Door rectangle */}
-        <rect
-          x={x + doorRect.x}
-          y={y + doorRect.y}
-          width={doorRect.width}
-          height={doorRect.height}
-          fill="saddlebrown"
-          stroke="#333"
-          strokeWidth="1"
-        />
-        {/* Door swing arc */}
-        <path
-          d={arcPath}
-          transform={`translate(${x},${y})`}
-          fill="none"
-          stroke="#333"
-          strokeWidth="1"
-          strokeDasharray="4,2"
-        />
+      <g key={`door-${index}`} className="door-group">
+        {doorType === 'normal' && (
+          <>
+            {/* Door rectangle */}
+            <rect
+              x={x + doorRect.x}
+              y={y + doorRect.y}
+              width={doorRect.width}
+              height={doorRect.height}
+              fill="saddlebrown"
+              stroke="#333"
+              strokeWidth="1"
+            />
+            {/* Door swing arc */}
+            <path
+              d={arcPath}
+              transform={`translate(${x},${y})`}
+              fill="none"
+              stroke="#333"
+              strokeWidth="1"
+              strokeDasharray="4,2"
+            />
+          </>
+        )}
+        {doorType === 'opening' && (
+          <>
+            {/* Just show opening lines on both sides */}
+            <line
+              x1={x + doorRect.x}
+              y1={y + doorRect.y}
+              x2={x + doorRect.x}
+              y2={y + doorRect.y + doorRect.height}
+              stroke="#666"
+              strokeWidth="2"
+              strokeDasharray="5,5"
+            />
+            <line
+              x1={x + doorRect.x + doorRect.width}
+              y1={y + doorRect.y}
+              x2={x + doorRect.x + doorRect.width}
+              y2={y + doorRect.y + doorRect.height}
+              stroke="#666"
+              strokeWidth="2"
+              strokeDasharray="5,5"
+            />
+          </>
+        )}
       </g>
     );
   };
@@ -534,7 +570,7 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
     const y = mm(posY);
 
     return (
-      <g key={`window-${index}`} transform={`translate(${x},${y}) rotate(${rotation})`}>
+      <g key={`window-${index}`} className="window-group" transform={`translate(${x},${y}) rotate(${rotation})`}>
         <rect
           x={rectX}
           y={rectY}
@@ -566,6 +602,7 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
           return (
             <g key={`${room.id}-obj-${idx}`}>
               <circle
+                className="room-object"
                 cx={mm(absX)}
                 cy={mm(absY)}
                 r={radius}
@@ -625,6 +662,7 @@ export function FloorplanRenderer({ data, onPositioningErrors }: FloorplanRender
           return (
             <g key={`${room.id}-obj-${idx}`}>
               <rect
+                className="room-object"
                 x={rectX}
                 y={rectY}
                 width={w}

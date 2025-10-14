@@ -62,6 +62,20 @@ export function resolveRoomPositions(rooms: Room[]): PositioningResult {
       // attachTo has priority over x/y
       if (room.attachTo) {
         const [refRoomId, refCorner] = room.attachTo.split(':') as [string, Anchor];
+
+        // Handle special "foundation" reference (virtual point at 0,0)
+        if (refRoomId === 'foundation') {
+          const offset = room.offset || [0, 0];
+          const anchor = room.anchor || 'top-left';
+          const anchorAdjust = getAnchorAdjustment(anchor, room.width, room.depth);
+          const x = offset[0] + anchorAdjust.x;
+          const y = offset[1] + anchorAdjust.y;
+
+          roomMap[room.id] = { ...room, x, y } as ResolvedRoom;
+          unresolved.splice(i, 1);
+          continue;
+        }
+
         const refRoom = roomMap[refRoomId];
         if (!refRoom) continue;
 
@@ -91,6 +105,15 @@ export function resolveRoomPositions(rooms: Room[]): PositioningResult {
       const displayName = room.name || room.id;
       errors.push(`Room "${displayName}" could not be positioned. Referenced room "${refRoomId}" not found or circular dependency detected.`);
     });
+  }
+
+  // Validate that at least one room is connected to foundation stone
+  const hasFoundationConnection = rooms.some(room =>
+    room.attachTo?.split(':')[0] === 'foundation' || (!room.attachTo && (room.x !== undefined || room.y !== undefined))
+  );
+
+  if (rooms.length > 0 && !hasFoundationConnection) {
+    errors.push('Warning: At least one room should be connected to Foundation Stone (0,0) to anchor the floorplan.');
   }
 
   return { roomMap, errors };

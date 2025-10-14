@@ -46,6 +46,7 @@ export interface Door {
   offset?: number; // Distance along the wall from the wall's start
   width: number;
   swing?: SwingDirection; // Direction the door swings (defaults to inwards-right)
+  type?: 'normal' | 'opening'; // 'normal' shows door blade, 'opening' shows just the opening
 }
 
 export interface Window {

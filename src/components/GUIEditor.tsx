@@ -76,16 +76,31 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
     updateData({ ...localData, grid_step: gridStep });
   };
 
+  // Generate a unique room ID
+  const generateRoomId = (baseName: string): string => {
+    const base = baseName.toLowerCase().replace(/\s+/g, '');
+    let counter = 1;
+    let id = `${base}${counter}`;
+    const existingIds = new Set(localData.rooms.map(r => r.id));
+    while (existingIds.has(id)) {
+      counter++;
+      id = `${base}${counter}`;
+    }
+    return id;
+  };
+
   const addRoom = () => {
+    const roomName = `Room ${localData.rooms.length + 1}`;
     const newRoom: Room = {
-      name: `Room ${localData.rooms.length + 1}`,
+      id: generateRoomId(roomName),
+      name: roomName,
       width: 3000,
       depth: 3000,
-      x: 0,
-      y: 0,
+      attachTo: 'foundation:top-left',
     };
     // Add room at the beginning (on top)
-    updateData({ ...localData, rooms: [newRoom, ...localData.rooms] });
+    const updatedRooms = [newRoom, ...localData.rooms];
+    updateData({ ...localData, rooms: updatedRooms });
   };
 
   const updateRoom = (index: number, room: Room) => {
@@ -101,7 +116,7 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
 
   const addDoor = () => {
     const newDoor: Door = {
-      room: localData.rooms[0]?.name ? `${localData.rooms[0].name}:bottom` : 'Room:bottom',
+      room: localData.rooms[0]?.id ? `${localData.rooms[0].id}:bottom` : 'room1:bottom',
       offset: 1000,
       width: 800,
       swing: 'inwards-right',
@@ -122,7 +137,7 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
 
   const addWindow = () => {
     const newWindow: Window = {
-      room: localData.rooms[0]?.name ? `${localData.rooms[0].name}:top` : 'Room:top',
+      room: localData.rooms[0]?.id ? `${localData.rooms[0].id}:top` : 'room1:top',
       offset: 1000,
       width: 1200,
     };
@@ -167,8 +182,12 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
     updateRoom(roomIndex, { ...room, objects: newObjects });
   };
 
-  // Get list of room names for attachTo dropdown
-  const roomNames = localData.rooms.map(r => r.name);
+  // Get list of rooms for dropdowns (show name, use ID)
+  // Add Foundation Stone as first option
+  const roomList = [
+    { id: 'foundation', name: '🏛️ Foundation Stone (0,0)' },
+    ...localData.rooms.map(r => ({ id: r.id, name: r.name || r.id }))
+  ];
 
   return (
     <div className="gui-editor">
@@ -178,15 +197,19 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
           <button onClick={addRoom} className="add-button">+ Add Room</button>
         </div>
         {localData.rooms.map((room, index) => (
-          <div key={index} className="item-card">
+          <div key={room.id} className="item-card" data-room-id={room.id}>
             <div className="card-header">
               <input
                 type="text"
-                value={room.name}
+                value={room.name || room.id}
+                placeholder="Room name"
                 onChange={(e) => updateRoom(index, { ...room, name: e.target.value })}
                 className="room-name-input"
               />
               <button onClick={() => deleteRoom(index)} className="delete-button">Delete</button>
+            </div>
+            <div style={{ fontSize: '0.85em', color: '#999', marginBottom: '8px' }}>
+              ID: {room.id}
             </div>
             <div className="dimensions-layout">
               <div className="dimensions-stack">
@@ -221,7 +244,7 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
               <label className="section-label">Positioning</label>
               <div className="form-grid">
                 <label>
-                  Attach To Room:
+                  Attach To:
                   <select
                     value={room.attachTo?.split(':')[0] || ''}
                     onChange={(e) => {
@@ -234,26 +257,25 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
                     }}
                   >
                     <option value="">-- None (use x, y) --</option>
-                    {roomNames.filter((_, i) => i !== index).map((name) => (
-                      <option key={name} value={name}>{name}</option>
+                    {roomList.filter((r) => r.id !== room.id).map((r) => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
                     ))}
                   </select>
                 </label>
 
-                {room.attachTo && (
+                {room.attachTo && room.attachTo.split(':')[0] !== 'foundation' && (
                   <div>
                     <label className="section-label">Attach To Corner:</label>
                     <AnchorSelector
                       value={(room.attachTo?.split(':')[1] as Anchor) || 'top-left'}
                       onChange={(anchor) => {
-                        const roomName = room.attachTo?.split(':')[0] || roomNames[0];
-                        updateRoom(index, { ...room, attachTo: `${roomName}:${anchor}` });
+                        const roomId = room.attachTo?.split(':')[0] || roomList[0]?.id;
+                        updateRoom(index, { ...room, attachTo: `${roomId}:${anchor}` });
                       }}
                     />
                   </div>
                 )}
               </div>
-
             </div>
 
             {/* Collapsible x, y section */}
@@ -417,8 +439,8 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
                     updateDoor(index, { ...door, room: `${e.target.value}:${wall}` });
                   }}
                 >
-                  {roomNames.map((name) => (
-                    <option key={name} value={name}>{name}</option>
+                  {roomList.map((r) => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
                   ))}
                 </select>
               </label>
@@ -456,19 +478,31 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
                 />
               </label>
             </div>
-            <div className="form-row">
+            <div className="form-grid">
               <label>
-                Swing Direction:
+                Type:
                 <select
-                  value={door.swing ?? 'inwards-right'}
-                  onChange={(e) => updateDoor(index, { ...door, swing: e.target.value as any })}
+                  value={door.type ?? 'normal'}
+                  onChange={(e) => updateDoor(index, { ...door, type: e.target.value as 'normal' | 'opening' })}
                 >
-                  <option value="inwards-left">Inwards Left</option>
-                  <option value="inwards-right">Inwards Right</option>
-                  <option value="outwards-left">Outwards Left</option>
-                  <option value="outwards-right">Outwards Right</option>
+                  <option value="normal">Normal (with door blade)</option>
+                  <option value="opening">Opening (no door blade)</option>
                 </select>
               </label>
+              {door.type !== 'opening' && (
+                <label>
+                  Swing Direction:
+                  <select
+                    value={door.swing ?? 'inwards-right'}
+                    onChange={(e) => updateDoor(index, { ...door, swing: e.target.value as any })}
+                  >
+                    <option value="inwards-left">Inwards Left</option>
+                    <option value="inwards-right">Inwards Right</option>
+                    <option value="outwards-left">Outwards Left</option>
+                    <option value="outwards-right">Outwards Right</option>
+                  </select>
+                </label>
+              )}
             </div>
           </div>
         ))}
@@ -495,8 +529,8 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
                     updateWindow(index, { ...window, room: `${e.target.value}:${wall}` });
                   }}
                 >
-                  {roomNames.map((name) => (
-                    <option key={name} value={name}>{name}</option>
+                  {roomList.map((r) => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
                   ))}
                 </select>
               </label>

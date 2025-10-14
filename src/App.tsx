@@ -11,6 +11,7 @@ const defaultJSON = `{
     {
       "id": "livingroom1",
       "name": "Living Room",
+      "attachTo": "foundation:top-left",
       "width": 4000,
       "depth": 3000
     },
@@ -87,7 +88,7 @@ function generateProjectId(): string {
 
 function App() {
   const [jsonText, setJsonText] = useState(() => {
-    // Try to load JSON from URL hash (format: #name=ProjectName&data=jsonData)
+    // Try to load JSON from URL hash (format: #id=projectId&name=ProjectName&data=jsonData)
     const hash = window.location.hash.slice(1);
     if (hash) {
       try {
@@ -191,7 +192,43 @@ function App() {
     }
     return 'Untitled Project';
   });
-  const [projectId, setProjectId] = useState<string>(() => generateProjectId());
+  const [projectId, setProjectId] = useState<string>(() => {
+    const hash = window.location.hash.slice(1);
+    if (hash) {
+      try {
+        const params = new URLSearchParams(hash);
+        const id = params.get('id');
+        if (id) {
+          return decodeURIComponent(id);
+        }
+      } catch {
+        // Ignore
+      }
+    }
+    return generateProjectId();
+  });
+
+  // Track if this is an existing project loaded from URL (don't auto-save these)
+  const [isExistingProject, setIsExistingProject] = useState<boolean>(() => {
+    const hash = window.location.hash.slice(1);
+    if (hash) {
+      try {
+        const params = new URLSearchParams(hash);
+        const id = params.get('id');
+        if (id) {
+          const saved = localStorage.getItem('floorplan_projects');
+          if (saved) {
+            const projects: SavedProject[] = JSON.parse(saved);
+            return projects.some(p => p.id === decodeURIComponent(id));
+          }
+        }
+      } catch {
+        // Ignore
+      }
+    }
+    return false;
+  });
+
   const [showProjectMenu, setShowProjectMenu] = useState(false);
 
   // Auto-update on JSON changes with debounce
@@ -205,8 +242,9 @@ function App() {
         setShowUpdateAnimation(true);
         setTimeout(() => setShowUpdateAnimation(false), 1000);
 
-        // Update URL hash with project name and encoded JSON
+        // Update URL hash with project ID, name and encoded JSON
         const params = new URLSearchParams();
+        params.set('id', encodeURIComponent(projectId));
         params.set('name', encodeURIComponent(projectName));
         params.set('data', encodeURIComponent(jsonText));
         window.history.replaceState(null, '', '#' + params.toString());
@@ -246,6 +284,20 @@ function App() {
 
   const handlePositioningErrors = (errors: string[]) => {
     setPositioningErrors(errors);
+  };
+
+  const handleRoomClick = (roomId: string) => {
+    // Switch to GUI tab if not already there
+    if (activeTab !== 'gui') {
+      setActiveTab('gui');
+    }
+    // Wait for tab switch, then scroll to room
+    setTimeout(() => {
+      const roomElement = document.querySelector(`[data-room-id="${roomId}"]`);
+      if (roomElement) {
+        roomElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
   };
 
   const handleGUIChange = (data: FloorplanData) => {
@@ -303,10 +355,56 @@ function App() {
     }
   };
 
+  const handleUploadJSON = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json,.json';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const text = event.target?.result as string;
+          const parsed = JSON.parse(text);
+
+          // Check if this project already exists in localStorage
+          // Look for project ID in URL format if the file was exported with ID
+          const filename = file.name.replace('.json', '');
+
+          // If project with this ID already exists, show warning
+          const existingProject = savedProjects.find(p => p.name === filename);
+          if (existingProject) {
+            if (!confirm(`A project named "${filename}" already exists. This file will not be imported to prevent duplicates. Use the "Duplicate" button in the project menu to create a copy if needed.`)) {
+              return;
+            }
+            // User confirmed, but we still won't overwrite - just load it without saving
+          }
+
+          setJsonText(JSON.stringify(parsed, null, 2));
+          // Generate new project ID for uploaded file
+          setProjectId(generateProjectId());
+
+          // Set project name from filename
+          if (filename && filename !== 'floorplan') {
+            setProjectName(filename);
+          }
+        } catch (err) {
+          alert('Failed to parse JSON file: ' + (err as Error).message);
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+
   // Auto-save whenever jsonText or projectName changes
   useEffect(() => {
-    // Don't save if project name is empty or it's the default example
-    if (!projectName || projectName === 'Example Floorplan') return;
+    // Don't save if:
+    // - project name is empty or it's the default example
+    // - this is an existing project loaded from URL (user must use duplicate)
+    if (!projectName || projectName === 'Example Floorplan' || isExistingProject) return;
 
     const timer = setTimeout(() => {
       const newProject: SavedProject = {
@@ -322,12 +420,52 @@ function App() {
     }, 1000); // Debounce 1s
 
     return () => clearTimeout(timer);
-  }, [jsonText, projectName, projectId]);
+  }, [jsonText, projectName, projectId, isExistingProject]);
 
   const handleLoadProject = (project: SavedProject) => {
     setProjectId(project.id);
     setProjectName(project.name);
     setJsonText(project.json);
+    setIsExistingProject(true); // Mark as existing to prevent auto-save
+    setShowProjectMenu(false);
+  };
+
+  const handleDuplicateProject = (project?: SavedProject) => {
+    // If no project provided, duplicate the current one
+    const sourceProject = project || {
+      id: projectId,
+      name: projectName,
+      json: jsonText,
+      timestamp: Date.now()
+    };
+
+    // Create a duplicate with a new ID and incremented name
+    const newId = generateProjectId();
+    let newName = sourceProject.name;
+
+    // Find next available name (e.g., "Project 2", "Project 3", etc.)
+    let counter = 2;
+    while (savedProjects.some(p => p.name === newName)) {
+      newName = `${sourceProject.name} ${counter}`;
+      counter++;
+    }
+
+    const duplicatedProject: SavedProject = {
+      id: newId,
+      name: newName,
+      json: sourceProject.json,
+      timestamp: Date.now()
+    };
+
+    const updated = [duplicatedProject, ...savedProjects];
+    setSavedProjects(updated);
+    localStorage.setItem('floorplan_projects', JSON.stringify(updated));
+
+    // Load the duplicated project
+    setProjectId(newId);
+    setProjectName(newName);
+    setJsonText(sourceProject.json);
+    setIsExistingProject(false); // New copy, allow auto-save
     setShowProjectMenu(false);
   };
 
@@ -341,6 +479,7 @@ function App() {
     setProjectId(generateProjectId());
     setProjectName('Untitled Project');
     setJsonText(defaultJSON);
+    setIsExistingProject(false); // New project, allow auto-save
     setShowProjectMenu(false);
   };
 
@@ -371,6 +510,19 @@ function App() {
               </button>
               <button onClick={handleLoadExample} className="project-menu-item">
                 📋 Load Example
+              </button>
+              <button onClick={handleUploadJSON} className="project-menu-item">
+                📁 Upload JSON
+              </button>
+              <button onClick={() => handleDuplicateProject()} className="project-menu-item">
+                📑 Duplicate Current Project
+              </button>
+              <div className="project-menu-divider" />
+              <button onClick={() => { handleDownloadJSON(); setShowProjectMenu(false); }} className="project-menu-item">
+                💾 Download JSON
+              </button>
+              <button onClick={() => { handleShare(); setShowProjectMenu(false); }} className="project-menu-item">
+                🔗 Share
               </button>
               <div className="project-menu-divider" />
               <div className="project-menu-label">Saved Projects:</div>
@@ -458,7 +610,11 @@ function App() {
             ✓ Link copied to clipboard!
           </div>
         )}
-        <FloorplanRenderer data={floorplanData} onPositioningErrors={handlePositioningErrors} />
+        <FloorplanRenderer
+          data={floorplanData}
+          onPositioningErrors={handlePositioningErrors}
+          onRoomClick={handleRoomClick}
+        />
         <button className="download-svg-button" onClick={handleDownloadSVG}>
           📥 Download SVG
         </button>

@@ -136,6 +136,21 @@
   background-color: #3a3a3a;
 }
 
+.project-menu-duplicate {
+  padding: 10px 12px;
+  background-color: transparent;
+  color: #888;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.project-menu-duplicate:hover {
+  background-color: #646cff;
+  color: white;
+}
+
 .project-menu-delete {
   padding: 10px 15px;
   background-color: transparent;
@@ -397,12 +412,50 @@
   flex: 1;
 }
 
+/* Hover effects for SVG elements */
+.floorplan-svg .room-rect:hover {
+  fill: #e3f2fd;
+  stroke: #2196f3;
+  stroke-width: 3;
+  cursor: pointer;
+}
+
+/* Highlight all parts when hovering over any part of a composite room */
+.floorplan-svg .composite-room:hover .composite-part {
+  fill: #e3f2fd;
+  stroke: #2196f3;
+  stroke-width: 3;
+  cursor: pointer;
+}
+
+.floorplan-svg .door-group:hover rect,
+.floorplan-svg .door-group:hover path {
+  stroke: #4caf50;
+  stroke-width: 3;
+  cursor: pointer;
+}
+
+.floorplan-svg .window-group:hover rect {
+  fill: #fff3e0;
+  stroke: #ff9800;
+  stroke-width: 3;
+  cursor: pointer;
+}
+
+.floorplan-svg .room-object:hover {
+  opacity: 0.8;
+  stroke: #9c27b0;
+  stroke-width: 2;
+  cursor: pointer;
+}
+
 .button-row {
   display: flex;
   gap: 10px;
   flex-shrink: 0;
 }
 
+.upload-button,
 .download-button,
 .share-button {
   padding: 12px 24px;
@@ -417,11 +470,13 @@
   flex: 1;
 }
 
+.upload-button:hover,
 .download-button:hover,
 .share-button:hover {
   background-color: #535bf2;
 }
 
+.upload-button:active,
 .download-button:active,
 .share-button:active {
   background-color: #4249d6;
