@@ -201,6 +201,12 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
     return !closest;
   };
 
+  // Check if point is inside room bounds
+  const isPointInRoom = (room: ResolvedRoom, x: number, y: number): boolean => {
+    return x >= room.x && x <= room.x + room.width &&
+           y >= room.y && y <= room.y + room.depth;
+  };
+
   // Mouse move handler for hover detection
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     const { x, y } = screenToMM(e.clientX, e.clientY);
@@ -209,16 +215,33 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
       // Handle dragging
       handleDragMove(x, y);
     } else {
-      // Handle hover detection
+      // Handle hover detection - first find which room we're hovering over
       let foundHover = false;
+
+      // Check rooms in order, prioritizing the one we're actually inside
       for (const room of Object.values(roomMap)) {
-        const closest = findClosestCorner(room, x, y);
-        if (closest) {
-          setHoveredCorner({ roomId: room.id, corner: closest.corner });
-          foundHover = true;
-          break;
+        if (isPointInRoom(room, x, y)) {
+          const closest = findClosestCorner(room, x, y);
+          if (closest) {
+            setHoveredCorner({ roomId: room.id, corner: closest.corner });
+            foundHover = true;
+            break;
+          }
         }
       }
+
+      // If not inside any room, check for nearby corners
+      if (!foundHover) {
+        for (const room of Object.values(roomMap)) {
+          const closest = findClosestCorner(room, x, y);
+          if (closest) {
+            setHoveredCorner({ roomId: room.id, corner: closest.corner });
+            foundHover = true;
+            break;
+          }
+        }
+      }
+
       if (!foundHover) {
         setHoveredCorner(null);
       }
