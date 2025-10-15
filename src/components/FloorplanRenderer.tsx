@@ -163,9 +163,11 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
     const svgPt = pt.matrixTransform(svgRef.current.getScreenCTM()?.inverse());
 
     // Convert from screen units back to mm
+    // mm() function does: val * DISPLAY_SCALE / 10 (where DISPLAY_SCALE = 1)
+    // So to reverse: screen_val * 10
     return {
-      x: svgPt.x / 0.2, // DISPLAY_SCALE is 0.2
-      y: svgPt.y / 0.2
+      x: svgPt.x * 10,
+      y: svgPt.y * 10
     };
   };
 
@@ -230,7 +232,7 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
       // Handle dragging
       handleDragMove(x, y);
     } else {
-      // Handle hover detection - only show corners for the room we're inside
+      // Handle hover detection - only highlight the specific corner we're near
       let foundHover = false;
 
       // Find which room we're inside
@@ -239,13 +241,10 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
           // We're inside this room - check if we're near a corner
           const closest = findClosestCorner(room, x, y);
           if (closest) {
-            // Near a corner - highlight that specific corner
+            // Near a corner - highlight ONLY that specific corner
             setHoveredCorner({ roomId: room.id, corner: closest.corner });
-          } else {
-            // Inside room but not near a corner - still show all corners but none highlighted
-            setHoveredCorner({ roomId: room.id, corner: 'top-left' }); // Dummy to show room is active
+            foundHover = true;
           }
-          foundHover = true;
           break;
         }
       }
@@ -961,41 +960,57 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
   const renderCornerHighlights = () => {
     const highlights = [];
 
-    // Render all corner dots for the hovered/dragged room
-    const activeRoomId = dragState?.roomId || hoveredCorner?.roomId;
-    if (activeRoomId) {
-      const room = roomMap[activeRoomId];
+    // When dragging, show all corners of dragged room
+    if (dragState) {
+      const room = roomMap[dragState.roomId];
       if (room) {
         const corners: Anchor[] = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
         corners.forEach((cornerType) => {
           const corner = getCorner(room, cornerType);
 
-          // Check if this specific corner is close to mouse (within grab radius)
-          // This is more accurate than relying on hoveredCorner which might be set as dummy
-          const isActuallyHovered = hoveredCorner?.roomId === activeRoomId &&
-                                     hoveredCorner?.corner === cornerType;
+          const isGrabbedCorner = dragState.anchor === cornerType;
 
-          // Apply drag offset to corner visualization if this room is being dragged
+          // Apply drag offset
           let cornerX = corner.x;
           let cornerY = corner.y;
-          if (dragState?.roomId === activeRoomId && dragOffset) {
+          if (dragOffset) {
             cornerX += dragOffset.x;
             cornerY += dragOffset.y;
           }
 
           highlights.push(
             <circle
-              key={`corner-${activeRoomId}-${cornerType}`}
+              key={`corner-${dragState.roomId}-${cornerType}`}
               cx={mm(cornerX)}
               cy={mm(cornerY)}
-              r={mm(isActuallyHovered ? 200 : 150)}
-              fill={isActuallyHovered ? "rgba(100, 108, 255, 0.5)" : "rgba(100, 108, 255, 0.2)"}
+              r={mm(isGrabbedCorner ? 200 : 150)}
+              fill={isGrabbedCorner ? "rgba(100, 108, 255, 0.5)" : "rgba(100, 108, 255, 0.2)"}
               stroke="#646cff"
-              strokeWidth={isActuallyHovered ? "3" : "2"}
+              strokeWidth={isGrabbedCorner ? "3" : "2"}
               pointerEvents="none"
             />
           );
         });
+      }
+    }
+    // When hovering (not dragging), show only the single hovered corner
+    else if (hoveredCorner) {
+      const room = roomMap[hoveredCorner.roomId];
+      if (room) {
+        const corner = getCorner(room, hoveredCorner.corner);
+
+        highlights.push(
+          <circle
+            key={`corner-${hoveredCorner.roomId}-${hoveredCorner.corner}`}
+            cx={mm(corner.x)}
+            cy={mm(corner.y)}
+            r={mm(200)}
+            fill="rgba(100, 108, 255, 0.5)"
+            stroke="#646cff"
+            strokeWidth="3"
+            pointerEvents="none"
+          />
+        );
       }
     }
 
