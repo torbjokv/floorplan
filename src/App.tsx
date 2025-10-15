@@ -400,6 +400,11 @@ function App() {
     setJsonText(JSON.stringify(data, null, 2));
   };
 
+  const handleRoomUpdate = (data: FloorplanData) => {
+    // Update JSON text from drag and drop changes
+    setJsonText(JSON.stringify(data, null, 2));
+  };
+
   const handleDownloadJSON = () => {
     const blob = new Blob([jsonText], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -722,6 +727,7 @@ function App() {
           onRoomClick={handleRoomClick}
           onDoorClick={handleDoorClick}
           onWindowClick={handleWindowClick}
+          onRoomUpdate={handleRoomUpdate}
         />
         <button className="download-svg-button" onClick={handleDownloadSVG}>
           📥 Download SVG

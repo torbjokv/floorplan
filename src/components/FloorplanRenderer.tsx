@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from 'react';
-import type { FloorplanData, ResolvedRoom, Door, Window, WallPosition, Anchor } from '../types';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import type { FloorplanData, ResolvedRoom, Door, Window, WallPosition, Anchor, Room } from '../types';
 import { mm, resolveRoomPositions, resolveCompositeRoom, getCorner } from '../utils';
 
 // Constants
@@ -8,6 +8,8 @@ const WINDOW_THICKNESS = 100; // mm
 const BOUNDS_PADDING_PERCENTAGE = 0.1; // 10% padding on each side
 const DEFAULT_OBJECT_SIZE = 1000; // mm
 const DEFAULT_OBJECT_RADIUS = 500; // mm
+const CORNER_GRAB_RADIUS = 300; // mm - distance from corner to detect hover/grab
+const SNAP_DISTANCE = 500; // mm - distance to snap to another corner
 
 interface FloorplanRendererProps {
   data: FloorplanData;
@@ -15,6 +17,22 @@ interface FloorplanRendererProps {
   onRoomClick?: (roomId: string) => void;
   onDoorClick?: (doorIndex: number) => void;
   onWindowClick?: (windowIndex: number) => void;
+  onRoomUpdate?: (updatedData: FloorplanData) => void;
+}
+
+interface DragState {
+  roomId: string;
+  dragType: 'corner' | 'center';
+  anchor?: Anchor;
+  startMouseX: number;
+  startMouseY: number;
+  startRoomX: number;
+  startRoomY: number;
+}
+
+interface CornerHighlight {
+  roomId: string;
+  corner: Anchor;
 }
 
 // Helper function to calculate anchor offset for objects
@@ -31,8 +49,14 @@ function getObjectAnchorOffset(anchor: Anchor, width: number, height: number): {
   }
 }
 
-export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDoorClick, onWindowClick }: FloorplanRendererProps) {
+export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDoorClick, onWindowClick, onRoomUpdate }: FloorplanRendererProps) {
   const gridStep = data.grid_step || 1000;
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  // Drag and hover state
+  const [dragState, setDragState] = useState<DragState | null>(null);
+  const [hoveredCorner, setHoveredCorner] = useState<CornerHighlight | null>(null);
+  const [snapTarget, setSnapTarget] = useState<CornerHighlight | null>(null);
 
   // Memoize room resolution to avoid recalculating on every render
   const { roomMap, errors } = useMemo(() => resolveRoomPositions(data.rooms), [data.rooms]);
@@ -127,6 +151,205 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
   const gridMinY = Math.floor(bounds.y / gridStep) * gridStep;
   const gridMaxX = Math.ceil((bounds.x + bounds.width) / gridStep) * gridStep;
   const gridMaxY = Math.ceil((bounds.y + bounds.depth) / gridStep) * gridStep;
+
+  // Convert SVG screen coordinates to mm coordinates
+  const screenToMM = (screenX: number, screenY: number): { x: number; y: number } => {
+    if (!svgRef.current) return { x: 0, y: 0 };
+
+    const pt = svgRef.current.createSVGPoint();
+    pt.x = screenX;
+    pt.y = screenY;
+    const svgPt = pt.matrixTransform(svgRef.current.getScreenCTM()?.inverse());
+
+    // Convert from screen units back to mm
+    return {
+      x: svgPt.x / 0.2, // DISPLAY_SCALE is 0.2
+      y: svgPt.y / 0.2
+    };
+  };
+
+  // Find which corner of a room is closest to a point
+  const findClosestCorner = (room: ResolvedRoom, x: number, y: number): { corner: Anchor; distance: number } | null => {
+    const corners: { corner: Anchor; x: number; y: number }[] = [
+      { corner: 'top-left', x: room.x, y: room.y },
+      { corner: 'top-right', x: room.x + room.width, y: room.y },
+      { corner: 'bottom-left', x: room.x, y: room.y + room.depth },
+      { corner: 'bottom-right', x: room.x + room.width, y: room.y + room.depth },
+    ];
+
+    let closest = null;
+    let minDist = CORNER_GRAB_RADIUS;
+
+    for (const c of corners) {
+      const dist = Math.sqrt(Math.pow(c.x - x, 2) + Math.pow(c.y - y, 2));
+      if (dist < minDist) {
+        minDist = dist;
+        closest = { corner: c.corner, distance: dist };
+      }
+    }
+
+    return closest;
+  };
+
+  // Check if point is inside room center (not near corners)
+  const isInsideRoomCenter = (room: ResolvedRoom, x: number, y: number): boolean => {
+    if (x < room.x || x > room.x + room.width || y < room.y || y > room.y + room.depth) {
+      return false;
+    }
+    // Make sure not near any corner
+    const closest = findClosestCorner(room, x, y);
+    return !closest;
+  };
+
+  // Mouse move handler for hover detection
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const { x, y } = screenToMM(e.clientX, e.clientY);
+
+    if (dragState) {
+      // Handle dragging
+      handleDragMove(x, y);
+    } else {
+      // Handle hover detection
+      let foundHover = false;
+      for (const room of Object.values(roomMap)) {
+        const closest = findClosestCorner(room, x, y);
+        if (closest) {
+          setHoveredCorner({ roomId: room.id, corner: closest.corner });
+          foundHover = true;
+          break;
+        }
+      }
+      if (!foundHover) {
+        setHoveredCorner(null);
+      }
+    }
+  };
+
+  // Mouse down handler to start dragging
+  const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>, roomId: string) => {
+    e.stopPropagation();
+    const { x, y } = screenToMM(e.clientX, e.clientY);
+    const room = roomMap[roomId];
+    if (!room) return;
+
+    // Check if clicking on corner
+    const closest = findClosestCorner(room, x, y);
+    if (closest) {
+      setDragState({
+        roomId,
+        dragType: 'corner',
+        anchor: closest.corner,
+        startMouseX: x,
+        startMouseY: y,
+        startRoomX: room.x,
+        startRoomY: room.y,
+      });
+    } else if (isInsideRoomCenter(room, x, y)) {
+      setDragState({
+        roomId,
+        dragType: 'center',
+        startMouseX: x,
+        startMouseY: y,
+        startRoomX: room.x,
+        startRoomY: room.y,
+      });
+    }
+  };
+
+  // Handle drag movement
+  const handleDragMove = (x: number, y: number) => {
+    if (!dragState) return;
+
+    const deltaX = x - dragState.startMouseX;
+    const deltaY = y - dragState.startMouseY;
+
+    // Check for snap targets when dragging
+    const room = roomMap[dragState.roomId];
+    if (!room) return;
+
+    let foundSnap = false;
+    if (dragState.dragType === 'corner' && dragState.anchor) {
+      // Calculate where the dragged corner would be
+      const cornerPos = getCorner(room, dragState.anchor);
+      const newCornerX = cornerPos.x + deltaX;
+      const newCornerY = cornerPos.y + deltaY;
+
+      // Check all other rooms for snap targets
+      for (const otherRoom of Object.values(roomMap)) {
+        if (otherRoom.id === dragState.roomId) continue;
+
+        const otherCorners: Anchor[] = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+        for (const otherCorner of otherCorners) {
+          const otherPos = getCorner(otherRoom, otherCorner);
+          const dist = Math.sqrt(
+            Math.pow(newCornerX - otherPos.x, 2) + Math.pow(newCornerY - otherPos.y, 2)
+          );
+
+          if (dist < SNAP_DISTANCE) {
+            setSnapTarget({ roomId: otherRoom.id, corner: otherCorner });
+            foundSnap = true;
+            break;
+          }
+        }
+        if (foundSnap) break;
+      }
+    }
+
+    if (!foundSnap) {
+      setSnapTarget(null);
+    }
+  };
+
+  // Mouse up handler to finish dragging
+  const handleMouseUp = () => {
+    if (!dragState || !onRoomUpdate) {
+      setDragState(null);
+      setSnapTarget(null);
+      return;
+    }
+
+    const room = data.rooms.find(r => r.id === dragState.roomId);
+    if (!room) {
+      setDragState(null);
+      setSnapTarget(null);
+      return;
+    }
+
+    const updatedRoom = { ...room };
+
+    if (dragState.dragType === 'corner' && dragState.anchor && snapTarget) {
+      // Snap to target corner
+      updatedRoom.attachTo = `${snapTarget.roomId}:${snapTarget.corner}`;
+      updatedRoom.anchor = dragState.anchor;
+      delete updatedRoom.offset;
+    } else if (dragState.dragType === 'center') {
+      // Attach to zeropoint with offset
+      const resolvedRoom = roomMap[dragState.roomId];
+      if (resolvedRoom) {
+        updatedRoom.attachTo = 'zeropoint:top-left';
+        updatedRoom.anchor = 'top-left';
+        updatedRoom.offset = [resolvedRoom.x, resolvedRoom.y];
+      }
+    }
+
+    // Update the room in data
+    const updatedRooms = data.rooms.map(r => r.id === dragState.roomId ? updatedRoom : r);
+    onRoomUpdate({ ...data, rooms: updatedRooms });
+
+    setDragState(null);
+    setSnapTarget(null);
+  };
+
+  // Add global mouse up listener
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (dragState) {
+        handleMouseUp();
+      }
+    };
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, [dragState]);
 
   const renderGrid = () => {
     const lines = [];
@@ -254,6 +477,8 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
             stroke="black"
             strokeWidth="2"
             onClick={() => onRoomClick?.(room.id)}
+            onMouseDown={(e) => handleMouseDown(e as any, room.id)}
+            style={{ cursor: dragState?.roomId === room.id ? 'grabbing' : 'grab' }}
           />
           {parts.map((part, idx) => (
             <rect
@@ -310,6 +535,8 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
           stroke="black"
           strokeWidth="2"
           onClick={() => onRoomClick?.(room.id)}
+          onMouseDown={(e) => handleMouseDown(e as any, room.id)}
+          style={{ cursor: dragState?.roomId === room.id ? 'grabbing' : 'grab' }}
         />
 
         {/* Room label */}
@@ -657,12 +884,62 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
     );
   };
 
+  // Render corner highlights
+  const renderCornerHighlights = () => {
+    const highlights = [];
+
+    // Render hovered corner
+    if (hoveredCorner) {
+      const room = roomMap[hoveredCorner.roomId];
+      if (room) {
+        const corner = getCorner(room, hoveredCorner.corner);
+        highlights.push(
+          <circle
+            key="hover"
+            cx={mm(corner.x)}
+            cy={mm(corner.y)}
+            r={mm(200)}
+            fill="rgba(100, 108, 255, 0.3)"
+            stroke="#646cff"
+            strokeWidth="2"
+            pointerEvents="none"
+          />
+        );
+      }
+    }
+
+    // Render snap target
+    if (snapTarget) {
+      const room = roomMap[snapTarget.roomId];
+      if (room) {
+        const corner = getCorner(room, snapTarget.corner);
+        highlights.push(
+          <circle
+            key="snap"
+            cx={mm(corner.x)}
+            cy={mm(corner.y)}
+            r={mm(250)}
+            fill="rgba(76, 175, 80, 0.3)"
+            stroke="#4caf50"
+            strokeWidth="3"
+            pointerEvents="none"
+          />
+        );
+      }
+    }
+
+    return highlights;
+  };
+
   return (
     <div className="preview-container">
       <svg
+        ref={svgRef}
         className="floorplan-svg"
         viewBox={viewBox}
         preserveAspectRatio="xMidYMid meet"
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
       >
         {/* Grid */}
         {renderGrid()}
@@ -678,6 +955,9 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
 
         {/* All room objects - rendered last so they appear on top */}
         {renderAllRoomObjects()}
+
+        {/* Corner highlights - rendered on top */}
+        {renderCornerHighlights()}
       </svg>
     </div>
   );
