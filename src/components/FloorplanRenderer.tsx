@@ -1080,10 +1080,32 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
         {Object.values(roomMap).map(renderRoom)}
 
         {/* Doors */}
-        {data.doors?.map(renderDoor)}
+        {data.doors?.map((door, index) => {
+          const roomId = door.room.split(':')[0];
+          const isDragging = dragState?.roomId === roomId;
+          const transform = isDragging && dragOffset
+            ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})`
+            : undefined;
+          return (
+            <g key={`door-${index}`} transform={transform}>
+              {renderDoor(door, index)}
+            </g>
+          );
+        })}
 
         {/* Windows */}
-        {data.windows?.map(renderWindow)}
+        {data.windows?.map((window, index) => {
+          const roomId = window.room.split(':')[0];
+          const isDragging = dragState?.roomId === roomId;
+          const transform = isDragging && dragOffset
+            ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})`
+            : undefined;
+          return (
+            <g key={`window-${index}`} transform={transform}>
+              {renderWindow(window, index)}
+            </g>
+          );
+        })}
 
         {/* All room objects - rendered last so they appear on top */}
         {renderAllRoomObjects()}
