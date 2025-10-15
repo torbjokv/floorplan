@@ -344,15 +344,26 @@ function App() {
       return id;
     };
 
-    // Calculate smart offset for new room
+    // Calculate smart offset for new room by finding actual maximum x extent
     let xOffset = 0;
     let yOffset = 0;
 
     if (floorplanData.rooms.length > 0) {
-      // Find max x and y offsets to avoid conflicts
+      // Find the rightmost edge of all existing rooms
       const SPACING = 500; // mm spacing between rooms
-      const maxOffset = floorplanData.rooms.length * (DEFAULT_ROOM_SIZE + SPACING);
-      xOffset = maxOffset;
+
+      // For rooms attached to zeropoint, calculate their actual positions
+      let maxX = 0;
+      floorplanData.rooms.forEach(room => {
+        if (room.attachTo?.startsWith('zeropoint:') && room.offset) {
+          const roomRightEdge = room.offset[0] + room.width;
+          if (roomRightEdge > maxX) {
+            maxX = roomRightEdge;
+          }
+        }
+      });
+
+      xOffset = maxX + SPACING;
       yOffset = 0;
     }
 
