@@ -8,7 +8,7 @@ const WINDOW_THICKNESS = 100; // mm
 const BOUNDS_PADDING_PERCENTAGE = 0.1; // 10% padding on each side
 const DEFAULT_OBJECT_SIZE = 1000; // mm
 const DEFAULT_OBJECT_RADIUS = 500; // mm
-const CORNER_GRAB_RADIUS = 300; // mm - distance from corner to detect hover/grab
+const CORNER_GRAB_RADIUS = 600; // mm - distance from corner to detect hover/grab
 const SNAP_DISTANCE = 500; // mm - distance to snap to another corner
 
 interface FloorplanRendererProps {
@@ -360,6 +360,21 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
       return;
     }
 
+    // Check if the room actually moved significantly (more than 100mm)
+    const MOVEMENT_THRESHOLD = 100; // mm
+    const hasMoved = dragOffset && (
+      Math.abs(dragOffset.x) > MOVEMENT_THRESHOLD ||
+      Math.abs(dragOffset.y) > MOVEMENT_THRESHOLD
+    );
+
+    // If didn't move enough, don't update anything
+    if (!hasMoved) {
+      setDragState(null);
+      setSnapTarget(null);
+      setDragOffset(null);
+      return;
+    }
+
     const updatedRoom = { ...room };
 
     if (dragState.dragType === 'corner' && dragState.anchor && snapTarget) {
@@ -369,20 +384,25 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
       delete updatedRoom.offset;
     } else if (dragState.dragType === 'corner' && dragState.anchor) {
       // Dropped corner without snap target - attach to zeropoint with offset
+      // Calculate the new position including the drag offset
       const resolvedRoom = roomMap[dragState.roomId];
-      if (resolvedRoom) {
+      if (resolvedRoom && dragOffset) {
         const cornerPos = getCorner(resolvedRoom, dragState.anchor);
+        const newCornerX = cornerPos.x + dragOffset.x;
+        const newCornerY = cornerPos.y + dragOffset.y;
         updatedRoom.attachTo = 'zeropoint:top-left';
         updatedRoom.anchor = dragState.anchor;
-        updatedRoom.offset = [cornerPos.x, cornerPos.y];
+        updatedRoom.offset = [newCornerX, newCornerY];
       }
     } else if (dragState.dragType === 'center') {
       // Attach to zeropoint with offset
       const resolvedRoom = roomMap[dragState.roomId];
-      if (resolvedRoom) {
+      if (resolvedRoom && dragOffset) {
+        const newX = resolvedRoom.x + dragOffset.x;
+        const newY = resolvedRoom.y + dragOffset.y;
         updatedRoom.attachTo = 'zeropoint:top-left';
         updatedRoom.anchor = 'top-left';
-        updatedRoom.offset = [resolvedRoom.x, resolvedRoom.y];
+        updatedRoom.offset = [newX, newY];
       }
     }
 
@@ -1006,7 +1026,7 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
           cornerY += dragOffset.y;
         }
 
-        const path = getQuarterCirclePath(cornerX, cornerY, dragState.anchor, 400);
+        const path = getQuarterCirclePath(cornerX, cornerY, dragState.anchor, 600);
 
         highlights.push(
           <path
@@ -1025,7 +1045,7 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
       const room = roomMap[hoveredCorner.roomId];
       if (room) {
         const corner = getCorner(room, hoveredCorner.corner);
-        const path = getQuarterCirclePath(corner.x, corner.y, hoveredCorner.corner, 400);
+        const path = getQuarterCirclePath(corner.x, corner.y, hoveredCorner.corner, 600);
 
         highlights.push(
           <path
