@@ -574,9 +574,9 @@
 .download-svg-button {
   position: absolute;
   bottom: 20px;
-  right: 20px;
+  left: 20px;
   padding: 12px 24px;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 600;
   background-color: #646cff;
   color: white;
@@ -594,6 +594,31 @@
 
 .download-svg-button:active {
   background-color: #4249d6;
+}
+
+.add-room-button {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+.add-room-button:hover {
+  background-color: #45a049;
+}
+
+.add-room-button:active {
+  background-color: #3d8b40;
 }
 
 /* Error Panel - Always visible at bottom of preview */

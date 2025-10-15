@@ -3,7 +3,7 @@ import './App.css'
 import { JSONEditor } from './components/JSONEditor'
 import { GUIEditor } from './components/GUIEditor'
 import { FloorplanRenderer } from './components/FloorplanRenderer'
-import type { FloorplanData } from './types'
+import type { FloorplanData, Room } from './types'
 
 const defaultJSON = `{
   "grid_step": 1000,
@@ -323,6 +323,63 @@ function App() {
       const windowElement = document.querySelector(`[data-window-index="${windowIndex}"]`);
       if (windowElement) {
         windowElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+  };
+
+  const handleAddRoom = () => {
+    const DEFAULT_ROOM_SIZE = 3000; // mm
+    const roomName = `Room ${floorplanData.rooms.length + 1}`;
+
+    // Generate unique room ID
+    const generateRoomId = (baseName: string): string => {
+      const base = baseName.toLowerCase().replace(/\s+/g, '');
+      let counter = 1;
+      let id = `${base}${counter}`;
+      const existingIds = new Set(floorplanData.rooms.map(r => r.id));
+      while (existingIds.has(id)) {
+        counter++;
+        id = `${base}${counter}`;
+      }
+      return id;
+    };
+
+    // Calculate smart offset for new room
+    let xOffset = 0;
+    let yOffset = 0;
+
+    if (floorplanData.rooms.length > 0) {
+      // Find max x and y offsets to avoid conflicts
+      const SPACING = 500; // mm spacing between rooms
+      const maxOffset = floorplanData.rooms.length * (DEFAULT_ROOM_SIZE + SPACING);
+      xOffset = maxOffset;
+      yOffset = 0;
+    }
+
+    const newRoom: Room = {
+      id: generateRoomId(roomName),
+      name: roomName,
+      width: DEFAULT_ROOM_SIZE,
+      depth: DEFAULT_ROOM_SIZE,
+      attachTo: 'zeropoint:top-left',
+      offset: [xOffset, yOffset],
+    };
+
+    const updatedData = {
+      ...floorplanData,
+      rooms: [...floorplanData.rooms, newRoom],
+    };
+
+    setJsonText(JSON.stringify(updatedData, null, 2));
+
+    // Switch to GUI tab and scroll to new room
+    if (activeTab !== 'gui') {
+      setActiveTab('gui');
+    }
+    setTimeout(() => {
+      const roomElement = document.querySelector(`[data-room-id="${newRoom.id}"]`);
+      if (roomElement) {
+        roomElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }, 100);
   };
@@ -657,6 +714,9 @@ function App() {
         />
         <button className="download-svg-button" onClick={handleDownloadSVG}>
           📥 Download SVG
+        </button>
+        <button className="add-room-button" onClick={handleAddRoom}>
+          + Add Room
         </button>
         {(positioningErrors.length > 0 || jsonError) && (
           <div className="error-panel">
