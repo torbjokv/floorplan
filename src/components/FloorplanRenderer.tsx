@@ -321,10 +321,11 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
     // Check for snap targets when dragging
     let foundSnap = false;
     if (dragState.dragType === 'corner' && dragState.anchor) {
-      // Calculate where the dragged corner would be
+      // Calculate where the dragged corner is now (it should be at mouse position)
       const cornerPos = getCorner(room, dragState.anchor);
       const newCornerX = cornerPos.x + deltaX;
       const newCornerY = cornerPos.y + deltaY;
+      // This should equal (x, y) if the drag sync is correct
 
       // Check all other rooms for snap targets
       for (const otherRoom of Object.values(roomMap)) {
@@ -979,11 +980,19 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
           const corner = getCorner(room, cornerType);
           const isHovered = hoveredCorner?.roomId === activeRoomId && hoveredCorner?.corner === cornerType;
 
+          // Apply drag offset to corner visualization if this room is being dragged
+          let cornerX = corner.x;
+          let cornerY = corner.y;
+          if (dragState?.roomId === activeRoomId && dragOffset) {
+            cornerX += dragOffset.x;
+            cornerY += dragOffset.y;
+          }
+
           highlights.push(
             <circle
               key={`corner-${activeRoomId}-${cornerType}`}
-              cx={mm(corner.x)}
-              cy={mm(corner.y)}
+              cx={mm(cornerX)}
+              cy={mm(cornerY)}
               r={mm(isHovered ? 200 : 150)}
               fill={isHovered ? "rgba(100, 108, 255, 0.5)" : "rgba(100, 108, 255, 0.2)"}
               stroke="#646cff"
