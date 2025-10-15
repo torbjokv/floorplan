@@ -230,30 +230,23 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
       // Handle dragging
       handleDragMove(x, y);
     } else {
-      // Handle hover detection - first find which room we're hovering over
+      // Handle hover detection - only show corners for the room we're inside
       let foundHover = false;
 
-      // Check rooms in order, prioritizing the one we're actually inside
+      // Find which room we're inside
       for (const room of Object.values(roomMap)) {
         if (isPointInRoom(room, x, y)) {
+          // We're inside this room - check if we're near a corner
           const closest = findClosestCorner(room, x, y);
           if (closest) {
+            // Near a corner - highlight that specific corner
             setHoveredCorner({ roomId: room.id, corner: closest.corner });
-            foundHover = true;
-            break;
+          } else {
+            // Inside room but not near a corner - still show all corners but none highlighted
+            setHoveredCorner({ roomId: room.id, corner: 'top-left' }); // Dummy to show room is active
           }
-        }
-      }
-
-      // If not inside any room, check for nearby corners
-      if (!foundHover) {
-        for (const room of Object.values(roomMap)) {
-          const closest = findClosestCorner(room, x, y);
-          if (closest) {
-            setHoveredCorner({ roomId: room.id, corner: closest.corner });
-            foundHover = true;
-            break;
-          }
+          foundHover = true;
+          break;
         }
       }
 
@@ -976,7 +969,11 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
         const corners: Anchor[] = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
         corners.forEach((cornerType) => {
           const corner = getCorner(room, cornerType);
-          const isHovered = hoveredCorner?.roomId === activeRoomId && hoveredCorner?.corner === cornerType;
+
+          // Check if this specific corner is close to mouse (within grab radius)
+          // This is more accurate than relying on hoveredCorner which might be set as dummy
+          const isActuallyHovered = hoveredCorner?.roomId === activeRoomId &&
+                                     hoveredCorner?.corner === cornerType;
 
           // Apply drag offset to corner visualization if this room is being dragged
           let cornerX = corner.x;
@@ -991,10 +988,10 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
               key={`corner-${activeRoomId}-${cornerType}`}
               cx={mm(cornerX)}
               cy={mm(cornerY)}
-              r={mm(isHovered ? 200 : 150)}
-              fill={isHovered ? "rgba(100, 108, 255, 0.5)" : "rgba(100, 108, 255, 0.2)"}
+              r={mm(isActuallyHovered ? 200 : 150)}
+              fill={isActuallyHovered ? "rgba(100, 108, 255, 0.5)" : "rgba(100, 108, 255, 0.2)"}
               stroke="#646cff"
-              strokeWidth={isHovered ? "3" : "2"}
+              strokeWidth={isActuallyHovered ? "3" : "2"}
               pointerEvents="none"
             />
           );
