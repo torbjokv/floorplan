@@ -53,7 +53,7 @@
 }
 
 .editor-section.collapsed .collapse-toggle-btn {
-  left: 4px; /* All the way to left edge when collapsed */
+  left: 0; /* All the way to left edge when collapsed */
   right: auto;
   border-radius: 0 12px 12px 0;
 }
@@ -84,6 +84,47 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(10px);
   border: 1px solid #404040;
+}
+
+.undo-redo-buttons {
+  position: absolute;
+  top: 60px;
+  left: 20px;
+  display: flex;
+  gap: 10px;
+  z-index: 50;
+}
+
+.undo-button,
+.redo-button {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  background-color: #646cff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.undo-button:hover:not(:disabled),
+.redo-button:hover:not(:disabled) {
+  background-color: #535bf2;
+}
+
+.undo-button:active:not(:disabled),
+.redo-button:active:not(:disabled) {
+  background-color: #4249d6;
+}
+
+.undo-button:disabled,
+.redo-button:disabled {
+  background-color: #555;
+  color: #888;
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .project-name-input {
@@ -679,4 +720,19 @@
   box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
   z-index: 1000;
   animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 1.7s;
+}
+
+.url-error-notification {
+  position: absolute;
+  top: 70px;
+  right: 20px;
+  background-color: #ff9800;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+  z-index: 1000;
+  animation: slideIn 0.3s ease-out;
 }

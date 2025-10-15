@@ -105,16 +105,34 @@ function parseHashData(): string | null {
 }
 
 function App() {
+  const [urlError, setUrlError] = useState<string | null>(null);
+
   const [jsonText, setJsonText] = useState(() => {
-    return parseHashData() || defaultJSON;
+    const hashData = parseHashData();
+    if (hashData) {
+      try {
+        JSON.parse(hashData); // Validate it's valid JSON
+        return hashData;
+      } catch (e) {
+        setUrlError('Invalid JSON in URL - using default template');
+      }
+    }
+    return defaultJSON;
   });
 
   const [floorplanData, setFloorplanData] = useState<FloorplanData>(() => {
     const hashData = parseHashData();
     if (hashData) {
       try {
-        return JSON.parse(hashData);
+        const parsed = JSON.parse(hashData);
+        // Validate it has required fields
+        if (!parsed.rooms || !Array.isArray(parsed.rooms)) {
+          setUrlError('Invalid floorplan data in URL - missing rooms array');
+          return JSON.parse(defaultJSON);
+        }
+        return parsed;
       } catch {
+        setUrlError('Failed to parse JSON from URL - using default template');
         // Fall through to default
       }
     }
@@ -133,6 +151,66 @@ function App() {
   const [showCopyNotification, setShowCopyNotification] = useState(false);
   const [activeTab, setActiveTab] = useState<'json' | 'gui'>('gui');
   const [editorCollapsed, setEditorCollapsed] = useState(false);
+
+  // Undo/Redo history
+  const [history, setHistory] = useState<string[]>([jsonText]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+
+  // Update JSON with history tracking
+  const updateJsonText = (newText: string, skipHistory = false) => {
+    setJsonText(newText);
+
+    if (!skipHistory && newText !== history[historyIndex]) {
+      // Remove any history after current index (when adding new changes after undo)
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push(newText);
+      // Limit history to 50 entries
+      if (newHistory.length > 50) {
+        newHistory.shift();
+      } else {
+        setHistoryIndex(historyIndex + 1);
+      }
+      setHistory(newHistory);
+    }
+  };
+
+  // Undo function
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      setJsonText(history[newIndex]);
+    }
+  };
+
+  // Redo function
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      setJsonText(history[newIndex]);
+    }
+  };
+
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < history.length - 1;
+
+  // Add keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') {
+        e.preventDefault();
+        handleUndo();
+      } else if ((e.ctrlKey || e.metaKey) && (e.shiftKey && e.key === 'z' || e.key === 'y')) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [historyIndex, history]);
+
   const [savedProjects, setSavedProjects] = useState<SavedProject[]>(() => {
     try {
       const saved = localStorage.getItem('floorplan_projects');
@@ -381,7 +459,7 @@ function App() {
       rooms: [...floorplanData.rooms, newRoom],
     };
 
-    setJsonText(JSON.stringify(updatedData, null, 2));
+    updateJsonText(JSON.stringify(updatedData, null, 2));
 
     // Switch to GUI tab and scroll to new room
     if (activeTab !== 'gui') {
@@ -397,12 +475,12 @@ function App() {
 
   const handleGUIChange = (data: FloorplanData) => {
     // Update JSON text from GUI changes
-    setJsonText(JSON.stringify(data, null, 2));
+    updateJsonText(JSON.stringify(data, null, 2));
   };
 
   const handleRoomUpdate = (data: FloorplanData) => {
     // Update JSON text from drag and drop changes
-    setJsonText(JSON.stringify(data, null, 2));
+    updateJsonText(JSON.stringify(data, null, 2));
   };
 
   const handleDownloadJSON = () => {
@@ -619,7 +697,7 @@ function App() {
         {activeTab === 'json' ? (
           <JSONEditor
             value={jsonText}
-            onChange={setJsonText}
+            onChange={updateJsonText}
             error={jsonError}
             warnings={positioningErrors}
           />
@@ -655,6 +733,24 @@ function App() {
           />
           <button className="project-menu-button" onClick={() => setShowProjectMenu(!showProjectMenu)}>
             📁 Projects
+          </button>
+        </div>
+        <div className="undo-redo-buttons">
+          <button
+            className="undo-button"
+            onClick={handleUndo}
+            disabled={!canUndo}
+            title="Undo (Ctrl+Z)"
+          >
+            ↶ Undo
+          </button>
+          <button
+            className="redo-button"
+            onClick={handleRedo}
+            disabled={!canRedo}
+            title="Redo (Ctrl+Y)"
+          >
+            ↷ Redo
           </button>
           <a
             href="https://github.com/torbjokv/floorplan"
@@ -719,6 +815,11 @@ function App() {
         {showCopyNotification && (
           <div className="copy-notification">
             ✓ Link copied to clipboard!
+          </div>
+        )}
+        {urlError && (
+          <div className="url-error-notification">
+            ⚠ {urlError}
           </div>
         )}
         <FloorplanRenderer
