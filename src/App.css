@@ -32,8 +32,8 @@
 }
 
 .collapse-toggle-btn {
-  position: fixed;
-  right: calc(20px + 450px - 16px); /* padding + editor width - half button */
+  position: absolute;
+  right: -16px; /* Half button width outside editor */
   top: 50%;
   transform: translateY(-50%);
   z-index: 100;
@@ -53,6 +53,7 @@
 }
 
 .collapse-toggle-btn.collapsed {
+  position: fixed;
   left: 0; /* All the way to left edge when collapsed */
   right: auto;
   border-radius: 0 12px 12px 0;
