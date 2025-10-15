@@ -876,13 +876,21 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
 
   // Render all room objects separately so they appear on top of all rooms
   const renderAllRoomObjects = () => {
-    return Object.values(roomMap).map(room =>
-      room.objects?.map((obj, idx) => {
-        const roomAnchor = obj.roomAnchor || 'top-left';
-        const roomCorner = getCorner(room, roomAnchor);
-        const absX = roomCorner.x + obj.x;
-        const absY = roomCorner.y + obj.y;
-        const color = obj.color || '#888';
+    return Object.values(roomMap).map(room => {
+      // Apply drag offset if this room is being dragged
+      const isDragging = dragState?.roomId === room.id;
+      const transform = isDragging && dragOffset
+        ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})`
+        : undefined;
+
+      return (
+        <g key={`${room.id}-objects`} transform={transform}>
+          {room.objects?.map((obj, idx) => {
+            const roomAnchor = obj.roomAnchor || 'top-left';
+            const roomCorner = getCorner(room, roomAnchor);
+            const absX = roomCorner.x + obj.x;
+            const absY = roomCorner.y + obj.y;
+            const color = obj.color || '#888';
 
         if (obj.type === 'circle') {
           const radius = mm(obj.radius || DEFAULT_OBJECT_RADIUS);
@@ -952,8 +960,32 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
             </g>
           );
         }
-      })
-    );
+      })}
+        </g>
+      );
+    });
+  };
+
+  // Helper function to create quarter-circle path
+  const getQuarterCirclePath = (cornerX: number, cornerY: number, anchor: Anchor, radius: number): string => {
+    const r = mm(radius);
+    const cx = mm(cornerX);
+    const cy = mm(cornerY);
+
+    switch (anchor) {
+      case 'top-left':
+        // Arc from right to bottom
+        return `M ${cx + r} ${cy} A ${r} ${r} 0 0 1 ${cx} ${cy + r} L ${cx} ${cy} Z`;
+      case 'top-right':
+        // Arc from left to bottom
+        return `M ${cx - r} ${cy} A ${r} ${r} 0 0 0 ${cx} ${cy + r} L ${cx} ${cy} Z`;
+      case 'bottom-left':
+        // Arc from right to top
+        return `M ${cx + r} ${cy} A ${r} ${r} 0 0 0 ${cx} ${cy - r} L ${cx} ${cy} Z`;
+      case 'bottom-right':
+        // Arc from left to top
+        return `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx} ${cy - r} L ${cx} ${cy} Z`;
+    }
   };
 
   // Render corner highlights
@@ -974,12 +1006,12 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
           cornerY += dragOffset.y;
         }
 
+        const path = getQuarterCirclePath(cornerX, cornerY, dragState.anchor, 400);
+
         highlights.push(
-          <circle
+          <path
             key={`corner-${dragState.roomId}-${dragState.anchor}`}
-            cx={mm(cornerX)}
-            cy={mm(cornerY)}
-            r={mm(200)}
+            d={path}
             fill="rgba(100, 108, 255, 0.5)"
             stroke="#646cff"
             strokeWidth="3"
@@ -993,13 +1025,12 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
       const room = roomMap[hoveredCorner.roomId];
       if (room) {
         const corner = getCorner(room, hoveredCorner.corner);
+        const path = getQuarterCirclePath(corner.x, corner.y, hoveredCorner.corner, 400);
 
         highlights.push(
-          <circle
+          <path
             key={`corner-${hoveredCorner.roomId}-${hoveredCorner.corner}`}
-            cx={mm(corner.x)}
-            cy={mm(corner.y)}
-            r={mm(200)}
+            d={path}
             fill="rgba(100, 108, 255, 0.5)"
             stroke="#646cff"
             strokeWidth="3"
