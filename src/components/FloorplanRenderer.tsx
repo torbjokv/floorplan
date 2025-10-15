@@ -960,37 +960,32 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
   const renderCornerHighlights = () => {
     const highlights = [];
 
-    // When dragging, show all corners of dragged room
-    if (dragState) {
+    // When dragging, show only the grabbed corner
+    if (dragState && dragState.anchor) {
       const room = roomMap[dragState.roomId];
       if (room) {
-        const corners: Anchor[] = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
-        corners.forEach((cornerType) => {
-          const corner = getCorner(room, cornerType);
+        const corner = getCorner(room, dragState.anchor);
 
-          const isGrabbedCorner = dragState.anchor === cornerType;
+        // Apply drag offset
+        let cornerX = corner.x;
+        let cornerY = corner.y;
+        if (dragOffset) {
+          cornerX += dragOffset.x;
+          cornerY += dragOffset.y;
+        }
 
-          // Apply drag offset
-          let cornerX = corner.x;
-          let cornerY = corner.y;
-          if (dragOffset) {
-            cornerX += dragOffset.x;
-            cornerY += dragOffset.y;
-          }
-
-          highlights.push(
-            <circle
-              key={`corner-${dragState.roomId}-${cornerType}`}
-              cx={mm(cornerX)}
-              cy={mm(cornerY)}
-              r={mm(isGrabbedCorner ? 200 : 150)}
-              fill={isGrabbedCorner ? "rgba(100, 108, 255, 0.5)" : "rgba(100, 108, 255, 0.2)"}
-              stroke="#646cff"
-              strokeWidth={isGrabbedCorner ? "3" : "2"}
-              pointerEvents="none"
-            />
-          );
-        });
+        highlights.push(
+          <circle
+            key={`corner-${dragState.roomId}-${dragState.anchor}`}
+            cx={mm(cornerX)}
+            cy={mm(cornerY)}
+            r={mm(200)}
+            fill="rgba(100, 108, 255, 0.5)"
+            stroke="#646cff"
+            strokeWidth="3"
+            pointerEvents="none"
+          />
+        );
       }
     }
     // When hovering (not dragging), show only the single hovered corner
