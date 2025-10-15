@@ -202,10 +202,24 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
     return !closest;
   };
 
-  // Check if point is inside room bounds
+  // Check if point is inside room bounds (including parts)
   const isPointInRoom = (room: ResolvedRoom, x: number, y: number): boolean => {
-    return x >= room.x && x <= room.x + room.width &&
-           y >= room.y && y <= room.y + room.depth;
+    // Check main room
+    if (x >= room.x && x <= room.x + room.width &&
+        y >= room.y && y <= room.y + room.depth) {
+      return true;
+    }
+
+    // Check parts
+    const parts = resolveCompositeRoom(room);
+    for (const part of parts) {
+      if (x >= part.x && x <= part.x + part.width &&
+          y >= part.y && y <= part.y + part.depth) {
+        return true;
+      }
+    }
+
+    return false;
   };
 
   // Mouse move handler for hover detection
@@ -284,16 +298,27 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
   const handleDragMove = (x: number, y: number) => {
     if (!dragState) return;
 
-    const deltaX = x - dragState.startMouseX;
-    const deltaY = y - dragState.startMouseY;
+    const room = roomMap[dragState.roomId];
+    if (!room) return;
+
+    let deltaX: number;
+    let deltaY: number;
+
+    if (dragState.dragType === 'corner' && dragState.anchor) {
+      // When dragging by corner, calculate offset to move that corner to mouse position
+      const cornerPos = getCorner(room, dragState.anchor);
+      deltaX = x - cornerPos.x;
+      deltaY = y - cornerPos.y;
+    } else {
+      // When dragging by center, use simple delta from start
+      deltaX = x - dragState.startMouseX;
+      deltaY = y - dragState.startMouseY;
+    }
 
     // Update visual drag offset
     setDragOffset({ x: deltaX, y: deltaY });
 
     // Check for snap targets when dragging
-    const room = roomMap[dragState.roomId];
-    if (!room) return;
-
     let foundSnap = false;
     if (dragState.dragType === 'corner' && dragState.anchor) {
       // Calculate where the dragged corner would be
@@ -944,23 +969,29 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
   const renderCornerHighlights = () => {
     const highlights = [];
 
-    // Render hovered corner
-    if (hoveredCorner) {
-      const room = roomMap[hoveredCorner.roomId];
+    // Render all corner dots for the hovered/dragged room
+    const activeRoomId = dragState?.roomId || hoveredCorner?.roomId;
+    if (activeRoomId) {
+      const room = roomMap[activeRoomId];
       if (room) {
-        const corner = getCorner(room, hoveredCorner.corner);
-        highlights.push(
-          <circle
-            key="hover"
-            cx={mm(corner.x)}
-            cy={mm(corner.y)}
-            r={mm(200)}
-            fill="rgba(100, 108, 255, 0.3)"
-            stroke="#646cff"
-            strokeWidth="2"
-            pointerEvents="none"
-          />
-        );
+        const corners: Anchor[] = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+        corners.forEach((cornerType) => {
+          const corner = getCorner(room, cornerType);
+          const isHovered = hoveredCorner?.roomId === activeRoomId && hoveredCorner?.corner === cornerType;
+
+          highlights.push(
+            <circle
+              key={`corner-${activeRoomId}-${cornerType}`}
+              cx={mm(corner.x)}
+              cy={mm(corner.y)}
+              r={mm(isHovered ? 200 : 150)}
+              fill={isHovered ? "rgba(100, 108, 255, 0.5)" : "rgba(100, 108, 255, 0.2)"}
+              stroke="#646cff"
+              strokeWidth={isHovered ? "3" : "2"}
+              pointerEvents="none"
+            />
+          );
+        });
       }
     }
 
