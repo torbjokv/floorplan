@@ -57,6 +57,7 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [hoveredCorner, setHoveredCorner] = useState<CornerHighlight | null>(null);
   const [snapTarget, setSnapTarget] = useState<CornerHighlight | null>(null);
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number } | null>(null);
 
   // Memoize room resolution to avoid recalculating on every render
   const { roomMap, errors } = useMemo(() => resolveRoomPositions(data.rooms), [data.rooms]);
@@ -286,6 +287,9 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
     const deltaX = x - dragState.startMouseX;
     const deltaY = y - dragState.startMouseY;
 
+    // Update visual drag offset
+    setDragOffset({ x: deltaX, y: deltaY });
+
     // Check for snap targets when dragging
     const room = roomMap[dragState.roomId];
     if (!room) return;
@@ -328,6 +332,7 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
     if (!dragState || !onRoomUpdate) {
       setDragState(null);
       setSnapTarget(null);
+      setDragOffset(null);
       return;
     }
 
@@ -335,6 +340,7 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
     if (!room) {
       setDragState(null);
       setSnapTarget(null);
+      setDragOffset(null);
       return;
     }
 
@@ -345,6 +351,15 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
       updatedRoom.attachTo = `${snapTarget.roomId}:${snapTarget.corner}`;
       updatedRoom.anchor = dragState.anchor;
       delete updatedRoom.offset;
+    } else if (dragState.dragType === 'corner' && dragState.anchor) {
+      // Dropped corner without snap target - attach to zeropoint with offset
+      const resolvedRoom = roomMap[dragState.roomId];
+      if (resolvedRoom) {
+        const cornerPos = getCorner(resolvedRoom, dragState.anchor);
+        updatedRoom.attachTo = 'zeropoint:top-left';
+        updatedRoom.anchor = dragState.anchor;
+        updatedRoom.offset = [cornerPos.x, cornerPos.y];
+      }
     } else if (dragState.dragType === 'center') {
       // Attach to zeropoint with offset
       const resolvedRoom = roomMap[dragState.roomId];
@@ -361,6 +376,7 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
 
     setDragState(null);
     setSnapTarget(null);
+    setDragOffset(null);
   };
 
   // Add global mouse up listener
@@ -487,8 +503,19 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
         }
       }
 
+      // Apply drag offset if this room is being dragged
+      const isDragging = dragState?.roomId === room.id;
+      const transform = isDragging && dragOffset
+        ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})`
+        : undefined;
+
       return (
-        <g key={room.id} className="composite-room" data-room-id={room.id}>
+        <g
+          key={room.id}
+          className="composite-room"
+          data-room-id={room.id}
+          transform={transform}
+        >
           {/* Layer 1: All rectangles WITH borders */}
           <rect
             className="room-rect composite-part"
@@ -546,8 +573,14 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
     }
 
     // Simple room without parts
+    // Apply drag offset if this room is being dragged
+    const isDragging = dragState?.roomId === room.id;
+    const transform = isDragging && dragOffset
+      ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})`
+      : undefined;
+
     return (
-      <g key={room.id}>
+      <g key={room.id} transform={transform}>
         <rect
           className="room-rect"
           x={mm(room.x)}
