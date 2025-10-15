@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
-import type { FloorplanData, ResolvedRoom, Door, Window, WallPosition, Anchor, Room } from '../types';
+import type { FloorplanData, ResolvedRoom, Door, Window, WallPosition, Anchor } from '../types';
 import { mm, resolveRoomPositions, resolveCompositeRoom, getCorner } from '../utils';
 
 // Constants
