@@ -318,14 +318,11 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
     // Update visual drag offset
     setDragOffset({ x: deltaX, y: deltaY });
 
-    // Check for snap targets when dragging
+    // Check for snap targets when dragging - only for the corner being dragged
     let foundSnap = false;
     if (dragState.dragType === 'corner' && dragState.anchor) {
-      // Calculate where the dragged corner is now (it should be at mouse position)
-      const cornerPos = getCorner(room, dragState.anchor);
-      const newCornerX = cornerPos.x + deltaX;
-      const newCornerY = cornerPos.y + deltaY;
-      // This should equal (x, y) if the drag sync is correct
+      // The dragged corner should now be at mouse position (x, y)
+      // because we calculated deltaX/Y to make corner move to mouse
 
       // Check all other rooms for snap targets
       for (const otherRoom of Object.values(roomMap)) {
@@ -334,8 +331,9 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
         const otherCorners: Anchor[] = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
         for (const otherCorner of otherCorners) {
           const otherPos = getCorner(otherRoom, otherCorner);
+          // Check distance from current mouse position (where dragged corner is)
           const dist = Math.sqrt(
-            Math.pow(newCornerX - otherPos.x, 2) + Math.pow(newCornerY - otherPos.y, 2)
+            Math.pow(x - otherPos.x, 2) + Math.pow(y - otherPos.y, 2)
           );
 
           if (dist < SNAP_DISTANCE) {
