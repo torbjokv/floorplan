@@ -1,0 +1,60 @@
+/* Shared utility classes that can be imported by components */
+
+.button {
+  padding: 8px 16px;
+  font-size: var(--font-md);
+  font-weight: 600;
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.button:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
+}
+
+.button:active:not(:disabled) {
+  background-color: var(--color-primary-active);
+}
+
+.button:disabled {
+  background-color: #555;
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.inputText {
+  padding: 8px 12px;
+  font-size: var(--font-md);
+  font-weight: 600;
+  background-color: var(--color-background-input);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--transition-medium);
+  flex: 1;
+}
+
+.inputText:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background-color: var(--color-background-input-focus);
+}
+
+.divider {
+  height: 1px;
+  background-color: var(--color-border-light);
+  margin: var(--spacing-xs) 0;
+}
+
+.card {
+  background-color: var(--color-background-medium);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+}

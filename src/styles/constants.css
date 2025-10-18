@@ -1,0 +1,64 @@
+/* CSS Variables for the floorplan application */
+
+:root {
+  /* Colors */
+  --color-primary: #646cff;
+  --color-primary-hover: #535bf2;
+  --color-primary-active: #4249d6;
+  --color-background-dark: #1a1a1a;
+  --color-background-medium: #2d2d2d;
+  --color-background-light: #323232;
+  --color-background-lighter: #3a3a3a;
+  --color-background-input: #373737;
+  --color-background-input-focus: #424242;
+  --color-border: #404040;
+  --color-border-light: #505050;
+  --color-text-primary: #e0e0e0;
+  --color-text-secondary: #888;
+  --color-text-disabled: #666;
+  --color-success: #4caf50;
+  --color-error: #ff4444;
+  --color-error-bg: rgba(255, 68, 68, 0.95);
+  --color-warning: #ff9800;
+  --color-delete: #f44336;
+
+  /* Spacing */
+  --spacing-xs: 5px;
+  --spacing-sm: 10px;
+  --spacing-md: 12px;
+  --spacing-lg: 15px;
+  --spacing-xl: 20px;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-primary: 6px 0 16px rgba(100, 108, 255, 0.6);
+  --shadow-success: 0 4px 12px rgba(76, 175, 80, 0.3);
+  --shadow-warning: 0 4px 12px rgba(255, 152, 0, 0.3);
+
+  /* Z-index layers */
+  --z-base: 1;
+  --z-editor: 10;
+  --z-header: 50;
+  --z-overlay: 100;
+  --z-dropdown: 1000;
+  --z-notification: 1000;
+
+  /* Transitions */
+  --transition-fast: 0.2s;
+  --transition-medium: 0.3s;
+
+  /* Font sizes */
+  --font-xs: 12px;
+  --font-sm: 13px;
+  --font-md: 14px;
+  --font-lg: 16px;
+  --font-xl: 18px;
+}

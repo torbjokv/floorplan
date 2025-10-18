@@ -1,0 +1,65 @@
+
+.update {
+  position: absolute;
+  top: var(--spacing-xl);
+  right: var(--spacing-xl);
+  background-color: var(--color-success);
+  color: white;
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  font-size: var(--font-md);
+  box-shadow: var(--shadow-success);
+  z-index: var(--z-notification);
+  animation: slideIn var(--transition-medium) ease-out, fadeOut var(--transition-medium) ease-in 0.7s;
+}
+
+.copy {
+  position: absolute;
+  top: var(--spacing-xl);
+  right: var(--spacing-xl);
+  background-color: var(--color-success);
+  color: white;
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  font-size: var(--font-md);
+  box-shadow: var(--shadow-success);
+  z-index: var(--z-notification);
+  animation: slideIn var(--transition-medium) ease-out;
+}
+
+.urlError {
+  position: absolute;
+  top: 70px;
+  right: var(--spacing-xl);
+  background-color: var(--color-warning);
+  color: white;
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  font-size: var(--font-md);
+  box-shadow: var(--shadow-warning);
+  z-index: var(--z-notification);
+  animation: slideIn var(--transition-medium) ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}

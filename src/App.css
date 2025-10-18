@@ -1,3 +1,5 @@
+/* Main application container and layout */
+
 .app-container {
   display: flex;
   gap: 20px;
@@ -12,18 +14,20 @@
   background-size: 20px 20px;
 }
 
+/* Editor Section */
+
 .editor-section {
   display: flex;
   flex-direction: column;
   gap: 0;
   min-width: 450px;
   height: calc(100vh - 40px);
-  overflow: visible; /* Allow button to show outside */
+  overflow: visible;
   position: relative;
   transition: all 0.3s ease;
   border-radius: 12px;
   margin-top: 20px;
-  flex-shrink: 0; /* Prevent shrinking */
+  flex-shrink: 0;
 }
 
 .editor-section.collapsed {
@@ -33,7 +37,7 @@
 
 .collapse-toggle-btn {
   position: absolute;
-  right: -16px; /* Half button width outside editor */
+  right: -16px;
   top: 50%;
   transform: translateY(-50%);
   z-index: 100;
@@ -54,7 +58,7 @@
 
 .collapse-toggle-btn.collapsed {
   position: fixed;
-  left: 0; /* All the way to left edge when collapsed */
+  left: 0;
   right: auto;
   border-radius: 0 12px 12px 0;
 }
@@ -69,260 +73,7 @@
   transform: translateY(-50%) scale(0.95);
 }
 
-/* Project Management */
-.project-header {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  background-color: #2d2d2d;
-  padding: 12px 20px;
-  border-radius: 12px;
-  position: absolute;
-  top: 0;
-  left: 20px;
-  right: 20px;
-  z-index: 50;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(10px);
-  border: 1px solid #404040;
-}
-
-.undo-redo-buttons {
-  position: absolute;
-  top: 70px;
-  left: 20px;
-  display: flex;
-  gap: 10px;
-  z-index: 50;
-}
-
-.undo-button,
-.redo-button {
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  background-color: #646cff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.undo-button:hover:not(:disabled),
-.redo-button:hover:not(:disabled) {
-  background-color: #535bf2;
-}
-
-.undo-button:active:not(:disabled),
-.redo-button:active:not(:disabled) {
-  background-color: #4249d6;
-}
-
-.undo-button:disabled,
-.redo-button:disabled {
-  background-color: #555;
-  color: #888;
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.project-name-input {
-  flex: 1;
-  padding: 8px 12px;
-  font-size: 14px;
-  font-weight: 600;
-  background-color: #3a3a3a;
-  color: #ffffff;
-  border: 1px solid #404040;
-  border-radius: 4px;
-}
-
-.project-name-input:focus {
-  outline: none;
-  border-color: #646cff;
-  background-color: #424242;
-}
-
-.project-menu-container {
-  position: relative;
-}
-
-.project-menu-button {
-  padding: 8px 16px;
-  font-size: 14px;
-  font-weight: 600;
-  background-color: #646cff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  white-space: nowrap;
-}
-
-.project-menu-button:hover {
-  background-color: #535bf2;
-}
-
-.project-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 5px;
-  background-color: #2d2d2d;
-  border: 1px solid #404040;
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  min-width: 250px;
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.project-menu-item {
-  width: 100%;
-  padding: 10px 15px;
-  text-align: left;
-  background-color: transparent;
-  color: #e0e0e0;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
-  border-bottom: 1px solid #404040;
-}
-
-.project-menu-item:hover {
-  background-color: #3a3a3a;
-}
-
-.project-menu-divider {
-  height: 1px;
-  background-color: #505050;
-  margin: 5px 0;
-}
-
-.project-menu-label {
-  padding: 10px 15px 5px 15px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #888;
-  text-transform: uppercase;
-}
-
-.project-menu-empty {
-  padding: 10px 15px;
-  font-size: 13px;
-  color: #666;
-  font-style: italic;
-}
-
-.project-menu-saved {
-  display: flex;
-  align-items: center;
-  border-bottom: 1px solid #404040;
-}
-
-.project-menu-load {
-  flex: 1;
-  padding: 10px 15px;
-  text-align: left;
-  background-color: transparent;
-  color: #e0e0e0;
-  border: none;
-  cursor: pointer;
-  font-size: 13px;
-  transition: background-color 0.2s;
-}
-
-.project-menu-load:hover {
-  background-color: #3a3a3a;
-}
-
-.project-menu-duplicate {
-  padding: 10px 12px;
-  background-color: transparent;
-  color: #888;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
-  transition: all 0.2s;
-}
-
-.project-menu-duplicate:hover {
-  background-color: #646cff;
-  color: white;
-}
-
-.project-menu-delete {
-  padding: 10px 15px;
-  background-color: transparent;
-  color: #f44336;
-  border: none;
-  cursor: pointer;
-  font-size: 18px;
-  font-weight: bold;
-  transition: all 0.2s;
-}
-
-.project-menu-delete:hover {
-  background-color: #f44336;
-  color: white;
-}
-
-.tabs {
-  display: flex;
-  gap: 2px;
-  background-color: #1e1e1e;
-  border-radius: 6px 6px 0 0;
-  padding: 2px;
-  flex-shrink: 0;
-}
-
-.tab {
-  flex: 1;
-  padding: 10px 20px;
-  font-size: 14px;
-  font-weight: 600;
-  background-color: #2d2d2d;
-  color: #888;
-  border: none;
-  border-radius: 4px 4px 0 0;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.tab:hover {
-  background-color: #353535;
-  color: #b0b0b0;
-}
-
-.tab.active {
-  background-color: #1e1e1e;
-  color: #646cff;
-  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.manual-link {
-  padding: 10px 20px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #888;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  margin-left: auto;
-  background-color: transparent;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.manual-link:hover {
-  color: #646cff;
-  background-color: #2d2d2d;
-}
+/* Editor Container (JSONEditor/GUIEditor wrapper) */
 
 .editor-container {
   display: flex;
@@ -357,7 +108,6 @@
   min-width: 0;
   overflow: hidden;
 }
-
 
 .editor-with-lines {
   flex: 1;
@@ -450,6 +200,8 @@
   }
 }
 
+/* Preview Section */
+
 .preview-section {
   flex: 1;
   display: flex;
@@ -457,44 +209,9 @@
   min-width: 0;
   overflow: hidden;
   position: relative;
-  padding-top: 80px; /* Space for floating header */
+  padding-top: 80px;
   margin-top: 20px;
   border-radius: 12px;
-}
-
-.update-indicator {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background-color: #4caf50;
-  color: white;
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-  z-index: 1000;
-  animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 0.7s;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(100px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes fadeOut {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
 }
 
 .preview-container {
@@ -519,7 +236,8 @@
   flex: 1;
 }
 
-/* Hover effects for SVG elements */
+/* SVG Hover Effects */
+
 .floorplan-svg .room-rect:hover {
   fill: #e3f2fd;
   stroke: #2196f3;
@@ -527,7 +245,6 @@
   cursor: pointer;
 }
 
-/* Highlight all parts when hovering over any part of a composite room */
 .floorplan-svg .composite-room:hover .composite-part {
   fill: #e3f2fd;
   stroke: #2196f3;
@@ -555,6 +272,8 @@
   stroke-width: 2;
   cursor: pointer;
 }
+
+/* Editor Button Row */
 
 .button-row {
   display: flex;
@@ -617,6 +336,8 @@
   background-color: #353535;
 }
 
+/* Preview Section Buttons */
+
 .download-svg-button {
   position: absolute;
   bottom: 20px;
@@ -665,79 +386,4 @@
 
 .add-room-button:active {
   background-color: #3d8b40;
-}
-
-/* Error Panel - Always visible at bottom of preview */
-.error-panel {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: #2d2d2d;
-  border-top: 2px solid #ff4444;
-  padding: 12px 20px;
-  max-height: 200px;
-  overflow-y: auto;
-  z-index: 10;
-  box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.3);
-}
-
-.error-message {
-  padding: 8px 12px;
-  margin-bottom: 8px;
-  border-radius: 4px;
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-.error-message:last-child {
-  margin-bottom: 0;
-}
-
-.error-message.json-error {
-  background-color: #4a1f1f;
-  color: #ff6b6b;
-  border-left: 4px solid #ff4444;
-}
-
-.error-message.positioning-error {
-  background-color: #4a1f1f;
-  color: #ff6b6b;
-  border-left: 4px solid #ff4444;
-}
-
-.error-message.positioning-warning {
-  background-color: #4a3a1f;
-  color: #ffa64d;
-  border-left: 4px solid #ff9800;
-}
-
-.copy-notification {
-  position: absolute;
-  top: 70px;
-  right: 20px;
-  background-color: #2196f3;
-  color: white;
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
-  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
-  z-index: 1000;
-  animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 1.7s;
-}
-
-.url-error-notification {
-  position: absolute;
-  top: 70px;
-  right: 20px;
-  background-color: #ff9800;
-  color: white;
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
-  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
-  z-index: 1000;
-  animation: slideIn 0.3s ease-out;
 }

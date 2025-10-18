@@ -3,6 +3,12 @@ import './App.css'
 import { JSONEditor } from './components/JSONEditor'
 import { GUIEditor } from './components/GUIEditor'
 import { FloorplanRenderer } from './components/FloorplanRenderer'
+import { ProjectHeader } from './components/ui/ProjectHeader/ProjectHeader'
+import { UndoRedoControls } from './components/ui/UndoRedoControls/UndoRedoControls'
+import { EditorTabs } from './components/ui/EditorTabs/EditorTabs'
+import { ErrorPanel } from './components/ui/ErrorPanel/ErrorPanel'
+import { Notifications } from './components/ui/Notifications/Notifications'
+import type { SavedProject } from './components/ui/ProjectMenu/ProjectMenu'
 import type { FloorplanData, Room } from './types'
 
 const defaultJSON = `{
@@ -73,13 +79,6 @@ const defaultJSON = `{
     }
   ]
 }`;
-
-interface SavedProject {
-  id: string;
-  name: string;
-  json: string;
-  timestamp: number;
-}
 
 // Generate a random project ID
 function generateProjectId(): string {
@@ -314,8 +313,6 @@ function App() {
     return false;
   });
 
-  const [showProjectMenu, setShowProjectMenu] = useState(false);
-
   // Auto-update on JSON changes with debounce
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -340,32 +337,6 @@ function App() {
 
     return () => clearTimeout(timer);
   }, [jsonText]);
-
-  // Close project menu on ESC key or click outside
-  useEffect(() => {
-    if (!showProjectMenu) return;
-
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setShowProjectMenu(false);
-      }
-    };
-
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest('.project-header')) {
-        setShowProjectMenu(false);
-      }
-    };
-
-    document.addEventListener('keydown', handleEscape);
-    document.addEventListener('mousedown', handleClickOutside);
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showProjectMenu]);
 
   const handlePositioningErrors = (errors: string[]) => {
     setPositioningErrors(errors);
@@ -612,8 +583,7 @@ function App() {
     setProjectId(project.id);
     setProjectName(project.name);
     setJsonText(project.json);
-    setIsExistingProject(true); // Mark as existing to prevent auto-save
-    setShowProjectMenu(false);
+    setIsExistingProject(false); // Allow auto-save for loaded projects from localStorage
   };
 
   const handleDuplicateProject = (project?: SavedProject) => {
@@ -652,7 +622,6 @@ function App() {
     setProjectName(newName);
     setJsonText(sourceProject.json);
     setIsExistingProject(false); // New copy, allow auto-save
-    setShowProjectMenu(false);
   };
 
   const handleDeleteProject = (projectId: string) => {
@@ -666,42 +635,28 @@ function App() {
     setProjectName('Untitled Project');
     setJsonText(defaultJSON);
     setIsExistingProject(false); // New project, allow auto-save
-    setShowProjectMenu(false);
   };
 
   const handleLoadExample = () => {
     setProjectId(generateProjectId());
     setProjectName('Example Floorplan');
     setJsonText(defaultJSON);
-    setShowProjectMenu(false);
   };
 
   return (
-    <div className={`app-container ${editorCollapsed ? 'show-grid' : ''}`}>
-      <div className={`editor-section ${editorCollapsed ? 'collapsed' : ''}`}>
+    <div className={`app-container ${editorCollapsed ? 'show-grid' : ''}`} data-testid="app-container">
+      <div className={`editor-section ${editorCollapsed ? 'collapsed' : ''}`} data-testid="editor-section">
         <button
           className={`collapse-toggle-btn ${editorCollapsed ? 'collapsed' : ''}`}
           onClick={() => setEditorCollapsed(!editorCollapsed)}
           title={editorCollapsed ? "Expand editor" : "Collapse editor"}
+          data-testid="collapse-toggle-btn"
         >
           {editorCollapsed ? '▶' : '◀'}
         </button>
         {!editorCollapsed && (
           <>
-        <div className="tabs">
-          <button
-            className={`tab ${activeTab === 'gui' ? 'active' : ''}`}
-            onClick={() => setActiveTab('gui')}
-          >
-            GUI Editor
-          </button>
-          <button
-            className={`tab ${activeTab === 'json' ? 'active' : ''}`}
-            onClick={() => setActiveTab('json')}
-          >
-            JSON Editor
-          </button>
-        </div>
+        <EditorTabs activeTab={activeTab} onTabChange={setActiveTab} />
         {activeTab === 'json' ? (
           <JSONEditor
             value={jsonText}
@@ -715,123 +670,47 @@ function App() {
             onChange={handleGUIChange}
           />
         )}
-        <div className="button-row">
+        <div className="button-row" data-testid="editor-button-row">
           {activeTab === 'json' && (
-            <button className="format-button" onClick={handleFormatJSON}>
+            <button className="format-button" onClick={handleFormatJSON} data-testid="format-json-btn">
               Format JSON
             </button>
           )}
-          <button className="download-button" onClick={handleDownloadJSON}>
+          <button className="download-button" onClick={handleDownloadJSON} data-testid="download-json-btn">
             💾 Download JSON
           </button>
-          <button className="share-button" onClick={handleShare}>
+          <button className="share-button" onClick={handleShare} data-testid="share-btn">
             🔗 Share
           </button>
         </div>
         </>
         )}
       </div>
-      <div className="preview-section">
-        <div className="project-header">
-          <input
-            type="text"
-            value={projectName}
-            onChange={(e) => setProjectName(e.target.value)}
-            className="project-name-input"
-          />
-          <div className="project-menu-container">
-            <button className="project-menu-button" onClick={() => setShowProjectMenu(!showProjectMenu)}>
-              📁 Projects
-            </button>
-            {showProjectMenu && (
-              <div className="project-menu">
-                <button onClick={handleNewProject} className="project-menu-item">
-                  📄 New Project
-                </button>
-                <button onClick={handleLoadExample} className="project-menu-item">
-                  📋 Load Example
-                </button>
-                <button onClick={handleUploadJSON} className="project-menu-item">
-                  📁 Upload JSON
-                </button>
-                <button onClick={() => handleDuplicateProject()} className="project-menu-item">
-                  📑 Duplicate Current Project
-                </button>
-                <div className="project-menu-divider" />
-                <button onClick={() => { handleDownloadJSON(); setShowProjectMenu(false); }} className="project-menu-item">
-                  💾 Download JSON
-                </button>
-                <button onClick={() => { handleShare(); setShowProjectMenu(false); }} className="project-menu-item">
-                  🔗 Share
-                </button>
-                <div className="project-menu-divider" />
-                <div className="project-menu-label">Saved Projects:</div>
-                {savedProjects.length === 0 ? (
-                  <div className="project-menu-empty">No saved projects</div>
-                ) : (
-                  savedProjects.map((project) => (
-                    <div key={project.name} className="project-menu-saved">
-                      <button
-                        onClick={() => handleLoadProject(project)}
-                        className="project-menu-load"
-                      >
-                        {project.name}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteProject(project.id)}
-                        className="project-menu-delete"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="undo-redo-buttons">
-          <button
-            className="undo-button"
-            onClick={handleUndo}
-            disabled={!canUndo}
-            title="Undo (Ctrl+Z)"
-          >
-            ↶ Undo
-          </button>
-          <button
-            className="redo-button"
-            onClick={handleRedo}
-            disabled={!canRedo}
-            title="Redo (Ctrl+Y)"
-          >
-            ↷ Redo
-          </button>
-          <a
-            href="https://github.com/torbjokv/floorplan"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="manual-link"
-            title="View JSON format documentation"
-          >
-            📖 Manual
-          </a>
-        </div>
-        {showUpdateAnimation && (
-          <div className="update-indicator">
-            ✓ Updated
-          </div>
-        )}
-        {showCopyNotification && (
-          <div className="copy-notification">
-            ✓ Link copied to clipboard!
-          </div>
-        )}
-        {urlError && (
-          <div className="url-error-notification">
-            ⚠ {urlError}
-          </div>
-        )}
+      <div className="preview-section" data-testid="preview-section">
+        <ProjectHeader
+          projectName={projectName}
+          onProjectNameChange={setProjectName}
+          savedProjects={savedProjects}
+          onNewProject={handleNewProject}
+          onLoadExample={handleLoadExample}
+          onUploadJSON={handleUploadJSON}
+          onDuplicateProject={() => handleDuplicateProject()}
+          onDownloadJSON={handleDownloadJSON}
+          onShare={handleShare}
+          onLoadProject={handleLoadProject}
+          onDeleteProject={handleDeleteProject}
+        />
+        <UndoRedoControls
+          canUndo={canUndo}
+          canRedo={canRedo}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+        />
+        <Notifications
+          showUpdate={showUpdateAnimation}
+          showCopy={showCopyNotification}
+          urlError={urlError}
+        />
         <FloorplanRenderer
           data={floorplanData}
           onPositioningErrors={handlePositioningErrors}
@@ -840,26 +719,16 @@ function App() {
           onWindowClick={handleWindowClick}
           onRoomUpdate={handleRoomUpdate}
         />
-        <button className="download-svg-button" onClick={handleDownloadSVG}>
+        <button className="download-svg-button" onClick={handleDownloadSVG} data-testid="download-svg-btn">
           📥 Download SVG
         </button>
-        <button className="add-room-button" onClick={handleAddRoom}>
+        <button className="add-room-button" onClick={handleAddRoom} data-testid="add-room-btn">
           + Add Room
         </button>
-        {(positioningErrors.length > 0 || jsonError) && (
-          <div className="error-panel">
-            {jsonError && (
-              <div className="error-message json-error">
-                <strong>JSON Error:</strong> {jsonError}
-              </div>
-            )}
-            {positioningErrors.map((error, idx) => (
-              <div key={idx} className={`error-message ${error.startsWith('Error:') ? 'positioning-error' : 'positioning-warning'}`}>
-                {error}
-              </div>
-            ))}
-          </div>
-        )}
+        <ErrorPanel
+          jsonError={jsonError}
+          positioningErrors={positioningErrors}
+        />
       </div>
     </div>
   )
