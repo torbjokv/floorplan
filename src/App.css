@@ -145,6 +145,10 @@
   background-color: #424242;
 }
 
+.project-menu-container {
+  position: relative;
+}
+
 .project-menu-button {
   padding: 8px 16px;
   font-size: 14px;
@@ -165,7 +169,7 @@
 .project-menu {
   position: absolute;
   top: 100%;
-  right: 10px;
+  right: 0;
   margin-top: 5px;
   background-color: #2d2d2d;
   border: 1px solid #404040;

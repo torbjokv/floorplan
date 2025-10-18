@@ -367,25 +367,16 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
       Math.abs(dragOffset.y) > MOVEMENT_THRESHOLD
     );
 
-    // If didn't move enough, don't update anything
-    if (!hasMoved) {
-      setDragState(null);
-      setSnapTarget(null);
-      setDragOffset(null);
-      return;
-    }
-
     const updatedRoom = { ...room };
+    const resolvedRoom = roomMap[dragState.roomId];
 
-    if (dragState.dragType === 'corner' && dragState.anchor && snapTarget) {
-      // Snap to target corner
+    if (dragState.dragType === 'corner' && dragState.anchor && snapTarget && hasMoved) {
+      // Only change attachment if moved significantly AND there's a snap target
       updatedRoom.attachTo = `${snapTarget.roomId}:${snapTarget.corner}`;
       updatedRoom.anchor = dragState.anchor;
       delete updatedRoom.offset;
-    } else if (dragState.dragType === 'corner' && dragState.anchor) {
-      // Dropped corner without snap target - attach to zeropoint with offset
-      // Calculate the new position including the drag offset
-      const resolvedRoom = roomMap[dragState.roomId];
+    } else if (dragState.dragType === 'corner' && dragState.anchor && !snapTarget && hasMoved) {
+      // Moved significantly but no snap target - attach to zeropoint with offset
       if (resolvedRoom && dragOffset) {
         const cornerPos = getCorner(resolvedRoom, dragState.anchor);
         const newCornerX = cornerPos.x + dragOffset.x;
@@ -394,9 +385,28 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
         updatedRoom.anchor = dragState.anchor;
         updatedRoom.offset = [newCornerX, newCornerY];
       }
-    } else if (dragState.dragType === 'center') {
-      // Attach to zeropoint with offset
-      const resolvedRoom = roomMap[dragState.roomId];
+    } else if (dragState.dragType === 'corner' && dragState.anchor && !hasMoved) {
+      // Tiny movement - adjust offset but keep existing attachment
+      if (resolvedRoom && dragOffset && room.attachTo) {
+        // Calculate new offset based on current attachment
+        if (room.attachTo.startsWith('zeropoint:')) {
+          // Already attached to zeropoint, adjust the offset
+          const cornerPos = getCorner(resolvedRoom, dragState.anchor);
+          const newCornerX = cornerPos.x + dragOffset.x;
+          const newCornerY = cornerPos.y + dragOffset.y;
+          updatedRoom.offset = [newCornerX, newCornerY];
+        } else {
+          // Attached to another room - convert to zeropoint with current position
+          const cornerPos = getCorner(resolvedRoom, dragState.anchor);
+          const newCornerX = cornerPos.x + dragOffset.x;
+          const newCornerY = cornerPos.y + dragOffset.y;
+          updatedRoom.attachTo = 'zeropoint:top-left';
+          updatedRoom.anchor = dragState.anchor;
+          updatedRoom.offset = [newCornerX, newCornerY];
+        }
+      }
+    } else if (dragState.dragType === 'center' && hasMoved) {
+      // Center drag with significant movement - attach to zeropoint with offset
       if (resolvedRoom && dragOffset) {
         const newX = resolvedRoom.x + dragOffset.x;
         const newY = resolvedRoom.y + dragOffset.y;
@@ -404,6 +414,31 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
         updatedRoom.anchor = 'top-left';
         updatedRoom.offset = [newX, newY];
       }
+    } else if (dragState.dragType === 'center' && !hasMoved) {
+      // Tiny center movement - adjust offset but keep existing attachment
+      if (resolvedRoom && dragOffset) {
+        if (room.attachTo?.startsWith('zeropoint:')) {
+          // Already at zeropoint, adjust offset
+          const newX = resolvedRoom.x + dragOffset.x;
+          const newY = resolvedRoom.y + dragOffset.y;
+          updatedRoom.offset = [newX, newY];
+        } else {
+          // Attached to another room - convert to zeropoint
+          const newX = resolvedRoom.x + dragOffset.x;
+          const newY = resolvedRoom.y + dragOffset.y;
+          updatedRoom.attachTo = 'zeropoint:top-left';
+          updatedRoom.anchor = 'top-left';
+          updatedRoom.offset = [newX, newY];
+        }
+      }
+    }
+
+    // Only update if there were actual changes
+    if (!hasMoved && !dragOffset) {
+      setDragState(null);
+      setSnapTarget(null);
+      setDragOffset(null);
+      return;
     }
 
     // Update the room in data

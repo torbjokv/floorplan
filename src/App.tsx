@@ -246,13 +246,21 @@ function App() {
       try {
         const params = new URLSearchParams(hash);
         const name = params.get('name');
+        const urlId = params.get('id');
         if (name) {
           const decodedName = decodeURIComponent(name);
-          // Check if a project with this name already exists
+          // Only check for duplicates if this is NOT an existing project being refreshed
+          // (i.e., if the project ID in URL doesn't match any saved project)
           const saved = localStorage.getItem('floorplan_projects');
           const projects: SavedProject[] = saved ? JSON.parse(saved) : [];
-          const existingNames = new Set(projects.map(p => p.name));
 
+          // If this project ID exists in saved projects, use the name as-is (it's a refresh)
+          if (urlId && projects.some(p => p.id === decodeURIComponent(urlId))) {
+            return decodedName;
+          }
+
+          // Otherwise, check for duplicate names and append number if needed
+          const existingNames = new Set(projects.map(p => p.name));
           if (existingNames.has(decodedName)) {
             // Find next available number
             let num = 2;
@@ -731,9 +739,56 @@ function App() {
             onChange={(e) => setProjectName(e.target.value)}
             className="project-name-input"
           />
-          <button className="project-menu-button" onClick={() => setShowProjectMenu(!showProjectMenu)}>
-            📁 Projects
-          </button>
+          <div className="project-menu-container">
+            <button className="project-menu-button" onClick={() => setShowProjectMenu(!showProjectMenu)}>
+              📁 Projects
+            </button>
+            {showProjectMenu && (
+              <div className="project-menu">
+                <button onClick={handleNewProject} className="project-menu-item">
+                  📄 New Project
+                </button>
+                <button onClick={handleLoadExample} className="project-menu-item">
+                  📋 Load Example
+                </button>
+                <button onClick={handleUploadJSON} className="project-menu-item">
+                  📁 Upload JSON
+                </button>
+                <button onClick={() => handleDuplicateProject()} className="project-menu-item">
+                  📑 Duplicate Current Project
+                </button>
+                <div className="project-menu-divider" />
+                <button onClick={() => { handleDownloadJSON(); setShowProjectMenu(false); }} className="project-menu-item">
+                  💾 Download JSON
+                </button>
+                <button onClick={() => { handleShare(); setShowProjectMenu(false); }} className="project-menu-item">
+                  🔗 Share
+                </button>
+                <div className="project-menu-divider" />
+                <div className="project-menu-label">Saved Projects:</div>
+                {savedProjects.length === 0 ? (
+                  <div className="project-menu-empty">No saved projects</div>
+                ) : (
+                  savedProjects.map((project) => (
+                    <div key={project.name} className="project-menu-saved">
+                      <button
+                        onClick={() => handleLoadProject(project)}
+                        className="project-menu-load"
+                      >
+                        {project.name}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteProject(project.id)}
+                        className="project-menu-delete"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         </div>
         <div className="undo-redo-buttons">
           <button
@@ -761,51 +816,6 @@ function App() {
           >
             📖 Manual
           </a>
-          {showProjectMenu && (
-            <div className="project-menu">
-              <button onClick={handleNewProject} className="project-menu-item">
-                📄 New Project
-              </button>
-              <button onClick={handleLoadExample} className="project-menu-item">
-                📋 Load Example
-              </button>
-              <button onClick={handleUploadJSON} className="project-menu-item">
-                📁 Upload JSON
-              </button>
-              <button onClick={() => handleDuplicateProject()} className="project-menu-item">
-                📑 Duplicate Current Project
-              </button>
-              <div className="project-menu-divider" />
-              <button onClick={() => { handleDownloadJSON(); setShowProjectMenu(false); }} className="project-menu-item">
-                💾 Download JSON
-              </button>
-              <button onClick={() => { handleShare(); setShowProjectMenu(false); }} className="project-menu-item">
-                🔗 Share
-              </button>
-              <div className="project-menu-divider" />
-              <div className="project-menu-label">Saved Projects:</div>
-              {savedProjects.length === 0 ? (
-                <div className="project-menu-empty">No saved projects</div>
-              ) : (
-                savedProjects.map((project) => (
-                  <div key={project.name} className="project-menu-saved">
-                    <button
-                      onClick={() => handleLoadProject(project)}
-                      className="project-menu-load"
-                    >
-                      {project.name}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteProject(project.id)}
-                      className="project-menu-delete"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
         </div>
         {showUpdateAnimation && (
           <div className="update-indicator">
