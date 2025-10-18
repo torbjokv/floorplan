@@ -1,4 +1,5 @@
 import styles from './ProjectMenu.module.css';
+import { naturalSort } from '../../../utils/projectUtils';
 
 export interface SavedProject {
   id: string;
@@ -88,7 +89,7 @@ export function ProjectMenu({
           No saved projects
         </div>
       ) : (
-        savedProjects.map((project) => (
+        savedProjects.sort(naturalSort).map((project) => (
           <div
             key={project.id}
             className={styles.savedItem}

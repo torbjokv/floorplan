@@ -1,8 +1,8 @@
-
 .update {
   position: absolute;
   top: var(--spacing-xl);
-  right: var(--spacing-xl);
+  left: 50%;
+  transform: translateX(-50%);
   background-color: var(--color-success);
   color: white;
   padding: var(--spacing-md) var(--spacing-xl);
@@ -11,13 +11,14 @@
   font-size: var(--font-md);
   box-shadow: var(--shadow-success);
   z-index: var(--z-notification);
-  animation: slideIn var(--transition-medium) ease-out, fadeOut var(--transition-medium) ease-in 0.7s;
+  animation: slideInTop var(--transition-medium) ease-out, fadeOut var(--transition-medium) ease-in 0.7s;
 }
 
 .copy {
   position: absolute;
   top: var(--spacing-xl);
-  right: var(--spacing-xl);
+  left: 50%;
+  transform: translateX(-50%);
   background-color: var(--color-success);
   color: white;
   padding: var(--spacing-md) var(--spacing-xl);
@@ -26,13 +27,14 @@
   font-size: var(--font-md);
   box-shadow: var(--shadow-success);
   z-index: var(--z-notification);
-  animation: slideIn var(--transition-medium) ease-out;
+  animation: slideInTop var(--transition-medium) ease-out;
 }
 
 .urlError {
   position: absolute;
-  top: 70px;
-  right: var(--spacing-xl);
+  top: var(--spacing-xl);
+  left: 50%;
+  transform: translateX(-50%);
   background-color: var(--color-warning);
   color: white;
   padding: var(--spacing-md) var(--spacing-xl);
@@ -41,16 +43,16 @@
   font-size: var(--font-md);
   box-shadow: var(--shadow-warning);
   z-index: var(--z-notification);
-  animation: slideIn var(--transition-medium) ease-out;
+  animation: slideInTop var(--transition-medium) ease-out;
 }
 
-@keyframes slideIn {
+@keyframes slideInTop {
   from {
-    transform: translateX(100px);
+    transform: translateX(-50%) translateY(-50px);
     opacity: 0;
   }
   to {
-    transform: translateX(0);
+    transform: translateX(-50%) translateY(0);
     opacity: 1;
   }
 }

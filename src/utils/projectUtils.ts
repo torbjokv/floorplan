@@ -75,3 +75,14 @@ export function loadSavedProjects(): SavedProject[] {
 export function saveSavedProjects(projects: SavedProject[]): void {
   localStorage.setItem('floorplan_projects', JSON.stringify(projects));
 }
+
+/**
+ * Natural sort comparison function for project names
+ * Handles numbers correctly (e.g., "Project 2" before "Project 10")
+ */
+export function naturalSort(a: SavedProject, b: SavedProject): number {
+  return a.name.localeCompare(b.name, undefined, {
+    numeric: true,
+    sensitivity: 'base'
+  });
+}
