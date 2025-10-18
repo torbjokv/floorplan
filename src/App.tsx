@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import './App.css'
+
+// Components
 import { JSONEditor } from './components/JSONEditor'
 import { GUIEditor } from './components/GUIEditor'
 import { FloorplanRenderer } from './components/FloorplanRenderer'
@@ -8,8 +10,14 @@ import { UndoRedoControls } from './components/ui/UndoRedoControls/UndoRedoContr
 import { EditorTabs } from './components/ui/EditorTabs/EditorTabs'
 import { ErrorPanel } from './components/ui/ErrorPanel/ErrorPanel'
 import { Notifications } from './components/ui/Notifications/Notifications'
+
+// Types
 import type { SavedProject } from './components/ui/ProjectMenu/ProjectMenu'
 import type { FloorplanData, Room } from './types'
+
+// Utilities and Hooks
+import { generateProjectId, parseHashData, loadSavedProjects, saveSavedProjects } from './utils/projectUtils'
+import { useUndoRedo } from './hooks/useUndoRedo'
 
 const defaultJSON = `{
   "grid_step": 1000,
@@ -80,33 +88,18 @@ const defaultJSON = `{
   ]
 }`;
 
-// Generate a random project ID
-function generateProjectId(): string {
-  return 'proj_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-}
-
-// Parse JSON data from URL hash
-function parseHashData(): string | null {
-  const hash = window.location.hash.slice(1);
-  if (!hash) return null;
-
-  try {
-    const params = new URLSearchParams(hash);
-    const data = params.get('data');
-    if (data) {
-      return decodeURIComponent(data);
-    }
-    // Fallback: old format (just JSON in hash)
-    return decodeURIComponent(hash);
-  } catch {
-    return null;
-  }
-}
+// ============================================================================
+// Main App Component
+// ============================================================================
 
 function App() {
   const [urlError, setUrlError] = useState<string | null>(null);
 
-  const [jsonText, setJsonText] = useState(() => {
+  // ============================================================================
+  // Undo/Redo State
+  // ============================================================================
+
+  const initialJsonValue = (() => {
     const hashData = parseHashData();
     if (hashData) {
       try {
@@ -117,7 +110,27 @@ function App() {
       }
     }
     return defaultJSON;
-  });
+  })();
+
+  const { value: jsonText, setValue: setJsonText, undo, redo, canUndo, canRedo, setValueDirect } = useUndoRedo(initialJsonValue);
+
+  // Helper function to update JSON with history tracking
+  const updateJsonText = (newText: string) => {
+    setJsonText(newText);
+  };
+
+  // ============================================================================
+  // UI State
+  // ============================================================================
+
+  const [activeTab, setActiveTab] = useState<'json' | 'gui'>('gui');
+  const [editorCollapsed, setEditorCollapsed] = useState(false);
+  const [showUpdateAnimation, setShowUpdateAnimation] = useState(false);
+  const [showCopyNotification, setShowCopyNotification] = useState(false);
+
+  // ============================================================================
+  // Floorplan Data State
+  // ============================================================================
 
   const [floorplanData, setFloorplanData] = useState<FloorplanData>(() => {
     const hashData = parseHashData();
@@ -146,99 +159,12 @@ function App() {
   });
   const [jsonError, setJsonError] = useState<string>('');
   const [positioningErrors, setPositioningErrors] = useState<string[]>([]);
-  const [showUpdateAnimation, setShowUpdateAnimation] = useState(false);
-  const [showCopyNotification, setShowCopyNotification] = useState(false);
-  const [activeTab, setActiveTab] = useState<'json' | 'gui'>('gui');
-  const [editorCollapsed, setEditorCollapsed] = useState(false);
 
-  // Undo/Redo history
-  const [history, setHistory] = useState<string[]>([jsonText]);
-  const [historyIndex, setHistoryIndex] = useState(0);
+  // ============================================================================
+  // Project Management State
+  // ============================================================================
 
-  // Update JSON with history tracking
-  const updateJsonText = (newText: string, skipHistory = false) => {
-    setJsonText(newText);
-
-    if (!skipHistory && newText !== history[historyIndex]) {
-      // Remove any history after current index (when adding new changes after undo)
-      const newHistory = history.slice(0, historyIndex + 1);
-      newHistory.push(newText);
-      // Limit history to 50 entries
-      if (newHistory.length > 50) {
-        newHistory.shift();
-      } else {
-        setHistoryIndex(historyIndex + 1);
-      }
-      setHistory(newHistory);
-    }
-  };
-
-  // Undo function
-  const handleUndo = () => {
-    if (historyIndex > 0) {
-      const newIndex = historyIndex - 1;
-      setHistoryIndex(newIndex);
-      setJsonText(history[newIndex]);
-    }
-  };
-
-  // Redo function
-  const handleRedo = () => {
-    if (historyIndex < history.length - 1) {
-      const newIndex = historyIndex + 1;
-      setHistoryIndex(newIndex);
-      setJsonText(history[newIndex]);
-    }
-  };
-
-  const canUndo = historyIndex > 0;
-  const canRedo = historyIndex < history.length - 1;
-
-  // Add keyboard shortcuts for undo/redo
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') {
-        e.preventDefault();
-        handleUndo();
-      } else if ((e.ctrlKey || e.metaKey) && (e.shiftKey && e.key === 'z' || e.key === 'y')) {
-        e.preventDefault();
-        handleRedo();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [historyIndex, history]);
-
-  const [savedProjects, setSavedProjects] = useState<SavedProject[]>(() => {
-    try {
-      const saved = localStorage.getItem('floorplan_projects');
-      if (!saved) return [];
-
-      const projects: SavedProject[] = JSON.parse(saved);
-      // Migrate old projects without IDs
-      let needsMigration = false;
-      const migrated = projects.map(p => {
-        if (!p.id) {
-          needsMigration = true;
-          return {
-            ...p,
-            id: generateProjectId()
-          };
-        }
-        return p;
-      });
-
-      // Save migrated data back to localStorage
-      if (needsMigration) {
-        localStorage.setItem('floorplan_projects', JSON.stringify(migrated));
-      }
-
-      return migrated;
-    } catch {
-      return [];
-    }
-  });
+  const [savedProjects, setSavedProjects] = useState<SavedProject[]>(loadSavedProjects);
   const [projectName, setProjectName] = useState<string>(() => {
     const hash = window.location.hash.slice(1);
     if (hash) {
@@ -337,6 +263,10 @@ function App() {
 
     return () => clearTimeout(timer);
   }, [jsonText]);
+
+  // ============================================================================
+  // Event Handlers
+  // ============================================================================
 
   const handlePositioningErrors = (errors: string[]) => {
     setPositioningErrors(errors);
@@ -573,7 +503,7 @@ function App() {
       // Update by ID, not name
       const updated = [newProject, ...savedProjects.filter(p => p.id !== projectId)];
       setSavedProjects(updated);
-      localStorage.setItem('floorplan_projects', JSON.stringify(updated));
+      saveSavedProjects(updated);
     }, 1000); // Debounce 1s
 
     return () => clearTimeout(timer);
@@ -582,7 +512,7 @@ function App() {
   const handleLoadProject = (project: SavedProject) => {
     setProjectId(project.id);
     setProjectName(project.name);
-    setJsonText(project.json);
+    setValueDirect(project.json); // Bypass history when loading projects
     setIsExistingProject(false); // Allow auto-save for loaded projects from localStorage
   };
 
@@ -615,32 +545,32 @@ function App() {
 
     const updated = [duplicatedProject, ...savedProjects];
     setSavedProjects(updated);
-    localStorage.setItem('floorplan_projects', JSON.stringify(updated));
+    saveSavedProjects(updated);
 
     // Load the duplicated project
     setProjectId(newId);
     setProjectName(newName);
-    setJsonText(sourceProject.json);
+    setValueDirect(sourceProject.json); // Bypass history when loading projects
     setIsExistingProject(false); // New copy, allow auto-save
   };
 
   const handleDeleteProject = (projectId: string) => {
     const updated = savedProjects.filter(p => p.id !== projectId);
     setSavedProjects(updated);
-    localStorage.setItem('floorplan_projects', JSON.stringify(updated));
+    saveSavedProjects(updated);
   };
 
   const handleNewProject = () => {
     setProjectId(generateProjectId());
     setProjectName('Untitled Project');
-    setJsonText(defaultJSON);
+    setValueDirect(defaultJSON); // Bypass history when creating new project
     setIsExistingProject(false); // New project, allow auto-save
   };
 
   const handleLoadExample = () => {
     setProjectId(generateProjectId());
     setProjectName('Example Floorplan');
-    setJsonText(defaultJSON);
+    setValueDirect(defaultJSON); // Bypass history when loading example
   };
 
   return (
@@ -703,8 +633,8 @@ function App() {
         <UndoRedoControls
           canUndo={canUndo}
           canRedo={canRedo}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
+          onUndo={undo}
+          onRedo={redo}
         />
         <Notifications
           showUpdate={showUpdateAnimation}
