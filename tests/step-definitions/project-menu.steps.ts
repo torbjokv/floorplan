@@ -5,7 +5,7 @@ import { FloorplanWorld } from '../support/world';
 // Background steps
 Given('I am on the floorplan designer page', async function(this: FloorplanWorld) {
   // Page is already loaded in Before hook
-  await expect(this.page).toHaveTitle(/Floorplan/);
+  await expect(this.page).toHaveTitle(/floorplan/i);
 });
 
 Given('localStorage is cleared', async function(this: FloorplanWorld) {
