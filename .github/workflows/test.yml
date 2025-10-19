@@ -57,6 +57,7 @@ jobs:
         with:
           name: failure-screenshots
           path: test-results/**/*.png
+          if-no-files-found: ignore
           retention-days: 7
 
       - name: Publish test report
