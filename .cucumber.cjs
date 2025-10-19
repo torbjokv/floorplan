@@ -10,6 +10,7 @@ module.exports = {
     ],
     formatOptions: {
       snippetInterface: 'async-await'
-    }
+    },
+    timeout: 10000  // 10 seconds timeout for steps
   }
 };
