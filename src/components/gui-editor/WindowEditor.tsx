@@ -1,10 +1,6 @@
 import type { Window, Room } from '../../types';
 import './WindowEditor.css';
 
-// Constants
-const DEFAULT_WINDOW_WIDTH = 1200; // mm
-const DEFAULT_WINDOW_OFFSET = 1000; // mm
-
 interface RoomListItem {
   id: string;
   name: string;

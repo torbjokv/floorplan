@@ -1,10 +1,6 @@
 import type { Door, Room } from '../../types';
 import './DoorEditor.css';
 
-// Constants
-const DEFAULT_DOOR_WIDTH = 800; // mm
-const DEFAULT_DOOR_OFFSET = 1000; // mm
-
 interface RoomListItem {
   id: string;
   name: string;

@@ -122,13 +122,6 @@ export function RoomRenderer({
 }: RoomRendererProps) {
   const parts = resolveCompositeRoom(room);
 
-  // Visual styling for connected rooms
-  const connectedStyle = isConnected ? {
-    opacity: 0.7,
-    stroke: '#646cff',
-    strokeWidth: '3'
-  } : {};
-
   // For composite rooms, draw all rectangles WITH borders, then cover internal borders
   if (parts.length > 0) {
     const allParts = [

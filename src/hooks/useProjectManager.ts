@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { SavedProject } from '../components/ui/ProjectMenu/ProjectMenu';
-import { generateProjectId, parseHashData, loadSavedProjects, saveSavedProjects } from '../utils/projectUtils';
+import { generateProjectId, loadSavedProjects, saveSavedProjects } from '../utils/projectUtils';
 
 const defaultJSON = `{
   "grid_step": 1000,
