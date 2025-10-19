@@ -18,7 +18,23 @@ When('I click on the {string} button', async function(this: FloorplanWorld, butt
 });
 
 When('I click on {string} in the menu', async function(this: FloorplanWorld, menuItem: string) {
-  await this.page.getByRole('menuitem', { name: menuItem }).click();
+  // Map menu item names to test IDs
+  const menuItemMap: Record<string, string> = {
+    'New Project': 'project-menu-new',
+    'Load Example': 'project-menu-load-example',
+    'Upload JSON': 'project-menu-upload',
+    'Download JSON': 'project-menu-download',
+    'Share': 'project-menu-share',
+    'Duplicate': 'project-menu-duplicate'
+  };
+
+  const testId = menuItemMap[menuItem];
+  if (testId) {
+    await this.page.getByTestId(testId).click();
+  } else {
+    // Fallback to text search
+    await this.page.getByText(menuItem).click();
+  }
 });
 
 When('I click on {string} for the project', async function(this: FloorplanWorld, action: string) {
@@ -58,17 +74,29 @@ When('I click outside the menu', async function(this: FloorplanWorld) {
   await this.page.getByTestId('preview-section').click();
 });
 
+When('I click on {string}', async function(this: FloorplanWorld, buttonText: string) {
+  // Generic click handler for any button
+  await this.page.getByRole('button', { name: new RegExp(buttonText, 'i') }).click();
+});
+
+When('I click on {string} button', async function(this: FloorplanWorld, buttonText: string) {
+  // Alternative format for button clicks
+  await this.page.getByRole('button', { name: new RegExp(buttonText, 'i') }).click();
+});
+
 // Assertion steps
 Then('the project menu should be visible', async function(this: FloorplanWorld) {
-  await expect(this.page.getByRole('menu')).toBeVisible();
+  await expect(this.page.getByTestId('project-menu')).toBeVisible();
 });
 
 Then('the project menu should close', async function(this: FloorplanWorld) {
-  await expect(this.page.getByRole('menu')).not.toBeVisible();
+  await expect(this.page.getByTestId('project-menu')).not.toBeVisible();
 });
 
 Then('the menu should contain {string} option', async function(this: FloorplanWorld, optionText: string) {
-  await expect(this.page.getByRole('menuitem', { name: optionText })).toBeVisible();
+  // Check if the menu contains the option by text
+  const menu = this.page.getByTestId('project-menu');
+  await expect(menu.getByText(optionText)).toBeVisible();
 });
 
 Then('a new empty project should be created', async function(this: FloorplanWorld) {
@@ -201,7 +229,8 @@ Then('the projects should be listed in order: {string}, {string}, {string}', asy
   second: string,
   third: string
 ) {
-  const items = this.page.getByRole('menuitem');
+  const menu = this.page.getByTestId('project-menu');
+  const items = menu.locator('button');
   const texts = await items.allTextContents();
   const projectTexts = texts.filter(t => t.includes('Project'));
 
@@ -209,6 +238,12 @@ Then('the projects should be listed in order: {string}, {string}, {string}', asy
   const secondIndex = projectTexts.findIndex(t => t.includes(second));
   const thirdIndex = projectTexts.findIndex(t => t.includes(third));
 
+  // All should be found
+  expect(firstIndex).toBeGreaterThanOrEqual(0);
+  expect(secondIndex).toBeGreaterThanOrEqual(0);
+  expect(thirdIndex).toBeGreaterThanOrEqual(0);
+
+  // Check ordering
   expect(firstIndex).toBeLessThan(secondIndex);
   expect(secondIndex).toBeLessThan(thirdIndex);
 });
