@@ -1,5 +1,8 @@
-import { Before, After, BeforeAll, AfterAll } from '@cucumber/cucumber';
+import { Before, After, BeforeAll, AfterAll, setDefaultTimeout } from '@cucumber/cucumber';
 import { FloorplanWorld } from './world';
+
+// Set default timeout to 15 seconds for all steps
+setDefaultTimeout(15000);
 
 // Global setup
 BeforeAll(async function() {
