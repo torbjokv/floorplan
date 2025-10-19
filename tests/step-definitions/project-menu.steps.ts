@@ -80,8 +80,14 @@ When('I upload the JSON file', async function(this: FloorplanWorld) {
 });
 
 When('I click outside the menu', async function(this: FloorplanWorld) {
-  // Click on the preview section
-  await this.page.getByTestId('preview-section').click();
+  // Click on the floorplan preview (outside the project header)
+  const svg = this.page.locator('svg').first();
+  if (await svg.isVisible()) {
+    await svg.click();
+  } else {
+    // If no SVG, click on the editor section
+    await this.page.locator('.editor-container').first().click();
+  }
   // Wait for menu to close
   await this.page.waitForTimeout(300);
 });
