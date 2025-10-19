@@ -17,6 +17,7 @@ import type { FloorplanData, Room } from './types'
 
 // Utilities and Hooks
 import { generateProjectId, parseHashData, loadSavedProjects, saveSavedProjects } from './utils/projectUtils'
+import { resolveRoomPositions } from './utils'
 import { useUndoRedo } from './hooks/useUndoRedo'
 
 const defaultJSON = `{
@@ -336,17 +337,17 @@ function App() {
     let yOffset = 0;
 
     if (floorplanData.rooms.length > 0) {
-      // Find the rightmost edge of all existing rooms
+      // Find the rightmost edge of all existing rooms using the positioning system
       const SPACING = 500; // mm spacing between rooms
 
-      // For rooms attached to zeropoint, calculate their actual positions
+      // Resolve all room positions to get actual coordinates
+      const { roomMap } = resolveRoomPositions(floorplanData.rooms);
+
       let maxX = 0;
-      floorplanData.rooms.forEach(room => {
-        if (room.attachTo?.startsWith('zeropoint:') && room.offset) {
-          const roomRightEdge = room.offset[0] + room.width;
-          if (roomRightEdge > maxX) {
-            maxX = roomRightEdge;
-          }
+      Object.values(roomMap).forEach(room => {
+        const roomRightEdge = room.x + room.width;
+        if (roomRightEdge > maxX) {
+          maxX = roomRightEdge;
         }
       });
 
@@ -390,6 +391,27 @@ function App() {
   const handleRoomUpdate = (data: FloorplanData) => {
     // Update JSON text from drag and drop changes
     updateJsonText(JSON.stringify(data, null, 2));
+  };
+
+  const handleRoomNameUpdate = (roomId: string, newName: string) => {
+    // Update room name in the floorplan data
+    const updatedRooms = floorplanData.rooms.map(room =>
+      room.id === roomId ? { ...room, name: newName } : room
+    );
+    updateJsonText(JSON.stringify({ ...floorplanData, rooms: updatedRooms }, null, 2));
+  };
+
+  const handleObjectClick = (roomId: string, objectIndex: number) => {
+    // Switch to GUI tab and scroll to the room containing this object
+    if (activeTab !== 'gui') {
+      setActiveTab('gui');
+    }
+    setTimeout(() => {
+      const roomElement = document.querySelector(`[data-room-id="${roomId}"]`);
+      if (roomElement) {
+        roomElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
   };
 
   const handleDownloadJSON = () => {
@@ -648,6 +670,8 @@ function App() {
           onDoorClick={handleDoorClick}
           onWindowClick={handleWindowClick}
           onRoomUpdate={handleRoomUpdate}
+          onRoomNameUpdate={handleRoomNameUpdate}
+          onObjectClick={handleObjectClick}
         />
         <button className="download-svg-button" onClick={handleDownloadSVG} data-testid="download-svg-btn">
           📥 Download SVG

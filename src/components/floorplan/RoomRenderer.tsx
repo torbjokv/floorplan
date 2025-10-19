@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import type { ResolvedRoom, Anchor } from '../../types';
 
 interface DragState {
@@ -10,28 +11,123 @@ interface DragState {
   startRoomY: number;
 }
 
+interface EditableRoomLabelProps {
+  room: ResolvedRoom;
+  x: number;
+  y: number;
+  onNameUpdate?: (roomId: string, newName: string) => void;
+}
+
+function EditableRoomLabel({ room, x, y, onNameUpdate }: EditableRoomLabelProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(room.name || room.id);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditing(true);
+    setEditValue(room.name || room.id);
+  };
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    if (editValue.trim() && editValue !== (room.name || room.id)) {
+      onNameUpdate?.(room.id, editValue.trim());
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleBlur();
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+      setEditValue(room.name || room.id);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <foreignObject x={x - 150} y={y - 20} width={300} height={40}>
+        <input
+          ref={inputRef}
+          type="text"
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          style={{
+            width: '100%',
+            height: '100%',
+            textAlign: 'center',
+            fontSize: '16px',
+            border: '2px solid #646cff',
+            borderRadius: '4px',
+            padding: '4px 8px',
+            background: 'white',
+            color: 'black',
+            outline: 'none',
+            boxSizing: 'border-box'
+          }}
+        />
+      </foreignObject>
+    );
+  }
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fontSize="14"
+      textAnchor="middle"
+      dominantBaseline="middle"
+      onDoubleClick={handleDoubleClick}
+      style={{ cursor: 'text', userSelect: 'none' }}
+    >
+      {room.name || room.id}
+    </text>
+  );
+}
+
 interface RoomRendererProps {
   room: ResolvedRoom;
   dragState: DragState | null;
   dragOffset: { x: number; y: number } | null;
   hoveredCorner: { roomId: string; corner: Anchor } | null;
+  isConnected: boolean;
   mm: (val: number) => number;
   resolveCompositeRoom: (room: ResolvedRoom) => Array<{ x: number; y: number; width: number; depth: number }>;
   getCorner: (room: ResolvedRoom, corner: Anchor) => { x: number; y: number };
   onMouseDown: (e: React.MouseEvent<SVGElement>, roomId: string) => void;
   onClick?: (roomId: string) => void;
+  onNameUpdate?: (roomId: string, newName: string) => void;
 }
 
 export function RoomRenderer({
   room,
   dragState,
   dragOffset,
+  isConnected,
   mm,
   resolveCompositeRoom,
   onMouseDown,
-  onClick
+  onClick,
+  onNameUpdate
 }: RoomRendererProps) {
   const parts = resolveCompositeRoom(room);
+
+  // Visual styling for connected rooms
+  const connectedStyle = isConnected ? {
+    opacity: 0.7,
+    stroke: '#646cff',
+    strokeWidth: '3'
+  } : {};
 
   // For composite rooms, draw all rectangles WITH borders, then cover internal borders
   if (parts.length > 0) {
@@ -130,8 +226,9 @@ export function RoomRenderer({
           width={mm(room.width)}
           height={mm(room.depth)}
           fill="#e0ebe8"
-          stroke="black"
-          strokeWidth="2"
+          stroke={isConnected ? '#646cff' : 'black'}
+          strokeWidth={isConnected ? '3' : '2'}
+          opacity={isConnected ? 0.7 : 1}
           onClick={() => onClick?.(room.id)}
           onMouseDown={(e) => onMouseDown(e, room.id)}
           style={{ cursor: dragState?.roomId === room.id ? 'grabbing' : 'grab' }}
@@ -145,8 +242,9 @@ export function RoomRenderer({
             width={mm(part.width)}
             height={mm(part.depth)}
             fill="#e0ebe8"
-            stroke="black"
-            strokeWidth="2"
+            stroke={isConnected ? '#646cff' : 'black'}
+            strokeWidth={isConnected ? '3' : '2'}
+            opacity={isConnected ? 0.7 : 1}
             onClick={() => onClick?.(room.id)}
           />
         ))}
@@ -165,15 +263,12 @@ export function RoomRenderer({
         ))}
 
         {/* Room label */}
-        <text
+        <EditableRoomLabel
+          room={room}
           x={mm(room.x + room.width / 2)}
           y={mm(room.y + room.depth / 2)}
-          fontSize="14"
-          textAnchor="middle"
-          dominantBaseline="middle"
-        >
-          {room.name || room.id}
-        </text>
+          onNameUpdate={onNameUpdate}
+        />
       </g>
     );
   }
@@ -194,23 +289,21 @@ export function RoomRenderer({
         width={mm(room.width)}
         height={mm(room.depth)}
         fill="#e0ebe8"
-        stroke="black"
-        strokeWidth="2"
+        stroke={isConnected ? '#646cff' : 'black'}
+        strokeWidth={isConnected ? '3' : '2'}
+        opacity={isConnected ? 0.7 : 1}
         onClick={() => onClick?.(room.id)}
         onMouseDown={(e) => onMouseDown(e, room.id)}
         style={{ cursor: dragState?.roomId === room.id ? 'grabbing' : 'grab' }}
       />
 
       {/* Room label */}
-      <text
+      <EditableRoomLabel
+        room={room}
         x={mm(room.x + room.width / 2)}
         y={mm(room.y + room.depth / 2)}
-        fontSize="14"
-        textAnchor="middle"
-        dominantBaseline="middle"
-      >
-        {room.name || room.id}
-      </text>
+        onNameUpdate={onNameUpdate}
+      />
     </g>
   );
 }

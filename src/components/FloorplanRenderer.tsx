@@ -22,6 +22,8 @@ interface FloorplanRendererProps {
   onDoorClick?: (doorIndex: number) => void;
   onWindowClick?: (windowIndex: number) => void;
   onRoomUpdate?: (updatedData: FloorplanData) => void;
+  onRoomNameUpdate?: (roomId: string, newName: string) => void;
+  onObjectClick?: (roomId: string, objectIndex: number) => void;
 }
 
 interface DragState {
@@ -53,7 +55,7 @@ function getObjectAnchorOffset(anchor: Anchor, width: number, height: number): {
   }
 }
 
-export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDoorClick, onWindowClick, onRoomUpdate }: FloorplanRendererProps) {
+export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDoorClick, onWindowClick, onRoomUpdate, onRoomNameUpdate, onObjectClick }: FloorplanRendererProps) {
   const gridStep = data.grid_step || 1000;
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -62,6 +64,7 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
   const [hoveredCorner, setHoveredCorner] = useState<CornerHighlight | null>(null);
   const [snapTarget, setSnapTarget] = useState<CornerHighlight | null>(null);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number } | null>(null);
+  const [connectedRooms, setConnectedRooms] = useState<Set<string>>(new Set());
 
   // Memoize room resolution to avoid recalculating on every render
   const { roomMap, errors } = useMemo(() => resolveRoomPositions(data.rooms), [data.rooms]);
@@ -175,6 +178,30 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
     };
   };
 
+  // Find all rooms that are attached to the given room (directly or indirectly)
+  const findConnectedRooms = (rootRoomId: string): Set<string> => {
+    const connected = new Set<string>();
+    const toCheck = [rootRoomId];
+
+    while (toCheck.length > 0) {
+      const currentId = toCheck.pop()!;
+      if (connected.has(currentId)) continue;
+      connected.add(currentId);
+
+      // Find rooms that attach to this room
+      data.rooms.forEach(room => {
+        const attachTo = room.attachTo?.split(':')[0];
+        if (attachTo === currentId && !connected.has(room.id)) {
+          toCheck.push(room.id);
+        }
+      });
+    }
+
+    // Remove the root room itself from the set
+    connected.delete(rootRoomId);
+    return connected;
+  };
+
   // Find which corner of a room is closest to a point
   const findClosestCorner = (room: ResolvedRoom, x: number, y: number): { corner: Anchor; distance: number } | null => {
     const corners: { corner: Anchor; x: number; y: number }[] = [
@@ -266,6 +293,10 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
     const room = roomMap[roomId];
     if (!room) return;
 
+    // Find all rooms connected to this one
+    const connected = findConnectedRooms(roomId);
+    setConnectedRooms(connected);
+
     // Check if clicking on corner
     const closest = findClosestCorner(room, x, y);
     if (closest) {
@@ -353,6 +384,7 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
       setDragState(null);
       setSnapTarget(null);
       setDragOffset(null);
+      setConnectedRooms(new Set());
       return;
     }
 
@@ -452,6 +484,7 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
     setDragState(null);
     setSnapTarget(null);
     setDragOffset(null);
+    setConnectedRooms(new Set());
   };
 
   // Add global mouse up listener
@@ -500,11 +533,13 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
             dragState={dragState}
             dragOffset={dragOffset}
             hoveredCorner={hoveredCorner}
+            isConnected={connectedRooms.has(room.id)}
             mm={mm}
             resolveCompositeRoom={resolveCompositeRoom}
             getCorner={getCorner}
             onMouseDown={handleMouseDown}
             onClick={onRoomClick}
+            onNameUpdate={onRoomNameUpdate}
           />
         ))}
 
@@ -555,6 +590,7 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
           dragOffset={dragOffset}
           mm={mm}
           getCorner={getCorner}
+          onObjectClick={onObjectClick}
         />
 
         {/* Corner highlights - rendered on top */}

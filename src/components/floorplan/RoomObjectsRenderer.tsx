@@ -19,6 +19,7 @@ interface RoomObjectsRendererProps {
   dragOffset: { x: number; y: number } | null;
   mm: (val: number) => number;
   getCorner: (room: ResolvedRoom, corner: Anchor) => { x: number; y: number };
+  onObjectClick?: (roomId: string, objectIndex: number) => void;
 }
 
 // Helper function to calculate anchor offset for objects
@@ -35,7 +36,7 @@ function getObjectAnchorOffset(anchor: Anchor, width: number, height: number): {
   }
 }
 
-export function RoomObjectsRenderer({ roomMap, dragState, dragOffset, mm, getCorner }: RoomObjectsRendererProps) {
+export function RoomObjectsRenderer({ roomMap, dragState, dragOffset, mm, getCorner, onObjectClick }: RoomObjectsRendererProps) {
   return (
     <>
       {Object.values(roomMap).map(room => {
@@ -57,7 +58,14 @@ export function RoomObjectsRenderer({ roomMap, dragState, dragOffset, mm, getCor
               if (obj.type === 'circle') {
                 const radius = mm(obj.radius || DEFAULT_OBJECT_RADIUS);
                 return (
-                  <g key={`${room.id}-obj-${idx}`}>
+                  <g
+                    key={`${room.id}-obj-${idx}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onObjectClick?.(room.id, idx);
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <circle
                       className="room-object"
                       cx={mm(absX)}
@@ -75,6 +83,7 @@ export function RoomObjectsRenderer({ roomMap, dragState, dragOffset, mm, getCor
                         textAnchor="middle"
                         dominantBaseline="middle"
                         fill="#000"
+                        style={{ pointerEvents: 'none' }}
                       >
                         {obj.text}
                       </text>
@@ -96,7 +105,14 @@ export function RoomObjectsRenderer({ roomMap, dragState, dragOffset, mm, getCor
                 const centerY = rectY + h / 2;
 
                 return (
-                  <g key={`${room.id}-obj-${idx}`}>
+                  <g
+                    key={`${room.id}-obj-${idx}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onObjectClick?.(room.id, idx);
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <rect
                       className="room-object"
                       x={rectX}
@@ -115,6 +131,7 @@ export function RoomObjectsRenderer({ roomMap, dragState, dragOffset, mm, getCor
                         textAnchor="middle"
                         dominantBaseline="middle"
                         fill="#000"
+                        style={{ pointerEvents: 'none' }}
                       >
                         {obj.text}
                       </text>
