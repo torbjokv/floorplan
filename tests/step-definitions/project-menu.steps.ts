@@ -39,9 +39,12 @@ When('I click on {string} in the menu', async function(this: FloorplanWorld, men
 
 When('I click on {string} for the project', async function(this: FloorplanWorld, action: string) {
   if (action === 'Duplicate') {
-    // First load the project, then duplicate it
+    // First load the project (clicking it closes the menu)
     await this.page.getByTestId('project-menu-load-test-project-1').click();
-    await this.page.waitForTimeout(600); // Wait for project to load
+    await this.page.waitForTimeout(800); // Wait for project to load and menu to close
+    // Now open menu again and click duplicate
+    await this.page.getByRole('button', { name: /projects/i }).click();
+    await this.page.waitForTimeout(300);
     await this.page.getByTestId('project-menu-duplicate').click();
   } else if (action === 'Delete') {
     // Click the delete button for the test project
