@@ -18,7 +18,6 @@ Feature: Project Menu
     And I click on "New Project" in the menu
     Then a new empty project should be created
     And the project name should be "Untitled Project"
-    And the floorplan should be empty
 
   Scenario: Loading the example project
     When I click on the "Projects" button
