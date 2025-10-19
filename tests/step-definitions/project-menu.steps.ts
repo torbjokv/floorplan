@@ -40,12 +40,12 @@ When('I click on {string} in the menu', async function(this: FloorplanWorld, men
 When('I click on {string} for the project', async function(this: FloorplanWorld, action: string) {
   if (action === 'Duplicate') {
     // First load the project, then duplicate it
-    await this.page.getByTestId('project-menu-load-1').click();
+    await this.page.getByTestId('project-menu-load-test-project-1').click();
     await this.page.waitForTimeout(600); // Wait for project to load
     await this.page.getByTestId('project-menu-duplicate').click();
   } else if (action === 'Delete') {
-    // Click the delete button for the first saved project
-    await this.page.getByTestId('project-menu-delete-1').click();
+    // Click the delete button for the test project
+    await this.page.getByTestId('project-menu-delete-test-project-1').click();
   } else {
     // Find the project row and click the action button
     await this.page.locator(`button:has-text("${action}")`).first().click();
