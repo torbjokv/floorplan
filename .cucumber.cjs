@@ -1,8 +1,8 @@
-const config = {
+module.exports = {
   default: {
     paths: ['tests/features/**/*.feature'],
     import: ['tests/support/**/*.ts', 'tests/step-definitions/**/*.ts'],
-    requireModule: ['ts-node/register'],
+    loader: ['ts-node/esm'],
     format: [
       'progress-bar',
       'html:test-results/cucumber-report.html',
@@ -10,9 +10,6 @@ const config = {
     ],
     formatOptions: {
       snippetInterface: 'async-await'
-    },
-    publishQuiet: true
+    }
   }
 };
-
-export default config;

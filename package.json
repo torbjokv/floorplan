@@ -8,9 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "cucumber-js",
-    "test:headed": "HEADLESS=false cucumber-js",
-    "test:ci": "cucumber-js --publish-quiet"
+    "test": "NODE_OPTIONS='--loader ts-node/esm --experimental-specifier-resolution=node' TS_NODE_PROJECT=tsconfig.cucumber.json cucumber-js --config .cucumber.cjs",
+    "test:headed": "HEADLESS=false NODE_OPTIONS='--loader ts-node/esm --experimental-specifier-resolution=node' TS_NODE_PROJECT=tsconfig.cucumber.json cucumber-js --config .cucumber.cjs",
+    "test:ci": "NODE_OPTIONS='--loader ts-node/esm --experimental-specifier-resolution=node' TS_NODE_PROJECT=tsconfig.cucumber.json cucumber-js --config .cucumber.cjs"
   },
   "dependencies": {
     "react": "^19.1.1",

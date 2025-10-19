@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ES2022"],
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "types": ["node", "@cucumber/cucumber", "@playwright/test"],
+    "allowJs": true,
+    "outDir": "./dist-tests",
+    "rootDir": "."
+  },
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node",
+    "transpileOnly": true
+  },
+  "include": ["tests/**/*.ts"],
+  "exclude": ["node_modules", "dist", "dist-tests"]
+}

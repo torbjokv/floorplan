@@ -5,6 +5,8 @@ export interface FloorplanWorld extends World {
   browser: Browser;
   context: BrowserContext;
   page: Page;
+  init(): Promise<void>;
+  cleanup(): Promise<void>;
 }
 
 class CustomWorld extends World implements FloorplanWorld {
