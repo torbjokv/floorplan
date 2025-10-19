@@ -402,14 +402,21 @@ function App() {
   };
 
   const handleObjectClick = (roomId: string, objectIndex: number) => {
-    // Switch to GUI tab and scroll to the room containing this object
+    // Switch to GUI tab and scroll to the specific object
     if (activeTab !== 'gui') {
       setActiveTab('gui');
     }
     setTimeout(() => {
-      const roomElement = document.querySelector(`[data-room-id="${roomId}"]`);
-      if (roomElement) {
-        roomElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Try to find the specific object first
+      const objectElement = document.querySelector(`[data-room-id="${roomId}"][data-object-index="${objectIndex}"]`);
+      if (objectElement) {
+        objectElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        // Fallback to room if object not found
+        const roomElement = document.querySelector(`[data-room-id="${roomId}"]`);
+        if (roomElement) {
+          roomElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
       }
     }, 100);
   };

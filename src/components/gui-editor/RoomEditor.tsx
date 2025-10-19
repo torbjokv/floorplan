@@ -313,7 +313,7 @@ export function RoomEditor({
               <button onClick={() => addRoomObject(index)} className="add-button-small">+ Add Object</button>
             </div>
             {(room.objects || []).map((obj, objIndex) => (
-              <div key={objIndex} className="object-card">
+              <div key={objIndex} className="object-card" data-room-id={room.id} data-object-index={objIndex}>
                 <div className="object-header">
                   <select
                     value={obj.type}

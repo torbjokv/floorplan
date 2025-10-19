@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "types": ["node", "@cucumber/cucumber", "@playwright/test"],
+    "esModuleInterop": true,
+    "resolveJsonModule": true
+  },
+  "include": ["tests/**/*", "src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

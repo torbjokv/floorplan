@@ -6,6 +6,11 @@ notes.md
 ### Build ###
 dist/
 
+### Test Results ###
+test-results/
+playwright-report/
+.playwright/
+
 ### Claude ###
 .claude
 CLAUDE.md
