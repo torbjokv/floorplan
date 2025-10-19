@@ -55,6 +55,21 @@ export function resolveRoomPositions(rooms: Room[]): PositioningResult {
   const unresolved = [...rooms];
   let safety = 20;
 
+  // If first room has no valid attachTo or references a non-existent room, place it at 0,0
+  if (rooms.length > 0 && unresolved.length > 0) {
+    const firstRoom = unresolved[0];
+    const hasValidAttach = firstRoom.attachTo && (
+      firstRoom.attachTo.startsWith('zeropoint:') ||
+      rooms.some(r => r.id === firstRoom.attachTo?.split(':')[0])
+    );
+
+    if (!hasValidAttach) {
+      // Place first room at 0,0
+      roomMap[firstRoom.id] = { ...firstRoom, x: 0, y: 0 } as ResolvedRoom;
+      unresolved.splice(0, 1);
+    }
+  }
+
   while (unresolved.length && safety--) {
     for (let i = unresolved.length - 1; i >= 0; i--) {
       const room = unresolved[i];
@@ -97,14 +112,7 @@ export function resolveRoomPositions(rooms: Room[]): PositioningResult {
     });
   }
 
-  // Validate that at least one room is connected to Zero Point
-  const hasZeroPointConnection = rooms.some(room =>
-    room.attachTo?.split(':')[0] === 'zeropoint'
-  );
-
-  if (rooms.length > 0 && !hasZeroPointConnection) {
-    errors.push('Error: At least one room must be connected to Zero Point (0,0) to anchor the floorplan.');
-  }
+  // Note: No longer require Zero Point connection - first room automatically placed at 0,0
 
   return { roomMap, errors };
 }
