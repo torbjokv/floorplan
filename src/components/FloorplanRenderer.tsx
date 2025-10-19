@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
-import type { FloorplanData, ResolvedRoom, Door, Window, WallPosition, Anchor } from '../types';
+import type { FloorplanData, ResolvedRoom, Anchor } from '../types';
 import { mm, resolveRoomPositions, resolveCompositeRoom, getCorner } from '../utils';
+import { GridRenderer } from './floorplan/GridRenderer';
+import { RoomRenderer } from './floorplan/RoomRenderer';
+import { DoorRenderer } from './floorplan/DoorRenderer';
+import { WindowRenderer } from './floorplan/WindowRenderer';
+import { RoomObjectsRenderer } from './floorplan/RoomObjectsRenderer';
+import { CornerHighlights } from './floorplan/CornerHighlights';
 
 // Constants
-const DOOR_THICKNESS = 100; // mm
-const WINDOW_THICKNESS = 100; // mm
 const BOUNDS_PADDING_PERCENTAGE = 0.1; // 10% padding on each side
 const DEFAULT_OBJECT_SIZE = 1000; // mm
 const DEFAULT_OBJECT_RADIUS = 500; // mm
@@ -256,7 +260,7 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
   };
 
   // Mouse down handler to start dragging
-  const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>, roomId: string) => {
+  const handleMouseDown = (e: React.MouseEvent<SVGElement>, roomId: string) => {
     e.stopPropagation();
     const { x, y } = screenToMM(e.clientX, e.clientY);
     const room = roomMap[roomId];
@@ -461,662 +465,12 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
     return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
   }, [dragState]);
 
-  const renderGrid = () => {
-    const lines = [];
 
-    // Vertical lines
-    for (let i = gridMinX; i <= gridMaxX; i += gridStep) {
-      lines.push(
-        <line
-          key={`v-${i}`}
-          x1={mm(i)}
-          y1={mm(gridMinY)}
-          x2={mm(i)}
-          y2={mm(gridMaxY)}
-          stroke="#eee"
-        />
-      );
-    }
 
-    // Horizontal lines
-    for (let i = gridMinY; i <= gridMaxY; i += gridStep) {
-      lines.push(
-        <line
-          key={`h-${i}`}
-          x1={mm(gridMinX)}
-          y1={mm(i)}
-          x2={mm(gridMaxX)}
-          y2={mm(i)}
-          stroke="#eee"
-        />
-      );
-    }
 
-    return lines;
-  };
-
-  const renderRoom = (room: ResolvedRoom) => {
-    const parts = resolveCompositeRoom(room);
-
-    // For composite rooms, draw all rectangles WITH borders, then cover internal borders
-    if (parts.length > 0) {
-      const allParts = [
-        { x: room.x, y: room.y, width: room.width, depth: room.depth },
-        ...parts
-      ];
-
-      // Find shared edges between rectangles
-      interface Edge {
-        x1: number;
-        y1: number;
-        x2: number;
-        y2: number;
-        isVertical: boolean;
-      }
-
-      const sharedEdges: Edge[] = [];
-
-      // Check each pair of rectangles for shared edges
-      for (let i = 0; i < allParts.length; i++) {
-        for (let j = i + 1; j < allParts.length; j++) {
-          const a = allParts[i];
-          const b = allParts[j];
-
-          // Check if they share a vertical edge (left/right sides touching)
-          if (a.x + a.width === b.x && !(a.y + a.depth <= b.y || b.y + b.depth <= a.y)) {
-            // A's right edge touches B's left edge
-            const overlapTop = Math.max(a.y, b.y);
-            const overlapBottom = Math.min(a.y + a.depth, b.y + b.depth);
-            sharedEdges.push({
-              x1: a.x + a.width,
-              y1: overlapTop,
-              x2: a.x + a.width,
-              y2: overlapBottom,
-              isVertical: true
-            });
-          } else if (b.x + b.width === a.x && !(a.y + a.depth <= b.y || b.y + b.depth <= a.y)) {
-            // B's right edge touches A's left edge
-            const overlapTop = Math.max(a.y, b.y);
-            const overlapBottom = Math.min(a.y + a.depth, b.y + b.depth);
-            sharedEdges.push({
-              x1: b.x + b.width,
-              y1: overlapTop,
-              x2: b.x + b.width,
-              y2: overlapBottom,
-              isVertical: true
-            });
-          }
-
-          // Check if they share a horizontal edge (top/bottom sides touching)
-          if (a.y + a.depth === b.y && !(a.x + a.width <= b.x || b.x + b.width <= a.x)) {
-            // A's bottom edge touches B's top edge
-            const overlapLeft = Math.max(a.x, b.x);
-            const overlapRight = Math.min(a.x + a.width, b.x + b.width);
-            sharedEdges.push({
-              x1: overlapLeft,
-              y1: a.y + a.depth,
-              x2: overlapRight,
-              y2: a.y + a.depth,
-              isVertical: false
-            });
-          } else if (b.y + b.depth === a.y && !(a.x + a.width <= b.x || b.x + b.width <= a.x)) {
-            // B's bottom edge touches A's top edge
-            const overlapLeft = Math.max(a.x, b.x);
-            const overlapRight = Math.min(a.x + a.width, b.x + b.width);
-            sharedEdges.push({
-              x1: overlapLeft,
-              y1: b.y + b.depth,
-              x2: overlapRight,
-              y2: b.y + b.depth,
-              isVertical: false
-            });
-          }
-        }
-      }
-
-      // Apply drag offset if this room is being dragged
-      const isDragging = dragState?.roomId === room.id;
-      const transform = isDragging && dragOffset
-        ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})`
-        : undefined;
-
-      return (
-        <g
-          key={room.id}
-          className="composite-room"
-          data-room-id={room.id}
-          transform={transform}
-        >
-          {/* Layer 1: All rectangles WITH borders */}
-          <rect
-            className="room-rect composite-part"
-            x={mm(room.x)}
-            y={mm(room.y)}
-            width={mm(room.width)}
-            height={mm(room.depth)}
-            fill="#e0ebe8"
-            stroke="black"
-            strokeWidth="2"
-            onClick={() => onRoomClick?.(room.id)}
-            onMouseDown={(e) => handleMouseDown(e as any, room.id)}
-            style={{ cursor: dragState?.roomId === room.id ? 'grabbing' : 'grab' }}
-          />
-          {parts.map((part, idx) => (
-            <rect
-              className="room-rect composite-part"
-              key={`border-${idx}`}
-              x={mm(part.x)}
-              y={mm(part.y)}
-              width={mm(part.width)}
-              height={mm(part.depth)}
-              fill="#e0ebe8"
-              stroke="black"
-              strokeWidth="2"
-              onClick={() => onRoomClick?.(room.id)}
-            />
-          ))}
-
-          {/* Layer 2: Cover only the shared edges */}
-          {sharedEdges.map((edge, idx) => (
-            <line
-              key={`cover-${idx}`}
-              x1={mm(edge.x1)}
-              y1={mm(edge.y1)}
-              x2={mm(edge.x2)}
-              y2={mm(edge.y2)}
-              stroke="#e0ebe8"
-              strokeWidth="3"
-            />
-          ))}
-
-          {/* Room label */}
-          <text
-            x={mm(room.x + room.width / 2)}
-            y={mm(room.y + room.depth / 2)}
-            fontSize="14"
-            textAnchor="middle"
-            dominantBaseline="middle"
-          >
-            {room.name || room.id}
-          </text>
-        </g>
-      );
-    }
-
-    // Simple room without parts
-    // Apply drag offset if this room is being dragged
-    const isDragging = dragState?.roomId === room.id;
-    const transform = isDragging && dragOffset
-      ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})`
-      : undefined;
-
-    return (
-      <g key={room.id} transform={transform}>
-        <rect
-          className="room-rect"
-          x={mm(room.x)}
-          y={mm(room.y)}
-          width={mm(room.width)}
-          height={mm(room.depth)}
-          fill="#e0ebe8"
-          stroke="black"
-          strokeWidth="2"
-          onClick={() => onRoomClick?.(room.id)}
-          onMouseDown={(e) => handleMouseDown(e as any, room.id)}
-          style={{ cursor: dragState?.roomId === room.id ? 'grabbing' : 'grab' }}
-        />
-
-        {/* Room label */}
-        <text
-          x={mm(room.x + room.width / 2)}
-          y={mm(room.y + room.depth / 2)}
-          fontSize="14"
-          textAnchor="middle"
-          dominantBaseline="middle"
-        >
-          {room.name || room.id}
-        </text>
-      </g>
-    );
-  };
-
-  const renderDoor = (door: Door, index: number) => {
-    const [roomId, wallStr = 'left'] = door.room.split(':') as [string, WallPosition];
-    const room = roomMap[roomId];
-    if (!room) return null;
-
-    const wall = wallStr as WallPosition;
-    const offset = mm(door.offset ?? 0);
-    const swing = door.swing || 'inwards-right';
-    const w = mm(door.width);
-    const d = mm(DOOR_THICKNESS);
-
-    // Determine if door swings inwards or outwards, and left or right
-    const isInwards = swing.startsWith('inwards');
-    const isRight = swing.endsWith('right');
-
-    // Calculate position based on wall and offset
-    let x: number, y: number;
-    let doorRect: { x: number; y: number; width: number; height: number };
-    let arcPath: string;
-
-    switch (wall) {
-      case 'bottom':
-        // Bottom wall - door opens into room (upward)
-        x = mm(room.x) + offset;
-        y = mm(room.y + room.depth);
-
-        if (isInwards) {
-          // Door swings into room (upward)
-          doorRect = { x: 0, y: -d, width: w, height: d };
-          if (isRight) {
-            // Hinge on right, arc from right edge to left
-            arcPath = `M ${w} ${-d} A ${w} ${w} 0 0 0 0 ${-d - w}`;
-          } else {
-            // Hinge on left, arc from left edge to right
-            arcPath = `M 0 ${-d} A ${w} ${w} 0 0 1 ${w} ${-d - w}`;
-          }
-        } else {
-          // Door swings out of room (downward)
-          doorRect = { x: 0, y: 0, width: w, height: d };
-          if (isRight) {
-            // Hinge on right, arc from right edge outward
-            arcPath = `M ${w} 0 A ${w} ${w} 0 0 1 0 ${w}`;
-          } else {
-            // Hinge on left, arc from left edge outward
-            arcPath = `M 0 0 A ${w} ${w} 0 0 0 ${w} ${w}`;
-          }
-        }
-        break;
-
-      case 'top':
-        // Top wall - door opens into room (downward)
-        x = mm(room.x) + offset;
-        y = mm(room.y);
-
-        if (isInwards) {
-          // Door swings into room (downward)
-          doorRect = { x: 0, y: 0, width: w, height: d };
-          if (isRight) {
-            // Hinge on right, arc from right edge to left
-            arcPath = `M ${w} ${d} A ${w} ${w} 0 0 1 0 ${d + w}`;
-          } else {
-            // Hinge on left, arc from left edge to right
-            arcPath = `M 0 ${d} A ${w} ${w} 0 0 0 ${w} ${d + w}`;
-          }
-        } else {
-          // Door swings out of room (upward)
-          doorRect = { x: 0, y: -d, width: w, height: d };
-          if (isRight) {
-            // Hinge on right, arc from right edge outward
-            arcPath = `M ${w} ${-d} A ${w} ${w} 0 0 0 0 ${-d - w}`;
-          } else {
-            // Hinge on left, arc from left edge outward
-            arcPath = `M 0 ${-d} A ${w} ${w} 0 0 1 ${w} ${-d - w}`;
-          }
-        }
-        break;
-
-      case 'left':
-        // Left wall - door opens into room (rightward)
-        x = mm(room.x);
-        y = mm(room.y) + offset;
-
-        if (isInwards) {
-          // Door swings into room (rightward)
-          doorRect = { x: 0, y: 0, width: d, height: w };
-          if (isRight) {
-            // Hinge on bottom, arc from bottom edge upward
-            arcPath = `M ${d} ${w} A ${w} ${w} 0 0 0 ${d + w} 0`;
-          } else {
-            // Hinge on top, arc from top edge downward
-            arcPath = `M ${d} 0 A ${w} ${w} 0 0 1 ${d + w} ${w}`;
-          }
-        } else {
-          // Door swings out of room (leftward)
-          doorRect = { x: -d, y: 0, width: d, height: w };
-          if (isRight) {
-            // Hinge on bottom, arc from bottom edge outward
-            arcPath = `M ${-d} ${w} A ${w} ${w} 0 0 1 ${-d - w} 0`;
-          } else {
-            // Hinge on top, arc from top edge outward
-            arcPath = `M ${-d} 0 A ${w} ${w} 0 0 0 ${-d - w} ${w}`;
-          }
-        }
-        break;
-
-      case 'right':
-        // Right wall - door opens into room (leftward)
-        x = mm(room.x + room.width);
-        y = mm(room.y) + offset;
-
-        if (isInwards) {
-          // Door swings into room (leftward)
-          doorRect = { x: -d, y: 0, width: d, height: w };
-          if (isRight) {
-            // Hinge on bottom, arc from bottom edge upward
-            arcPath = `M ${-d} ${w} A ${w} ${w} 0 0 1 ${-d - w} 0`;
-          } else {
-            // Hinge on top, arc from top edge downward
-            arcPath = `M ${-d} 0 A ${w} ${w} 0 0 0 ${-d - w} ${w}`;
-          }
-        } else {
-          // Door swings out of room (rightward)
-          doorRect = { x: 0, y: 0, width: d, height: w };
-          if (isRight) {
-            // Hinge on bottom, arc from bottom edge outward
-            arcPath = `M ${d} ${w} A ${w} ${w} 0 0 0 ${d + w} 0`;
-          } else {
-            // Hinge on top, arc from top edge outward
-            arcPath = `M ${d} 0 A ${w} ${w} 0 0 1 ${d + w} ${w}`;
-          }
-        }
-        break;
-
-      default:
-        return null;
-    }
-
-    const doorType = door.type || 'normal';
-
-    return (
-      <g
-        key={`door-${index}`}
-        className="door-group"
-        onClick={() => onDoorClick?.(index)}
-        style={{ cursor: 'pointer' }}
-      >
-        {/* Door rectangle (always shown) */}
-        <rect
-          x={x + doorRect.x}
-          y={y + doorRect.y}
-          width={doorRect.width}
-          height={doorRect.height}
-          fill="saddlebrown"
-          stroke="#333"
-          strokeWidth="1"
-        />
-        {/* Door swing arc (only for normal doors) */}
-        {doorType === 'normal' && (
-          <path
-            d={arcPath}
-            transform={`translate(${x},${y})`}
-            fill="none"
-            stroke="#333"
-            strokeWidth="1"
-            strokeDasharray="4,2"
-          />
-        )}
-      </g>
-    );
-  };
-
-  const renderWindow = (win: Window, index: number) => {
-    const [roomId, wallStr = 'top'] = win.room.split(':') as [string, WallPosition];
-    const room = roomMap[roomId];
-    if (!room) return null;
-
-    const wall = wallStr as WallPosition;
-    const offset = win.offset ?? 0;
-    const w = mm(win.width);
-    const d = mm(WINDOW_THICKNESS);
-
-    // Calculate position and rotation based on wall
-    let posX: number, posY: number, rotation: number;
-    let rectX = 0, rectY = 0;
-
-    switch (wall) {
-      case 'left':
-        posX = room.x;
-        posY = room.y + offset;
-        rotation = 90;
-        rectX = 0;  // Window thickness extends into room (rightward)
-        rectY = -d; // Shift up by window thickness (which is rotated)
-        break;
-
-      case 'right':
-        posX = room.x + room.width;
-        posY = room.y + offset;
-        rotation = 90;
-        rectX = -d; // Window extends into room
-        rectY = 0;
-        break;
-
-      case 'top':
-        posX = room.x + offset;
-        posY = room.y;
-        rotation = 0;
-        rectX = 0;
-        rectY = 0;  // Window extends into room (downward)
-        break;
-
-      case 'bottom':
-        posX = room.x + offset;
-        posY = room.y + room.depth;
-        rotation = 0;
-        rectX = 0;
-        rectY = -d; // Window extends into room (upward)
-        break;
-
-      default:
-        return null;
-    }
-
-    const x = mm(posX);
-    const y = mm(posY);
-
-    return (
-      <g
-        key={`window-${index}`}
-        className="window-group"
-        transform={`translate(${x},${y}) rotate(${rotation})`}
-        onClick={() => onWindowClick?.(index)}
-        style={{ cursor: 'pointer' }}
-      >
-        <rect
-          x={rectX}
-          y={rectY}
-          width={w}
-          height={d}
-          fill="lightblue"
-          stroke="#444"
-          strokeWidth="2"
-        />
-      </g>
-    );
-  };
 
   // Convert bounds to screen coordinates
   const viewBox = `${mm(bounds.x)} ${mm(bounds.y)} ${mm(bounds.width)} ${mm(bounds.depth)}`;
-
-  // Render all room objects separately so they appear on top of all rooms
-  const renderAllRoomObjects = () => {
-    return Object.values(roomMap).map(room => {
-      // Apply drag offset if this room is being dragged
-      const isDragging = dragState?.roomId === room.id;
-      const transform = isDragging && dragOffset
-        ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})`
-        : undefined;
-
-      return (
-        <g key={`${room.id}-objects`} transform={transform}>
-          {room.objects?.map((obj, idx) => {
-            const roomAnchor = obj.roomAnchor || 'top-left';
-            const roomCorner = getCorner(room, roomAnchor);
-            const absX = roomCorner.x + obj.x;
-            const absY = roomCorner.y + obj.y;
-            const color = obj.color || '#888';
-
-        if (obj.type === 'circle') {
-          const radius = mm(obj.radius || DEFAULT_OBJECT_RADIUS);
-          return (
-            <g key={`${room.id}-obj-${idx}`}>
-              <circle
-                className="room-object"
-                cx={mm(absX)}
-                cy={mm(absY)}
-                r={radius}
-                fill={color}
-                stroke="#333"
-                strokeWidth="1"
-              />
-              {obj.text && (
-                <text
-                  x={mm(absX)}
-                  y={mm(absY)}
-                  fontSize="12"
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fill="#000"
-                >
-                  {obj.text}
-                </text>
-              )}
-            </g>
-          );
-        } else {
-          // Square
-          const width = obj.width || DEFAULT_OBJECT_SIZE;
-          const height = obj.height || DEFAULT_OBJECT_SIZE;
-          const anchor = obj.anchor || 'top-left';
-          const offset = getObjectAnchorOffset(anchor, width, height);
-
-          const rectX = mm(absX + offset.x);
-          const rectY = mm(absY + offset.y);
-          const w = mm(width);
-          const h = mm(height);
-          const centerX = rectX + w / 2;
-          const centerY = rectY + h / 2;
-
-          return (
-            <g key={`${room.id}-obj-${idx}`}>
-              <rect
-                className="room-object"
-                x={rectX}
-                y={rectY}
-                width={w}
-                height={h}
-                fill={color}
-                stroke="#333"
-                strokeWidth="1"
-              />
-              {obj.text && (
-                <text
-                  x={centerX}
-                  y={centerY}
-                  fontSize="12"
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fill="#000"
-                >
-                  {obj.text}
-                </text>
-              )}
-            </g>
-          );
-        }
-      })}
-        </g>
-      );
-    });
-  };
-
-  // Helper function to create quarter-circle path
-  const getQuarterCirclePath = (cornerX: number, cornerY: number, anchor: Anchor, radius: number): string => {
-    const r = mm(radius);
-    const cx = mm(cornerX);
-    const cy = mm(cornerY);
-
-    switch (anchor) {
-      case 'top-left':
-        // Arc from right to bottom
-        return `M ${cx + r} ${cy} A ${r} ${r} 0 0 1 ${cx} ${cy + r} L ${cx} ${cy} Z`;
-      case 'top-right':
-        // Arc from left to bottom
-        return `M ${cx - r} ${cy} A ${r} ${r} 0 0 0 ${cx} ${cy + r} L ${cx} ${cy} Z`;
-      case 'bottom-left':
-        // Arc from right to top
-        return `M ${cx + r} ${cy} A ${r} ${r} 0 0 0 ${cx} ${cy - r} L ${cx} ${cy} Z`;
-      case 'bottom-right':
-        // Arc from left to top
-        return `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx} ${cy - r} L ${cx} ${cy} Z`;
-    }
-  };
-
-  // Render corner highlights
-  const renderCornerHighlights = () => {
-    const highlights = [];
-
-    // When dragging, show only the grabbed corner
-    if (dragState && dragState.anchor) {
-      const room = roomMap[dragState.roomId];
-      if (room) {
-        const corner = getCorner(room, dragState.anchor);
-
-        // Apply drag offset
-        let cornerX = corner.x;
-        let cornerY = corner.y;
-        if (dragOffset) {
-          cornerX += dragOffset.x;
-          cornerY += dragOffset.y;
-        }
-
-        const path = getQuarterCirclePath(cornerX, cornerY, dragState.anchor, 600);
-
-        highlights.push(
-          <path
-            key={`corner-${dragState.roomId}-${dragState.anchor}`}
-            d={path}
-            fill="rgba(100, 108, 255, 0.5)"
-            stroke="#646cff"
-            strokeWidth="3"
-            pointerEvents="none"
-          />
-        );
-      }
-    }
-    // When hovering (not dragging), show only the single hovered corner
-    else if (hoveredCorner) {
-      const room = roomMap[hoveredCorner.roomId];
-      if (room) {
-        const corner = getCorner(room, hoveredCorner.corner);
-        const path = getQuarterCirclePath(corner.x, corner.y, hoveredCorner.corner, 600);
-
-        highlights.push(
-          <path
-            key={`corner-${hoveredCorner.roomId}-${hoveredCorner.corner}`}
-            d={path}
-            fill="rgba(100, 108, 255, 0.5)"
-            stroke="#646cff"
-            strokeWidth="3"
-            pointerEvents="none"
-          />
-        );
-      }
-    }
-
-    // Render snap target
-    if (snapTarget) {
-      const room = roomMap[snapTarget.roomId];
-      if (room) {
-        const corner = getCorner(room, snapTarget.corner);
-        highlights.push(
-          <circle
-            key="snap"
-            cx={mm(corner.x)}
-            cy={mm(corner.y)}
-            r={mm(250)}
-            fill="rgba(76, 175, 80, 0.3)"
-            stroke="#4caf50"
-            strokeWidth="3"
-            pointerEvents="none"
-          />
-        );
-      }
-    }
-
-    return highlights;
-  };
 
   return (
     <div className="preview-container">
@@ -1129,10 +483,30 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
         onMouseUp={handleMouseUp}
       >
         {/* Grid */}
-        {renderGrid()}
+        <GridRenderer
+          gridMinX={gridMinX}
+          gridMinY={gridMinY}
+          gridMaxX={gridMaxX}
+          gridMaxY={gridMaxY}
+          gridStep={gridStep}
+          mm={mm}
+        />
 
         {/* Rooms (without objects) */}
-        {Object.values(roomMap).map(renderRoom)}
+        {Object.values(roomMap).map(room => (
+          <RoomRenderer
+            key={room.id}
+            room={room}
+            dragState={dragState}
+            dragOffset={dragOffset}
+            hoveredCorner={hoveredCorner}
+            mm={mm}
+            resolveCompositeRoom={resolveCompositeRoom}
+            getCorner={getCorner}
+            onMouseDown={handleMouseDown}
+            onClick={onRoomClick}
+          />
+        ))}
 
         {/* Doors */}
         {data.doors?.map((door, index) => {
@@ -1143,7 +517,13 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
             : undefined;
           return (
             <g key={`door-${index}`} transform={transform}>
-              {renderDoor(door, index)}
+              <DoorRenderer
+                door={door}
+                index={index}
+                roomMap={roomMap}
+                mm={mm}
+                onClick={onDoorClick}
+              />
             </g>
           );
         })}
@@ -1157,16 +537,36 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
             : undefined;
           return (
             <g key={`window-${index}`} transform={transform}>
-              {renderWindow(window, index)}
+              <WindowRenderer
+                window={window}
+                index={index}
+                roomMap={roomMap}
+                mm={mm}
+                onClick={onWindowClick}
+              />
             </g>
           );
         })}
 
         {/* All room objects - rendered last so they appear on top */}
-        {renderAllRoomObjects()}
+        <RoomObjectsRenderer
+          roomMap={roomMap}
+          dragState={dragState}
+          dragOffset={dragOffset}
+          mm={mm}
+          getCorner={getCorner}
+        />
 
         {/* Corner highlights - rendered on top */}
-        {renderCornerHighlights()}
+        <CornerHighlights
+          roomMap={roomMap}
+          hoveredCorner={hoveredCorner}
+          dragState={dragState}
+          snapTarget={snapTarget}
+          mm={mm}
+          getCorner={getCorner}
+          dragOffset={dragOffset}
+        />
       </svg>
     </div>
   );
