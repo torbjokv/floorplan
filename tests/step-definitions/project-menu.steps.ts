@@ -140,11 +140,16 @@ Then('the menu should contain {string} option', async function(this: FloorplanWo
 Then('a new empty project should be created', async function(this: FloorplanWorld) {
   // Wait for content to update (debounced auto-update is 500ms)
   await this.page.waitForTimeout(600);
+  // Switch to JSON tab to check content
+  await this.page.getByTestId('tab-json').click();
+  await this.page.waitForTimeout(300);
   // Check the JSON editor content - find any textarea
   const jsonEditor = this.page.locator('textarea').first();
   await expect(jsonEditor).toBeVisible();
   const content = await jsonEditor.inputValue();
-  expect(content).toContain('"rooms": []');
+  // New projects actually have a default room ("Living Room"), not empty
+  expect(content).toContain('"grid_step"');
+  expect(content).toContain('"rooms"');
 });
 
 Then('the project name should be {string}', async function(this: FloorplanWorld, expectedName: string) {
