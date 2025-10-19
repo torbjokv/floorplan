@@ -1,0 +1,66 @@
+/* Anchor Selector - Visual Corner Icons */
+.anchor-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 8px;
+  width: 80px;
+  height: 80px;
+  padding: 8px;
+  background-color: #3a3a3a;
+  border-radius: 6px;
+  border: 1px solid #505050;
+}
+
+.anchor-corner {
+  position: relative;
+  background-color: #2d2d2d;
+  border: 2px solid #505050;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.anchor-corner:hover {
+  background-color: #404040;
+  border-color: #646cff;
+}
+
+.anchor-corner.active {
+  background-color: #646cff;
+  border-color: #646cff;
+}
+
+.corner-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background-color: #888;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.anchor-corner.active .corner-dot {
+  background-color: #fff;
+}
+
+.anchor-corner.top-left .corner-dot {
+  top: 3px;
+  left: 3px;
+}
+
+.anchor-corner.top-right .corner-dot {
+  top: 3px;
+  right: 3px;
+}
+
+.anchor-corner.bottom-left .corner-dot {
+  bottom: 3px;
+  left: 3px;
+}
+
+.anchor-corner.bottom-right .corner-dot {
+  bottom: 3px;
+  right: 3px;
+}

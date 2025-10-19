@@ -1,0 +1,345 @@
+/* Shared styles for GUI Editor components */
+
+.gui-section {
+  margin-bottom: 30px;
+  background-color: #2d2d2d;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.gui-section h3 {
+  margin: 0 0 15px 0;
+  font-size: 1.1rem;
+  color: #ffffff;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.section-header h3 {
+  margin: 0;
+}
+
+.section-header-small {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 15px 0 10px 0;
+  padding-top: 15px;
+  border-top: 1px solid #404040;
+}
+
+.section-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #b0b0b0;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.form-row {
+  margin-bottom: 15px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.form-grid label,
+.form-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #b0b0b0;
+}
+
+.form-grid input,
+.form-grid select,
+.form-row input,
+.form-row select {
+  padding: 8px 10px;
+  border: 1px solid #404040;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  background-color: #3a3a3a;
+  color: #e0e0e0;
+}
+
+.form-grid input:focus,
+.form-grid select:focus,
+.form-row input:focus,
+.form-row select:focus {
+  outline: none;
+  border-color: #646cff;
+  background-color: #424242;
+}
+
+.form-section {
+  margin: 15px 0;
+  padding: 15px;
+  background-color: #252525;
+  border-radius: 6px;
+}
+
+.item-card {
+  background-color: #252525;
+  border: 1px solid #404040;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 25px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.room-name-input {
+  font-size: 16px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border: 1px solid #404040;
+  border-radius: 4px;
+  flex: 1;
+  max-width: 300px;
+  background-color: #3a3a3a;
+  color: #ffffff;
+}
+
+.room-name-input:focus {
+  outline: none;
+  border-color: #646cff;
+  background-color: #424242;
+}
+
+.item-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+/* Buttons */
+.add-button {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.add-button:hover {
+  background-color: #45a049;
+}
+
+.add-button:active {
+  background-color: #3d8b40;
+}
+
+.add-button-small {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.add-button-small:hover {
+  background-color: #45a049;
+}
+
+.delete-button {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.delete-button:hover {
+  background-color: #da190b;
+}
+
+.delete-button:active {
+  background-color: #c41e14;
+}
+
+.delete-button-small {
+  padding: 2px 8px;
+  font-size: 16px;
+  font-weight: bold;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  line-height: 1;
+}
+
+.delete-button-small:hover {
+  background-color: #da190b;
+}
+
+/* Collapsible Section */
+.collapsible-section {
+  margin: 15px 0;
+}
+
+.collapse-toggle {
+  width: 100%;
+  padding: 10px;
+  background-color: #2d2d2d;
+  border: 1px solid #404040;
+  border-radius: 4px;
+  color: #b0b0b0;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.collapse-toggle:hover {
+  background-color: #353535;
+  border-color: #505050;
+  color: #e0e0e0;
+}
+
+/* Room Objects Section */
+.objects-section {
+  margin-top: 20px;
+}
+
+.object-card {
+  background-color: #2d2d2d;
+  border: 1px solid #404040;
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.object-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.object-header select {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #404040;
+  border-radius: 4px;
+  background-color: #3a3a3a;
+  color: #e0e0e0;
+  font-size: 13px;
+  max-width: 150px;
+}
+
+.form-grid-small {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.form-grid-small label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #b0b0b0;
+}
+
+.form-grid-small input {
+  padding: 6px 8px;
+  border: 1px solid #404040;
+  border-radius: 4px;
+  font-size: 13px;
+  background-color: #3a3a3a;
+  color: #e0e0e0;
+}
+
+.form-grid-small input[type="color"] {
+  height: 32px;
+  padding: 2px;
+  cursor: pointer;
+}
+
+.form-grid-small input:focus {
+  outline: none;
+  border-color: #646cff;
+  background-color: #424242;
+}
+
+.form-grid-three {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 15px;
+  margin-bottom: 10px;
+  align-items: start;
+}
+
+.dimensions-layout {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 10px;
+  align-items: start;
+}
+
+.dimensions-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.dimensions-stack label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #b0b0b0;
+}
+
+.dimensions-stack input {
+  padding: 8px 10px;
+  border: 1px solid #404040;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  background-color: #3a3a3a;
+  color: #e0e0e0;
+}
+
+.dimensions-stack input:focus {
+  outline: none;
+  border-color: #646cff;
+  background-color: #424242;
+}
