@@ -24,13 +24,6 @@ Feature: GUI Editor Interface
     And the room should have an auto-generated ID
     And the room should have default values
 
-  @skip
-  Scenario: Auto-generated room IDs
-    When I add a room with name "Living Room"
-    Then the room ID should be auto-generated as "livingroom1"
-    When I add another room with name "Living Room"
-    Then the second room ID should be "livingroom2"
-
   Scenario: Editing room name in GUI
     Given I have a room in the GUI editor
     When I change the room name to "Master Bedroom"
