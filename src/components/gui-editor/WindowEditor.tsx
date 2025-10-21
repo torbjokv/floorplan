@@ -24,18 +24,18 @@ export function WindowEditor({
   onDeleteWindow,
 }: WindowEditorProps) {
   return (
-    <div className="gui-section">
+    <div className="gui-section" data-testid="window-editor">
       <div className="section-header">
         <h3>🪟 Windows</h3>
-        <button onClick={onAddWindow} className="add-button">+ Add Window</button>
+        <button onClick={onAddWindow} className="add-button" data-testid="add-window-button">+ Add Window</button>
       </div>
       {windows.map((window, index) => {
         const roomName = rooms.find(r => r.id === window.room.split(':')[0])?.name || window.room.split(':')[0];
         return (
-          <div key={index} className="item-card" data-window-index={index}>
+          <div key={index} className="item-card" data-window-index={index} data-testid={`window-card-${index}`}>
             <div className="card-header">
               <span className="item-label">{roomName} - Window {index + 1}</span>
-              <button onClick={() => onDeleteWindow(index)} className="delete-button">Delete</button>
+              <button onClick={() => onDeleteWindow(index)} className="delete-button" data-testid={`delete-window-button-${index}`}>Delete</button>
             </div>
             <div className="form-grid">
               <label>

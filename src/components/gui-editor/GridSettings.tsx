@@ -7,7 +7,7 @@ interface GridSettingsProps {
 
 export function GridSettings({ gridStep, onGridStepChange }: GridSettingsProps) {
   return (
-    <div className="gui-section">
+    <div className="gui-section" data-testid="grid-settings">
       <h3>📐 Grid Settings</h3>
       <div className="form-row">
         <label>
@@ -16,6 +16,7 @@ export function GridSettings({ gridStep, onGridStepChange }: GridSettingsProps) 
             type="number"
             value={gridStep}
             onChange={(e) => onGridStepChange(Number(e.target.value))}
+            data-testid="grid-step-input"
           />
         </label>
       </div>

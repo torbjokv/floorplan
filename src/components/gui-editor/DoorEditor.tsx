@@ -24,18 +24,18 @@ export function DoorEditor({
   onDeleteDoor,
 }: DoorEditorProps) {
   return (
-    <div className="gui-section">
+    <div className="gui-section" data-testid="door-editor">
       <div className="section-header">
         <h3>🚪 Doors</h3>
-        <button onClick={onAddDoor} className="add-button">+ Add Door</button>
+        <button onClick={onAddDoor} className="add-button" data-testid="add-door-button">+ Add Door</button>
       </div>
       {doors.map((door, index) => {
         const roomName = rooms.find(r => r.id === door.room.split(':')[0])?.name || door.room.split(':')[0];
         return (
-          <div key={index} className="item-card" data-door-index={index}>
+          <div key={index} className="item-card" data-door-index={index} data-testid={`door-card-${index}`}>
             <div className="card-header">
               <span className="item-label">{roomName} - Door {index + 1}</span>
-              <button onClick={() => onDeleteDoor(index)} className="delete-button">Delete</button>
+              <button onClick={() => onDeleteDoor(index)} className="delete-button" data-testid={`delete-door-button-${index}`}>Delete</button>
             </div>
             <div className="form-grid">
               <label>
@@ -92,6 +92,7 @@ export function DoorEditor({
                 <select
                   value={door.type ?? 'normal'}
                   onChange={(e) => onUpdateDoor(index, { ...door, type: e.target.value as 'normal' | 'opening' })}
+                  data-testid={`door-type-${index}`}
                 >
                   <option value="normal">Normal (with door blade)</option>
                   <option value="opening">Opening (no door blade)</option>
@@ -103,6 +104,7 @@ export function DoorEditor({
                   <select
                     value={door.swing ?? 'inwards-right'}
                     onChange={(e) => onUpdateDoor(index, { ...door, swing: e.target.value as any })}
+                    data-testid={`door-swing-${index}`}
                   >
                     <option value="inwards-left">Inwards Left</option>
                     <option value="inwards-right">Inwards Right</option>

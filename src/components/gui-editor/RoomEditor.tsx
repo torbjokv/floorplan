@@ -84,13 +84,13 @@ export function RoomEditor({
   };
 
   return (
-    <div className="gui-section">
+    <div className="gui-section" data-testid="room-editor">
       <div className="section-header">
         <h3>🏠 Rooms</h3>
-        <button onClick={onAddRoom} className="add-button">+ Add Room</button>
+        <button onClick={onAddRoom} className="add-button" data-testid="add-room-button">+ Add Room</button>
       </div>
       {rooms.map((room, index) => (
-        <div key={room.id} className="item-card">
+        <div key={room.id} className="item-card" data-testid={`room-card-${room.id}`}>
           <div className="card-header" data-room-id={room.id}>
             <input
               type="text"
@@ -98,8 +98,9 @@ export function RoomEditor({
               placeholder="Room name"
               onChange={(e) => onUpdateRoom(index, { ...room, name: e.target.value })}
               className="room-name-input"
+              data-testid={`room-name-input-${room.id}`}
             />
-            <button onClick={() => onDeleteRoom(index)} className="delete-button">Delete</button>
+            <button onClick={() => onDeleteRoom(index)} className="delete-button" data-testid={`delete-room-button-${room.id}`}>Delete</button>
           </div>
           <div style={{ fontSize: '0.85em', color: '#999', marginBottom: '8px' }}>
             ID: {room.id}
@@ -112,6 +113,7 @@ export function RoomEditor({
                   type="number"
                   value={room.width}
                   onChange={(e) => onUpdateRoom(index, { ...room, width: Number(e.target.value) })}
+                  data-testid={`room-width-${room.id}`}
                 />
               </label>
               <label>
@@ -120,6 +122,7 @@ export function RoomEditor({
                   type="number"
                   value={room.depth}
                   onChange={(e) => onUpdateRoom(index, { ...room, depth: Number(e.target.value) })}
+                  data-testid={`room-depth-${room.id}`}
                 />
               </label>
             </div>
@@ -144,6 +147,7 @@ export function RoomEditor({
                     const currentAnchor = room.attachTo?.split(':')[1] || 'top-left';
                     onUpdateRoom(index, { ...room, attachTo: `${e.target.value}:${currentAnchor}` });
                   }}
+                  data-testid={`room-attach-to-${room.id}`}
                 >
                   {roomList.filter((r) => r.id !== room.id).map((r) => (
                     <option key={r.id} value={r.id}>{r.name}</option>
@@ -310,19 +314,20 @@ export function RoomEditor({
           <div className="objects-section">
             <div className="section-header-small">
               <span className="section-label">Objects in Room</span>
-              <button onClick={() => addRoomObject(index)} className="add-button-small">+ Add Object</button>
+              <button onClick={() => addRoomObject(index)} className="add-button-small" data-testid={`add-object-button-${room.id}`}>+ Add Object</button>
             </div>
             {(room.objects || []).map((obj, objIndex) => (
-              <div key={objIndex} className="object-card" data-room-id={room.id} data-object-index={objIndex}>
+              <div key={objIndex} className="object-card" data-room-id={room.id} data-object-index={objIndex} data-testid={`object-card-${room.id}-${objIndex}`}>
                 <div className="object-header">
                   <select
                     value={obj.type}
                     onChange={(e) => updateRoomObject(index, objIndex, { ...obj, type: e.target.value as 'square' | 'circle' })}
+                    data-testid={`object-type-${room.id}-${objIndex}`}
                   >
                     <option value="square">Square</option>
                     <option value="circle">Circle</option>
                   </select>
-                  <button onClick={() => deleteRoomObject(index, objIndex)} className="delete-button-small">×</button>
+                  <button onClick={() => deleteRoomObject(index, objIndex)} className="delete-button-small" data-testid={`delete-object-button-${room.id}-${objIndex}`}>×</button>
                 </div>
                 <div className="form-grid-small">
                   <label>

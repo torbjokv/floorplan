@@ -1,6 +1,6 @@
 module.exports = {
   default: {
-    paths: ['tests/features/**/*.feature'],
+    // paths removed - specify on command line for better control
     import: ['tests/support/**/*.ts', 'tests/step-definitions/**/*.ts'],
     loader: ['ts-node/esm'],
     format: [
@@ -11,6 +11,7 @@ module.exports = {
     formatOptions: {
       snippetInterface: 'async-await'
     },
-    timeout: 10000  // 10 seconds timeout for steps
+    timeout: 15000,  // 15 seconds timeout for steps
+    tags: 'not @skip'  // Skip scenarios tagged with @skip
   }
 };

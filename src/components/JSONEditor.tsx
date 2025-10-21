@@ -28,11 +28,11 @@ export function JSONEditor({ value, onChange, error, warnings }: JSONEditorProps
   }, [value]);
 
   return (
-    <div className="editor-container">
+    <div className="editor-container" data-testid="json-editor">
       <h2>📏 Floorplan JSON</h2>
       <div className="editor-wrapper">
         <div className={`editor-with-lines ${error || (warnings && warnings.length > 0) ? 'has-error' : ''}`}>
-          <div ref={lineNumbersRef} className="line-numbers">
+          <div ref={lineNumbersRef} className="line-numbers" data-testid="line-numbers">
             {lineNumbers.map(num => (
               <div key={num} className="line-number">
                 {num}
@@ -47,14 +47,15 @@ export function JSONEditor({ value, onChange, error, warnings }: JSONEditorProps
               onScroll={handleScroll}
               className="json-editor"
               spellCheck={false}
+              data-testid="json-textarea"
             />
             {error && (
-              <div className="json-error-overlay">
+              <div className="json-error-overlay" data-testid="json-error">
                 ❌ {error}
               </div>
             )}
             {!error && warnings && warnings.length > 0 && (
-              <div className="json-error-overlay json-warning-overlay">
+              <div className="json-error-overlay json-warning-overlay" data-testid="json-warnings">
                 <strong>⚠️ Positioning Errors:</strong>
                 <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
                   {warnings.map((warning, idx) => (

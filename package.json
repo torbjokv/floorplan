@@ -8,9 +8,16 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "NODE_OPTIONS='--loader ts-node/esm --experimental-specifier-resolution=node' TS_NODE_PROJECT=tsconfig.cucumber.json cucumber-js --config .cucumber.cjs",
-    "test:headed": "HEADLESS=false NODE_OPTIONS='--loader ts-node/esm --experimental-specifier-resolution=node' TS_NODE_PROJECT=tsconfig.cucumber.json cucumber-js --config .cucumber.cjs",
-    "test:ci": "NODE_OPTIONS='--loader ts-node/esm --experimental-specifier-resolution=node' TS_NODE_PROJECT=tsconfig.cucumber.json cucumber-js --config .cucumber.cjs"
+    "test": "NODE_OPTIONS='--loader ts-node/esm --experimental-specifier-resolution=node' TS_NODE_PROJECT=tsconfig.cucumber.json cucumber-js --config .cucumber.cjs 'tests/features/**/*.feature'",
+    "test:headed": "HEADLESS=false NODE_OPTIONS='--loader ts-node/esm --experimental-specifier-resolution=node' TS_NODE_PROJECT=tsconfig.cucumber.json cucumber-js --config .cucumber.cjs 'tests/features/**/*.feature'",
+    "test:ci": "NODE_OPTIONS='--loader ts-node/esm --experimental-specifier-resolution=node' TS_NODE_PROJECT=tsconfig.cucumber.json cucumber-js --config .cucumber.cjs 'tests/features/**/*.feature'",
+    "test:project-menu": "NODE_OPTIONS='--loader ts-node/esm --experimental-specifier-resolution=node' TS_NODE_PROJECT=tsconfig.cucumber.json cucumber-js --config .cucumber.cjs tests/features/project-menu.feature",
+    "test:gui-editor": "NODE_OPTIONS='--loader ts-node/esm --experimental-specifier-resolution=node' TS_NODE_PROJECT=tsconfig.cucumber.json cucumber-js --config .cucumber.cjs tests/features/gui-editor.feature",
+    "test:json-editor": "NODE_OPTIONS='--loader ts-node/esm --experimental-specifier-resolution=node' TS_NODE_PROJECT=tsconfig.cucumber.json cucumber-js --config .cucumber.cjs tests/features/json-editor.feature",
+    "test:room-positioning": "NODE_OPTIONS='--loader ts-node/esm --experimental-specifier-resolution=node' TS_NODE_PROJECT=tsconfig.cucumber.json cucumber-js --config .cucumber.cjs tests/features/room-positioning.feature",
+    "test:architectural": "NODE_OPTIONS='--loader ts-node/esm --experimental-specifier-resolution=node' TS_NODE_PROJECT=tsconfig.cucumber.json cucumber-js --config .cucumber.cjs tests/features/architectural-elements.feature",
+    "test:svg-rendering": "NODE_OPTIONS='--loader ts-node/esm --experimental-specifier-resolution=node' TS_NODE_PROJECT=tsconfig.cucumber.json cucumber-js --config .cucumber.cjs tests/features/svg-rendering.feature",
+    "test:error-handling": "NODE_OPTIONS='--loader ts-node/esm --experimental-specifier-resolution=node' TS_NODE_PROJECT=tsconfig.cucumber.json cucumber-js --config .cucumber.cjs tests/features/error-handling.feature"
   },
   "dependencies": {
     "react": "^19.1.1",
