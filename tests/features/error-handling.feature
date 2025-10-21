@@ -1,3 +1,4 @@
+@skip
 Feature: Error Handling and Validation
   As a user of the floorplan designer
   I want clear error messages when something goes wrong

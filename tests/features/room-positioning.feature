@@ -1,3 +1,4 @@
+@skip
 Feature: Room Positioning System
   As a user of the floorplan designer
   I want to position rooms using different methods

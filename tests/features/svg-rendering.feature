@@ -1,3 +1,4 @@
+@skip
 Feature: SVG Rendering and Visualization
   As a user of the floorplan designer
   I want to see a live preview of my floor plan

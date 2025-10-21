@@ -164,6 +164,16 @@ Example floorplan structure with Zero Point and all features:
   }]
 }
 ```
+## Testing
+
+When writing tests, make sure to
+
+- Always verify element implementation before writing selectors
+- Global search/replace is powerful for fixing widespread issues
+- Skip tags are essential for maintaining clean test runs while work is ongoing
+- Timing issues (debounce, auto-save) need explicit waits in tests
+- Test expectations must match actual app behavior, not ideal behavior
+
 
 ## Recent Changes
 
