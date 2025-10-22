@@ -31,10 +31,11 @@ A browser-based SVG floorplan designer for creating architectural floor plans th
 
 ### Project Management
 - **💾 Auto-Save** - Projects automatically saved to localStorage
-- **🔗 Share URLs** - Share projects with URL including project ID
+- **🔗 Share URLs** - Share projects with URL including project ID and name
 - **🔒 Read-Only Sharing** - Shared projects load as read-only (duplicate to edit)
 - **📁 Upload/Download** - Import and export JSON files
 - **📋 Duplicate** - Create copies of existing projects
+- **↩️ Undo/Redo** - Full history tracking with undo/redo controls
 
 ## 🚀 Quick Start
 
@@ -283,11 +284,12 @@ src/
 
 ### Key Components
 
-- **FloorplanRenderer**: Interactive SVG with click handlers, hover effects, and composite highlighting
-- **GUIEditor**: Visual form editor with dropdowns, anchor selectors, and object editor
+- **FloorplanRenderer**: Interactive SVG with click handlers, hover effects, composite highlighting, and drag-and-drop room positioning
+- **GUIEditor**: Visual form editor with dropdowns, anchor selectors, object editor, and collapsible sections
 - **JSONEditor**: Text editor with line numbers, synchronized scrolling, and error overlay
-- **Positioning System**: Zero Point-based positioning with dependency resolution
-- **Project Management**: localStorage with auto-save, sharing, and read-only mode for shared projects
+- **Positioning System**: Zero Point-based positioning with dependency resolution and offset support
+- **Project Management**: localStorage with auto-save, sharing, read-only mode for shared projects, and URL-based persistence
+- **Undo/Redo System**: Full history tracking with keyboard shortcuts (Ctrl+Z/Ctrl+Shift+Z)
 
 ## 🛠️ Development
 
@@ -424,6 +426,74 @@ Contributions are welcome! Please follow these steps:
 - Follow existing code formatting
 - Add comments for complex logic
 - Update tests if applicable
+
+## 🧪 Testing
+
+The project uses a comprehensive E2E test suite with **Cucumber/Gherkin** and **Playwright**.
+
+### Running Tests
+
+```bash
+# Run all tests
+npm run test
+
+# Run tests in headed mode (see browser)
+npm run test:headed
+
+# Run specific feature tests
+npm run test:project-menu      # Project management (12 scenarios) - 100% passing ✅
+npm run test:gui-editor         # GUI editor (27 scenarios) - 100% passing ✅
+npm run test:json-editor        # JSON editor (8 scenarios) - 100% passing ✅
+npm run test:room-positioning   # Room positioning (14 scenarios)
+npm run test:architectural      # Doors & windows (13 scenarios)
+npm run test:svg-rendering      # SVG rendering (21 scenarios)
+npm run test:error-handling     # Error handling (21 scenarios)
+```
+
+### Advanced Test Commands
+
+```bash
+# Run a specific feature file
+npm run test tests/features/project-menu.feature
+
+# Run a specific scenario by line number
+npm run test tests/features/gui-editor.feature:42
+
+# Run tests with specific tags
+npm run test -- --tags @smoke
+npm run test:ci -- --tags "@smoke and not @slow"
+
+# Run in headed mode for any test
+npm run test:headed tests/features/error-handling.feature
+
+# CI mode (sets CI=true environment variable)
+npm run test:ci
+```
+
+All test commands use a centralized runner at `scripts/run-cucumber.js` for consistent configuration.
+
+### Test Statistics
+
+- **Total Scenarios:** 68
+- **Current Pass Rate:** 53 scenarios passing (78%)
+- **Full Suite Time:** ~90 seconds
+- **Individual Features:** 7-50 seconds each
+
+### Documentation
+
+- See [TESTING.md](TESTING.md) for comprehensive testing guide
+- See [TEST-STATUS.md](TEST-STATUS.md) for current test status and known issues
+
+### Test Features
+
+The test suite covers:
+- ✅ Project management (100% passing)
+- ✅ GUI editor operations (100% passing)
+- ✅ JSON editor functionality (87% passing)
+- Room positioning and Zero Point system
+- Door and window placement
+- SVG rendering and interactions
+- Error handling and validation
 
 ## 📄 License
 

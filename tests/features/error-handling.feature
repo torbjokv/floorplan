@@ -1,4 +1,3 @@
-@skip
 Feature: Error Handling and Validation
   As a user of the floorplan designer
   I want clear error messages when something goes wrong
@@ -46,7 +45,7 @@ Feature: Error Handling and Validation
     And the error should explain the circular reference
 
   Scenario: Invalid room reference error
-    When I create a room attached to "GhostRoom:top-left"
+    When I create a room with invalid reference "GhostRoom:top-left"
     And I wait for 600ms
     Then an error should indicate the room doesn't exist
     And the error should mention "GhostRoom"

@@ -21,6 +21,8 @@ The test suite uses **Cucumber/Gherkin** for behavior-driven development (BDD) w
 
 ## Running Tests
 
+All test commands use the centralized test runner at `scripts/run-cucumber.js` which handles Node.js configuration and environment setup.
+
 ### Run All Tests
 ```bash
 npm run test
@@ -34,15 +36,46 @@ npm run test:headed
 ### Run Specific Feature Tests
 ```bash
 npm run test:project-menu      # Project management tests (12 scenarios) - ~20 seconds
-npm run test:gui-editor         # GUI editor tests (47 scenarios) - ~80 seconds
-npm run test:json-editor        # JSON editor tests (13 scenarios) - ~22 seconds
+npm run test:gui-editor         # GUI editor tests (27 scenarios) - ~15 seconds
+npm run test:json-editor        # JSON editor tests (8 scenarios) - ~7 seconds
 npm run test:room-positioning   # Room positioning tests (15 scenarios) - ~25 seconds
 npm run test:architectural      # Doors & windows tests (13 scenarios) - ~22 seconds
 npm run test:svg-rendering      # SVG rendering tests (21 scenarios) - ~35 seconds
-npm run test:error-handling     # Error handling tests (15 scenarios) - ~25 seconds
+npm run test:error-handling     # Error handling tests (21 scenarios) - ~50 seconds
 ```
 
 **✅ These now run ONLY the specified feature file** (not all tests) for much faster feedback during development!
+
+### Advanced Test Running
+
+The test runner supports flexible test execution patterns:
+
+#### Run a specific feature file
+```bash
+npm run test tests/features/project-menu.feature
+```
+
+#### Run a specific scenario by line number
+```bash
+npm run test tests/features/gui-editor.feature:42
+```
+
+#### Run tests with specific tags
+```bash
+npm run test -- --tags @smoke
+npm run test:ci -- --tags "@smoke and not @slow"
+```
+
+#### Run in headed mode for any test
+```bash
+npm run test:headed tests/features/error-handling.feature
+```
+
+#### CI mode (sets CI=true environment variable)
+```bash
+npm run test:ci
+npm run test:ci -- --tags @critical
+```
 
 ### Skipping Tests
 
@@ -289,6 +322,40 @@ npm run test:headed  # See the browser
 3. **Add console.log** in step definitions for debugging
 4. **Use page.pause()** to pause execution and inspect
 5. **Check the HTML report** in `test-results/cucumber-report.html`
+
+## Test Runner Configuration
+
+The test suite uses a centralized Node.js script at `scripts/run-cucumber.js` to handle test execution. This provides:
+
+### Architecture
+
+The runner script:
+1. **Configures Node.js options** - Automatically sets `--loader ts-node/esm` and `--experimental-specifier-resolution=node`
+2. **Sets TypeScript config** - Uses `tsconfig.cucumber.json` for test compilation
+3. **Passes through arguments** - Supports feature files, line numbers, tags, etc.
+4. **Manages environment** - Inherits and extends environment variables (HEADLESS, CI)
+5. **Executes via npx** - Runs `cucumber-js` from node_modules
+
+### Benefits
+
+- **DRY principle** - Configuration is centralized instead of repeated in each script
+- **Maintainability** - Changes to Node options only need to be made once
+- **Flexibility** - Supports all Cucumber CLI arguments through pass-through
+- **Consistency** - All test commands use identical configuration
+
+### Customization
+
+To modify test configuration, edit `scripts/run-cucumber.js`:
+
+```javascript
+// Example: Add additional Node options
+const nodeOptions = [
+  '--loader',
+  'ts-node/esm',
+  '--experimental-specifier-resolution=node',
+  '--max-old-space-size=4096'  // Increase memory limit
+];
+```
 
 ## Resources
 

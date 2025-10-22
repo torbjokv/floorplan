@@ -303,11 +303,6 @@ When('I paste invalid JSON', async function(this: FloorplanWorld) {
   await jsonTextarea.fill('{ invalid: json }');
 });
 
-Then('the floorplan should render successfully', async function(this: FloorplanWorld) {
-  const svg = this.page.locator('.floorplan-svg');
-  await expect(svg).toBeVisible();
-});
-
 Then('the error should contain {string}', async function(this: FloorplanWorld, expectedText: string) {
   const errorOverlay = this.page.getByTestId('json-editor').getByTestId('json-error');
   const errorText = await errorOverlay.textContent();

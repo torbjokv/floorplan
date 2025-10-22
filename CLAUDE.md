@@ -33,12 +33,13 @@ This system is implemented in [src/utils.ts](src/utils.ts):
 ### Component Architecture
 
 - **[App.tsx](src/App.tsx)**: Main application component with tabbed interface (JSON/GUI editors), project management, and preview. Features:
-  - 500ms debounced auto-update when JSON changes
-  - URL-based persistence (project ID + JSON encoded in hash)
+  - 500ms debounced auto-update when JSON, project ID, or project name changes
+  - URL-based persistence (project ID + project name + JSON encoded in hash)
   - localStorage-based project management with auto-save (disabled for shared projects)
   - Read-only mode for projects loaded from shared URLs (must duplicate to edit)
   - Dark theme UI
   - Project controls in preview section header
+  - Undo/redo functionality with history tracking
 - **[JSONEditor.tsx](src/components/JSONEditor.tsx)**: Text editor with line numbers, synchronized scrolling, and error overlay display.
 - **[GUIEditor.tsx](src/components/GUIEditor.tsx)**: Visual form-based editor with:
   - Grid settings configuration
@@ -166,18 +167,82 @@ Example floorplan structure with Zero Point and all features:
 ```
 ## Testing
 
-When writing tests, make sure to
+The project uses **Cucumber/Gherkin** for behavior-driven development (BDD) with **Playwright** for E2E browser automation.
 
-- Always verify element implementation before writing selectors
-- Global search/replace is powerful for fixing widespread issues
-- Cloude is not allowed to write skip, but can ask what we should do with the failing tasks.
-- Timing issues (debounce, auto-save) need explicit waits in tests
-- Test expectations must match actual app behavior, not ideal behavior
+### Test Commands
+
+```bash
+# Run all tests (full suite, ~4 minutes)
+npm run test
+
+# Run tests in headed mode (see browser)
+npm run test:headed
+
+# Run specific feature tests (faster, 20-90 seconds each)
+npm run test:project-menu      # Project management - 100% passing ✅
+npm run test:gui-editor         # GUI editor - 71% passing
+npm run test:json-editor        # JSON editor
+npm run test:room-positioning   # Room positioning
+npm run test:architectural      # Doors & windows
+npm run test:svg-rendering      # SVG rendering
+npm run test:error-handling     # Error handling
+```
+
+### Test Suite Overview
+
+- **Total Scenarios:** 111
+- **Current Pass Rate:** 32 scenarios (29%), 162 steps passing
+- **Feature Files:** 7 files in `tests/features/`
+- **Step Definitions:** 7 files in `tests/step-definitions/`
+- **Test IDs:** Comprehensive `data-testid` attributes added throughout components
+
+### Test Documentation
+
+- **[TESTING.md](TESTING.md)**: Comprehensive guide to writing and running tests
+- **[TEST-STATUS.md](TEST-STATUS.md)**: Current test status, known issues, and progress tracking
+
+### Writing Tests - Best Practices
+
+When writing or updating tests:
+
+- **Verify element implementation** - Always check actual DOM structure before writing selectors
+- **Use data-testid attributes** - More reliable than CSS classes or complex selectors
+- **Handle timing issues** - Account for debouncing (500ms auto-update, 1s auto-save)
+- **Test actual behavior** - Test expectations must match actual app behavior, not ideal behavior
+- **Global search/replace** - Powerful for fixing widespread selector issues
+- **Run specific features** - Use individual test commands for faster feedback during development
+
+### Test Coverage
+
+The test suite covers:
+1. **Project Menu** (100% passing ✅) - Project management, save/load, sharing
+2. **GUI Editor** (71% passing) - Form controls, room/door/window management
+3. **JSON Editor** - Text editing, validation, line numbers
+4. **Room Positioning** - Zero Point system, relative positioning, offsets
+5. **Architectural Elements** - Doors, windows, wall positioning
+6. **SVG Rendering** - ViewBox, grid, hover effects, click handlers
+7. **Error Handling** - JSON errors, positioning errors, validation
+
+### Known Testing Issues
+
+- **Tab switching timeout** - JSON editor tests blocked by tab selector issues
+- **Room ID generation** - Tests expect specific IDs but app generates different ones
+- **Undefined steps** - Many scenarios have placeholder implementations (expected during development)
+- **Timing-sensitive tests** - Some tests need explicit waits for debounced updates
+
+### Skipping Tests
+
+Claude is not allowed to add `@skip` tags to tests. If tests are failing:
+1. Investigate the root cause
+2. Ask the user what should be done with failing tests
+3. User can manually add `@skip` tags if needed
 
 
 ## Recent Changes
 
 ### Latest Updates (Current Session)
+- **URL Update Fix**: Fixed bug where changing project name didn't update the URL - URL now updates when project ID, project name, or JSON changes
+- **Undo/Redo System**: Full history tracking for JSON changes with undo/redo controls in preview section
 - **Zero Point System** ⚫ (BREAKING CHANGE): Virtual anchor point at (0,0) for unified positioning
   - Renamed from "Foundation Stone" to "Zero Point" everywhere
   - No more "first room" special logic - all rooms use same positioning system
@@ -198,11 +263,11 @@ When writing tests, make sure to
   - Auto-generation of IDs in GUI editor (e.g., "livingroom1", "kitchen1")
 - **Project Management Improvements**:
   - Shared projects are read-only (must duplicate to edit)
-  - Project ID in URL for better tracking
+  - Project ID and name in URL for better tracking and sharing
   - Upload, Duplicate, Download, Share buttons in Projects menu
   - Projects menu moved to preview section header with Manual link
 - **Interactive Features**:
-  - Click rooms in SVG to scroll to their configuration in GUI editor
+  - Click rooms, doors, windows, and objects in SVG to scroll to their configuration in GUI editor
   - Composite rooms highlight all parts together on hover
   - Hover effects on all SVG elements (rooms, doors, windows, objects)
 - **Door Types**: New `type` property - "normal" (with swing arc) or "opening" (without arc)

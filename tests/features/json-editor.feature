@@ -26,7 +26,6 @@ Feature: JSON Editor
     Then no JSON error should be displayed
     And the floorplan should render successfully
 
-  @skip
   Scenario: JSON syntax validation with invalid JSON
     When I switch to the JSON tab
     And I enter invalid JSON in the editor

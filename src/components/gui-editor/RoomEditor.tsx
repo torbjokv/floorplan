@@ -175,6 +175,7 @@ export function RoomEditor({
                 Offset X (mm):
                 <input
                   type="number"
+                  data-testid={`room-offset-x-${room.id}`}
                   value={room.offset?.[0] ?? 0}
                   onChange={(e) => {
                     const newOffset: [number, number] = [Number(e.target.value), room.offset?.[1] ?? 0];
@@ -186,6 +187,7 @@ export function RoomEditor({
                 Offset Y (mm):
                 <input
                   type="number"
+                  data-testid={`room-offset-y-${room.id}`}
                   value={room.offset?.[1] ?? 0}
                   onChange={(e) => {
                     const newOffset: [number, number] = [room.offset?.[0] ?? 0, Number(e.target.value)];
@@ -352,6 +354,7 @@ export function RoomEditor({
                         Width:
                         <input
                           type="number"
+                          data-testid={`object-width-${room.id}-${objIndex}`}
                           value={obj.width || 1000}
                           onChange={(e) => updateRoomObject(index, objIndex, { ...obj, width: Number(e.target.value) })}
                         />
@@ -360,6 +363,7 @@ export function RoomEditor({
                         Height:
                         <input
                           type="number"
+                          data-testid={`object-height-${room.id}-${objIndex}`}
                           value={obj.height || 1000}
                           onChange={(e) => updateRoomObject(index, objIndex, { ...obj, height: Number(e.target.value) })}
                         />
@@ -370,6 +374,7 @@ export function RoomEditor({
                       Radius:
                       <input
                         type="number"
+                        data-testid={`object-radius-${room.id}-${objIndex}`}
                         value={obj.radius || 500}
                         onChange={(e) => updateRoomObject(index, objIndex, { ...obj, radius: Number(e.target.value) })}
                       />

@@ -334,6 +334,10 @@ Given('I have {int} rooms in the GUI editor', async function(this: FloorplanWorl
   for (let i = currentCount; i < count; i++) {
     await this.page.getByTestId('add-room-button').click();
   }
+
+  // Store the room count for later comparison
+  const finalCount = await this.page.locator('[data-testid^="room-card-"]').count();
+  (this as any).roomCount = finalCount;
 });
 
 When('I click delete on the first room', async function(this: FloorplanWorld) {
@@ -378,39 +382,80 @@ Then('the JSON should contain the updated value', async function(this: Floorplan
 
 // Stubs for remaining scenarios (to be implemented)
 Then('offset fields should be visible', async function(this: FloorplanWorld) {
-  expect(true).toBe(true); // TODO: Implement
+  const roomId = (this as any).currentRoomId;
+  const offsetXInput = this.page.getByTestId(`room-offset-x-${roomId}`);
+  const offsetYInput = this.page.getByTestId(`room-offset-y-${roomId}`);
+  await expect(offsetXInput).toBeVisible();
+  await expect(offsetYInput).toBeVisible();
 });
 
-Then('absolute x/y fields should show offset values', async function(this: FloorplanWorld) {
-  expect(true).toBe(true); // TODO: Implement
+Then('absolute x\\/y fields should show offset values', async function(this: FloorplanWorld) {
+  const roomId = (this as any).currentRoomId;
+  const offsetXInput = this.page.getByTestId(`room-offset-x-${roomId}`);
+  const offsetYInput = this.page.getByTestId(`room-offset-y-${roomId}`);
+  // The offset fields should exist and show numeric values
+  await expect(offsetXInput).toBeVisible();
+  await expect(offsetYInput).toBeVisible();
+  const xValue = await offsetXInput.inputValue();
+  const yValue = await offsetYInput.inputValue();
+  expect(xValue).toMatch(/^\d+$/);
+  expect(yValue).toMatch(/^\d+$/);
 });
 
 When('I add a room object', async function(this: FloorplanWorld) {
-  const roomId = (this as any).currentRoomId || 'room1';
+  const roomId = (this as any).currentRoomId;
   const addObjectButton = this.page.getByTestId(`add-object-button-${roomId}`);
-  if (await addObjectButton.isVisible()) {
-    await addObjectButton.click();
-  }
+  await addObjectButton.click();
+  // Store that we've added an object
+  (this as any).hasObject = true;
 });
 
 Then('object configuration fields should appear', async function(this: FloorplanWorld) {
-  expect(true).toBe(true); // TODO: Implement
+  const roomId = (this as any).currentRoomId;
+  // Check for the first object card
+  const objectCard = this.page.getByTestId(`object-card-${roomId}-0`);
+  await expect(objectCard).toBeVisible();
 });
 
 Then('I should be able to set object type, position, and properties', async function(this: FloorplanWorld) {
-  expect(true).toBe(true); // TODO: Implement
+  const roomId = (this as any).currentRoomId;
+  // Check that the object type selector is visible
+  const objectTypeSelect = this.page.getByTestId(`object-type-${roomId}-0`);
+  await expect(objectTypeSelect).toBeVisible();
+  // Verify we can see the various fields (looking for actual field labels)
+  const objectCard = this.page.getByTestId(`object-card-${roomId}-0`);
+  await expect(objectCard).toContainText('X:');
+  await expect(objectCard).toContainText('Y:');
+  await expect(objectCard).toContainText('Color:');
 });
 
-When('I change type to {string}', async function(this: FloorplanWorld, objectType: string) {
-  expect(true).toBe(true); // TODO: Implement
+When('I select object type {string}', async function(this: FloorplanWorld, objectType: string) {
+  const roomId = (this as any).currentRoomId;
+  const objectTypeSelect = this.page.getByTestId(`object-type-${roomId}-0`);
+  await objectTypeSelect.selectOption(objectType);
+});
+
+When('I change object type to {string}', async function(this: FloorplanWorld, objectType: string) {
+  const roomId = (this as any).currentRoomId;
+  const objectTypeSelect = this.page.getByTestId(`object-type-${roomId}-0`);
+  await objectTypeSelect.selectOption(objectType);
 });
 
 Then('width and height fields should be visible', async function(this: FloorplanWorld) {
-  expect(true).toBe(true); // TODO: Implement
+  const roomId = (this as any).currentRoomId;
+  const widthInput = this.page.getByTestId(`object-width-${roomId}-0`);
+  const heightInput = this.page.getByTestId(`object-height-${roomId}-0`);
+  await expect(widthInput).toBeVisible();
+  await expect(heightInput).toBeVisible();
 });
 
 Then('radius field should be visible instead', async function(this: FloorplanWorld) {
-  expect(true).toBe(true); // TODO: Implement
+  const roomId = (this as any).currentRoomId;
+  const radiusInput = this.page.getByTestId(`object-radius-${roomId}-0`);
+  await expect(radiusInput).toBeVisible();
+  // And width/height should not be visible
+  const widthInput = this.page.getByTestId(`object-width-${roomId}-0`);
+  await expect(widthInput).not.toBeVisible();
 });
 
 When('I configure a room object', async function(this: FloorplanWorld) {
@@ -474,14 +519,21 @@ Given('I have a door configured', async function(this: FloorplanWorld) {
 });
 
 When('I click delete on the door', async function(this: FloorplanWorld) {
+  // Store the initial count
+  const doorCards = this.page.locator('[data-testid^="door-card-"]');
+  const initialCount = await doorCards.count();
+  (this as any).doorCount = initialCount;
+
   const deleteButton = this.page.getByTestId('delete-door-button-0');
   await deleteButton.click();
 });
 
 Then('the door should be removed', async function(this: FloorplanWorld) {
-  await this.page.waitForTimeout(600); // Wait for auto-save debounce
+  await this.page.waitForTimeout(700); // Wait for auto-save debounce + UI update
   const doorCards = this.page.locator('[data-testid^="door-card-"]');
-  expect(await doorCards.count()).toBe(0);
+  const finalCount = await doorCards.count();
+  const initialCount = (this as any).doorCount || 1;
+  expect(finalCount).toBe(initialCount - 1);
 });
 
 Given('I have a window configured', async function(this: FloorplanWorld) {
@@ -497,14 +549,21 @@ Given('I have a window configured', async function(this: FloorplanWorld) {
 });
 
 When('I click delete on the window', async function(this: FloorplanWorld) {
+  // Store the initial count
+  const windowCards = this.page.locator('[data-testid^="window-card-"]');
+  const initialCount = await windowCards.count();
+  (this as any).windowCount = initialCount;
+
   const deleteButton = this.page.getByTestId('delete-window-button-0');
   await deleteButton.click();
 });
 
 Then('the window should be removed', async function(this: FloorplanWorld) {
-  await this.page.waitForTimeout(600); // Wait for auto-save debounce
+  await this.page.waitForTimeout(700); // Wait for auto-save debounce + UI update
   const windowCards = this.page.locator('[data-testid^="window-card-"]');
-  expect(await windowCards.count()).toBe(0);
+  const finalCount = await windowCards.count();
+  const initialCount = (this as any).windowCount || 1;
+  expect(finalCount).toBe(initialCount - 1);
 });
 
 // Additional stubs for remaining scenarios

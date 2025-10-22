@@ -42,32 +42,30 @@ Feature: GUI Editor Interface
     Then anchor corner selector should appear
     And I should be able to select a corner
 
-  @skip
   Scenario: Zero Point attachment in GUI
+    Given I have a room in the GUI editor
     When I select "Zero Point" in the attachTo dropdown
     Then the corner selector should be hidden
     And the room should attach to zero point
 
-  @skip
   Scenario: Collapsible coordinate fields
     Given I have a room in the GUI editor
     When the room uses attachTo positioning
     Then offset fields should be visible
     And absolute x/y fields should show offset values
 
-  @skip
   Scenario: Room objects editor in GUI
     Given I have a room in the GUI editor
     When I add a room object
     Then object configuration fields should appear
     And I should be able to set object type, position, and properties
 
-  @skip
   Scenario: Room object type selection (square/circle)
+    Given I have a room in the GUI editor
     When I add a room object
-    And I select type "square"
+    And I select object type "square"
     Then width and height fields should be visible
-    When I change type to "circle"
+    When I change object type to "circle"
     Then radius field should be visible instead
 
   Scenario: Room object dual anchor system in GUI
@@ -100,21 +98,18 @@ Feature: GUI Editor Interface
     Then window configuration fields should appear
     And I should be able to set room, wall, width, and offset
 
-  @skip
   Scenario: Deleting a room via GUI
     Given I have 2 rooms in the GUI editor
     When I click delete on the first room
     Then the room should be removed from the list
     And the preview should update without that room
 
-  @skip
   Scenario: Deleting a door via GUI
     Given I have a door configured
     When I click delete on the door
     Then the door should be removed
     And the preview should update
 
-  @skip
   Scenario: Deleting a window via GUI
     Given I have a window configured
     When I click delete on the window

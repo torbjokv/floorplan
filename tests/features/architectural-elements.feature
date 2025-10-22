@@ -1,4 +1,3 @@
-@skip
 Feature: Architectural Elements
   As a user of the floorplan designer
   I want to add doors and windows to my floor plan

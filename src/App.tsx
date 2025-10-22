@@ -263,7 +263,7 @@ function App() {
     }, 500); // Debounce 500ms
 
     return () => clearTimeout(timer);
-  }, [jsonText]);
+  }, [jsonText, projectId, projectName]);
 
   // ============================================================================
   // Event Handlers
