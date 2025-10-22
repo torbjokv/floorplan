@@ -1,4 +1,3 @@
-@skip
 Feature: SVG Rendering and Visualization
   As a user of the floorplan designer
   I want to see a live preview of my floor plan
@@ -13,13 +12,13 @@ Feature: SVG Rendering and Visualization
     And the SVG should have a valid viewBox
 
   Scenario: Dynamic viewBox calculation based on content
-    When I create a room with dimensions 4000x3000 at position 0,0
+    When I create a room with dimensions 4000x3000 attached to Zero Point
     Then the viewBox should encompass the room with padding
     And the viewBox should include 10% padding around content
 
   Scenario: ViewBox updates when adding new rooms
-    Given I have a room at 0,0 with size 2000x2000
-    When I add another room at 5000,5000 with size 2000x2000
+    Given I have a room attached to Zero Point with size 2000x2000
+    When I add another room attached to the first with size 2000x2000
     And I wait for 600ms
     Then the viewBox should expand to include both rooms
     And both rooms should be visible in the preview
@@ -101,9 +100,9 @@ Feature: SVG Rendering and Visualization
     Then the object's top-left should align with room's bottom-right
     And the object should be positioned correctly relative to the room
 
-  Scenario: Coordinate system verification (0,0 is top-left)
-    When I create a room at coordinates 0,0
-    Then the room should appear at the top-left of the viewBox
+  Scenario: Coordinate system verification (Zero Point is origin)
+    When I create a room attached to Zero Point
+    Then the room should appear at the origin of the viewBox
     And the coordinate system origin should be verified
 
   Scenario: Y-axis increases downward
