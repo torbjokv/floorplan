@@ -1,37 +1,26 @@
-@skip
 Feature: Room Positioning System
   As a user of the floorplan designer
-  I want to position rooms using different methods
+  I want to position rooms using the Zero Point and relative positioning system
   So that I can create complex floor plans easily
 
   Background:
     Given I am on the floorplan designer page
     And localStorage is cleared
 
-  Scenario: Absolute positioning with x and y coordinates
-    When I create a room with absolute coordinates x=1000 y=2000
-    Then the room should be positioned at 1000, 2000
-    And the room should be visible in the preview
-
-  Scenario: Default absolute positioning (0, 0)
-    When I create a room without x and y coordinates
-    Then the room should be positioned at 0, 0
-    And the room should be visible in the preview
-
   Scenario: Relative positioning using attachTo
-    Given I have a room named "Living Room" at 0, 0
+    Given I have a room named "Living Room" attached to Zero Point
     When I create a room attached to "Living Room:top-right"
     Then the new room should be positioned adjacent to Living Room
     And both rooms should be visible in the preview
 
   Scenario: Using offset with relative positioning
-    Given I have a room named "Kitchen" at 0, 0
+    Given I have a room named "Kitchen" attached to Zero Point
     When I create a room attached to "Kitchen:bottom-left" with offset 500, 200
     Then the new room should be offset by 500mm in x and 200mm in y
     And the rooms should have a visible gap
 
   Scenario: Anchor point selection for attachment
-    Given I have a room named "Bedroom" at 1000, 1000
+    Given I have a room named "Bedroom" attached to Zero Point
     When I create a room with anchor "bottom-right" attached to "Bedroom:top-left"
     Then the room's bottom-right corner should align with Bedroom's top-left
     And both rooms should be correctly positioned
