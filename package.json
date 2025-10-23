@@ -5,19 +5,24 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "npm run lint && npm run format:check && tsc -b && vite build",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "preview": "vite preview",
     "test": "node scripts/run-cucumber.js",
     "test:headed": "HEADLESS=false node scripts/run-cucumber.js",
     "test:ci": "CI=true node scripts/run-cucumber.js",
+    "test:coverage": "vitest run --coverage",
     "test:project-menu": "node scripts/run-cucumber.js tests/features/project-menu.feature",
     "test:gui-editor": "node scripts/run-cucumber.js tests/features/gui-editor.feature",
     "test:json-editor": "node scripts/run-cucumber.js tests/features/json-editor.feature",
     "test:room-positioning": "node scripts/run-cucumber.js tests/features/room-positioning.feature",
     "test:architectural": "node scripts/run-cucumber.js tests/features/architectural-elements.feature",
     "test:svg-rendering": "node scripts/run-cucumber.js tests/features/svg-rendering.feature",
-    "test:error-handling": "node scripts/run-cucumber.js tests/features/error-handling.feature"
+    "test:error-handling": "node scripts/run-cucumber.js tests/features/error-handling.feature",
+    "validate": "npm run lint && npm run format:check && npm run test"
   },
   "dependencies": {
     "react": "^19.1.1",
@@ -31,14 +36,19 @@
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^5.0.4",
+    "@vitest/coverage-v8": "^4.0.1",
     "eslint": "^9.36.0",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.0.0",
     "eslint-plugin-react-refresh": "^0.4.24",
+    "eslint-plugin-unused-imports": "^4.3.0",
     "globals": "^16.4.0",
+    "prettier": "^3.6.2",
     "ts-node": "^10.9.2",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.1",
     "vite": "^7.1.11",
+    "vitest": "^4.0.1",
     "wait-on": "^9.0.1"
   }
 }
