@@ -59,7 +59,7 @@ function EditableRoomLabel({ room, x, y, onNameUpdate }: EditableRoomLabelProps)
           ref={inputRef}
           type="text"
           value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
+          onChange={e => setEditValue(e.target.value)}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           style={{
@@ -73,7 +73,7 @@ function EditableRoomLabel({ room, x, y, onNameUpdate }: EditableRoomLabelProps)
             background: 'white',
             color: 'black',
             outline: 'none',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
           }}
         />
       </foreignObject>
@@ -102,7 +102,9 @@ interface RoomRendererProps {
   hoveredCorner: { roomId: string; corner: Anchor } | null;
   isConnected: boolean;
   mm: (val: number) => number;
-  resolveCompositeRoom: (room: ResolvedRoom) => Array<{ x: number; y: number; width: number; depth: number }>;
+  resolveCompositeRoom: (
+    room: ResolvedRoom
+  ) => Array<{ x: number; y: number; width: number; depth: number }>;
   getCorner: (room: ResolvedRoom, corner: Anchor) => { x: number; y: number };
   onMouseDown: (e: React.MouseEvent<SVGElement>, roomId: string) => void;
   onClick?: (roomId: string) => void;
@@ -118,16 +120,13 @@ export function RoomRenderer({
   resolveCompositeRoom,
   onMouseDown,
   onClick,
-  onNameUpdate
+  onNameUpdate,
 }: RoomRendererProps) {
   const parts = resolveCompositeRoom(room);
 
   // For composite rooms, draw all rectangles WITH borders, then cover internal borders
   if (parts.length > 0) {
-    const allParts = [
-      { x: room.x, y: room.y, width: room.width, depth: room.depth },
-      ...parts
-    ];
+    const allParts = [{ x: room.x, y: room.y, width: room.width, depth: room.depth }, ...parts];
 
     // Find shared edges between rectangles
     interface Edge {
@@ -156,7 +155,7 @@ export function RoomRenderer({
             y1: overlapTop,
             x2: a.x + a.width,
             y2: overlapBottom,
-            isVertical: true
+            isVertical: true,
           });
         } else if (b.x + b.width === a.x && !(a.y + a.depth <= b.y || b.y + b.depth <= a.y)) {
           // B's right edge touches A's left edge
@@ -167,7 +166,7 @@ export function RoomRenderer({
             y1: overlapTop,
             x2: b.x + b.width,
             y2: overlapBottom,
-            isVertical: true
+            isVertical: true,
           });
         }
 
@@ -181,7 +180,7 @@ export function RoomRenderer({
             y1: a.y + a.depth,
             x2: overlapRight,
             y2: a.y + a.depth,
-            isVertical: false
+            isVertical: false,
           });
         } else if (b.y + b.depth === a.y && !(a.x + a.width <= b.x || b.x + b.width <= a.x)) {
           // B's bottom edge touches A's top edge
@@ -192,7 +191,7 @@ export function RoomRenderer({
             y1: b.y + b.depth,
             x2: overlapRight,
             y2: b.y + b.depth,
-            isVertical: false
+            isVertical: false,
           });
         }
       }
@@ -200,17 +199,11 @@ export function RoomRenderer({
 
     // Apply drag offset if this room is being dragged
     const isDragging = dragState?.roomId === room.id;
-    const transform = isDragging && dragOffset
-      ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})`
-      : undefined;
+    const transform =
+      isDragging && dragOffset ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})` : undefined;
 
     return (
-      <g
-        key={room.id}
-        className="composite-room"
-        data-room-id={room.id}
-        transform={transform}
-      >
+      <g key={room.id} className="composite-room" data-room-id={room.id} transform={transform}>
         {/* Layer 1: All rectangles WITH borders */}
         <rect
           className="room-rect composite-part"
@@ -223,7 +216,7 @@ export function RoomRenderer({
           strokeWidth={isConnected ? '3' : '2'}
           opacity={isConnected ? 0.7 : 1}
           onClick={() => onClick?.(room.id)}
-          onMouseDown={(e) => onMouseDown(e, room.id)}
+          onMouseDown={e => onMouseDown(e, room.id)}
           style={{ cursor: dragState?.roomId === room.id ? 'grabbing' : 'grab' }}
         />
         {parts.map((part, idx) => (
@@ -269,9 +262,8 @@ export function RoomRenderer({
   // Simple room without parts
   // Apply drag offset if this room is being dragged
   const isDragging = dragState?.roomId === room.id;
-  const transform = isDragging && dragOffset
-    ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})`
-    : undefined;
+  const transform =
+    isDragging && dragOffset ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})` : undefined;
 
   return (
     <g key={room.id} transform={transform}>
@@ -286,7 +278,7 @@ export function RoomRenderer({
         strokeWidth={isConnected ? '3' : '2'}
         opacity={isConnected ? 0.7 : 1}
         onClick={() => onClick?.(room.id)}
-        onMouseDown={(e) => onMouseDown(e, room.id)}
+        onMouseDown={e => onMouseDown(e, room.id)}
         style={{ cursor: dragState?.roomId === room.id ? 'grabbing' : 'grab' }}
       />
 

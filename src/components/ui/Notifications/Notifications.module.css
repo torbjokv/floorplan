@@ -11,7 +11,9 @@
   font-size: var(--font-md);
   box-shadow: var(--shadow-success);
   z-index: var(--z-notification);
-  animation: slideInTop var(--transition-medium) ease-out, fadeOut var(--transition-medium) ease-in 0.7s;
+  animation:
+    slideInTop var(--transition-medium) ease-out,
+    fadeOut var(--transition-medium) ease-in 0.7s;
 }
 
 .copy {

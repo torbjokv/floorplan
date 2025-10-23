@@ -7,7 +7,14 @@ interface GridRendererProps {
   mm: (val: number) => number;
 }
 
-export function GridRenderer({ gridMinX, gridMinY, gridMaxX, gridMaxY, gridStep, mm }: GridRendererProps) {
+export function GridRenderer({
+  gridMinX,
+  gridMinY,
+  gridMaxX,
+  gridMaxY,
+  gridStep,
+  mm,
+}: GridRendererProps) {
   const lines = [];
 
   // Vertical lines

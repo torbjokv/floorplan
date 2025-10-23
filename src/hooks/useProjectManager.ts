@@ -100,7 +100,7 @@ export function useProjectManager() {
       id: projectId,
       name: projectName,
       json: currentJson || '',
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     const newId = generateProjectId();
@@ -116,7 +116,7 @@ export function useProjectManager() {
       id: newId,
       name: newName,
       json: sourceProject.json,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     const updated = [duplicatedProject, ...savedProjects];

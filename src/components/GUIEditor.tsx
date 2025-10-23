@@ -114,7 +114,7 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
   // Add Zero Point as first option
   const roomList = [
     { id: 'zeropoint', name: '⚫ Zero Point (0,0)' },
-    ...localData.rooms.map(r => ({ id: r.id, name: r.name || r.id }))
+    ...localData.rooms.map(r => ({ id: r.id, name: r.name || r.id })),
   ];
 
   return (
@@ -146,10 +146,7 @@ export function GUIEditor({ data, onChange }: GUIEditorProps) {
         onDeleteWindow={deleteWindow}
       />
 
-      <GridSettings
-        gridStep={localData.grid_step}
-        onGridStepChange={updateGridStep}
-      />
+      <GridSettings gridStep={localData.grid_step} onGridStepChange={updateGridStep} />
     </div>
   );
 }

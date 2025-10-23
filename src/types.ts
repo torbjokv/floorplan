@@ -14,13 +14,11 @@ export interface RoomObject {
   type: 'square' | 'circle';
   x: number;
   y: number;
-  width?: number; // For squares
-  height?: number; // For squares
-  radius?: number; // For circles
+  width: number; // Width for squares, diameter for circles
+  height?: number; // Height for squares (if omitted, uses width for square objects)
   color?: string;
   text?: string; // Optional text in center
-  anchor?: Anchor; // For squares only - which corner of the object is the anchor point
-  roomAnchor?: Anchor; // Which corner of the room the x,y coordinates reference
+  anchor?: Anchor; // Dual purpose: which room corner to attach to AND which object point to anchor (defaults to top-left)
 }
 
 export interface Room {
@@ -36,14 +34,18 @@ export interface Room {
 }
 
 export type WallPosition = 'top' | 'bottom' | 'left' | 'right';
-export type SwingDirection = 'inwards-left' | 'inwards-right' | 'outwards-left' | 'outwards-right';
+export type SwingDirection =
+  | 'inwards-left'
+  | 'inwards-right'
+  | 'outwards-left'
+  | 'outwards-right'
+  | 'opening'; // No door blade, just the opening
 
 export interface Door {
   room: string; // Format: "RoomName:wall" e.g., "Living Room:left"
   offset?: number; // Distance along the wall from the wall's start
   width: number;
-  swing?: SwingDirection; // Direction the door swings (defaults to inwards-right)
-  type?: 'normal' | 'opening'; // 'normal' shows door blade, 'opening' shows just the opening
+  swing?: SwingDirection; // Direction the door swings, or 'opening' for no door blade (defaults to inwards-right)
 }
 
 export interface Window {

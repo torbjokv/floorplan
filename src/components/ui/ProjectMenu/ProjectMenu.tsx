@@ -33,11 +33,7 @@ export function ProjectMenu({
 }: ProjectMenuProps) {
   return (
     <div className={styles.menu} data-testid="project-menu">
-      <button
-        onClick={onNewProject}
-        className={styles.menuItem}
-        data-testid="project-menu-new"
-      >
+      <button onClick={onNewProject} className={styles.menuItem} data-testid="project-menu-new">
         📄 New Project
       </button>
       <button
@@ -47,11 +43,7 @@ export function ProjectMenu({
       >
         📋 Load Example
       </button>
-      <button
-        onClick={onUploadJSON}
-        className={styles.menuItem}
-        data-testid="project-menu-upload"
-      >
+      <button onClick={onUploadJSON} className={styles.menuItem} data-testid="project-menu-upload">
         📁 Upload JSON
       </button>
       <button
@@ -71,11 +63,7 @@ export function ProjectMenu({
       >
         💾 Download JSON
       </button>
-      <button
-        onClick={onShare}
-        className={styles.menuItem}
-        data-testid="project-menu-share"
-      >
+      <button onClick={onShare} className={styles.menuItem} data-testid="project-menu-share">
         🔗 Share
       </button>
 
@@ -89,7 +77,7 @@ export function ProjectMenu({
           No saved projects
         </div>
       ) : (
-        savedProjects.sort(naturalSort).map((project) => (
+        savedProjects.sort(naturalSort).map(project => (
           <div
             key={project.id}
             className={styles.savedItem}

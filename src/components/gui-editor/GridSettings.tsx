@@ -15,7 +15,7 @@ export function GridSettings({ gridStep, onGridStepChange }: GridSettingsProps) 
           <input
             type="number"
             value={gridStep}
-            onChange={(e) => onGridStepChange(Number(e.target.value))}
+            onChange={e => onGridStepChange(Number(e.target.value))}
             data-testid="grid-step-input"
           />
         </label>

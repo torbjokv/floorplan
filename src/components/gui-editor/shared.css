@@ -285,7 +285,7 @@
   color: #e0e0e0;
 }
 
-.form-grid-small input[type="color"] {
+.form-grid-small input[type='color'] {
   height: 32px;
   padding: 2px;
   cursor: pointer;

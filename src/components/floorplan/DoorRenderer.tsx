@@ -21,6 +21,9 @@ export function DoorRenderer({ door, index, roomMap, mm, onClick }: DoorRenderer
   const w = mm(door.width);
   const d = mm(DOOR_THICKNESS);
 
+  // Check if this is an opening (no door blade)
+  const isOpening = swing === 'opening';
+
   // Determine if door swings inwards or outwards, and left or right
   const isInwards = swing.startsWith('inwards');
   const isRight = swing.endsWith('right');
@@ -147,8 +150,6 @@ export function DoorRenderer({ door, index, roomMap, mm, onClick }: DoorRenderer
       return null;
   }
 
-  const doorType = door.type || 'normal';
-
   return (
     <g
       key={`door-${index}`}
@@ -166,8 +167,8 @@ export function DoorRenderer({ door, index, roomMap, mm, onClick }: DoorRenderer
         stroke="#333"
         strokeWidth="1"
       />
-      {/* Door swing arc (only for normal doors) */}
-      {doorType === 'normal' && (
+      {/* Door swing arc (not shown for openings) */}
+      {!isOpening && (
         <path
           d={arcPath}
           transform={`translate(${x},${y})`}

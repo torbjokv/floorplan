@@ -11,7 +11,6 @@ import { CornerHighlights } from './floorplan/CornerHighlights';
 // Constants
 const BOUNDS_PADDING_PERCENTAGE = 0.1; // 10% padding on each side
 const DEFAULT_OBJECT_SIZE = 1000; // mm
-const DEFAULT_OBJECT_RADIUS = 500; // mm
 const CORNER_GRAB_RADIUS = 600; // mm - distance from corner to detect hover/grab
 const SNAP_DISTANCE = 500; // mm - distance to snap to another corner
 
@@ -42,7 +41,11 @@ interface CornerHighlight {
 }
 
 // Helper function to calculate anchor offset for objects
-function getObjectAnchorOffset(anchor: Anchor, width: number, height: number): { x: number; y: number } {
+function getObjectAnchorOffset(
+  anchor: Anchor,
+  width: number,
+  height: number
+): { x: number; y: number } {
   switch (anchor) {
     case 'top-left':
       return { x: 0, y: 0 };
@@ -55,7 +58,16 @@ function getObjectAnchorOffset(anchor: Anchor, width: number, height: number): {
   }
 }
 
-const FloorplanRendererComponent = ({ data, onPositioningErrors, onRoomClick, onDoorClick, onWindowClick, onRoomUpdate, onRoomNameUpdate, onObjectClick }: FloorplanRendererProps) => {
+const FloorplanRendererComponent = ({
+  data,
+  onPositioningErrors,
+  onRoomClick,
+  onDoorClick,
+  onWindowClick,
+  onRoomUpdate,
+  onRoomNameUpdate,
+  onObjectClick,
+}: FloorplanRendererProps) => {
   const gridStep = data.grid_step || 1000;
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -82,7 +94,10 @@ const FloorplanRendererComponent = ({ data, onPositioningErrors, onRoomClick, on
   // Memoize composite room parts to avoid recalculating on every render
   // ResolvedPart has x, y, width, depth properties just like ResolvedRoom
   const compositeRoomPartsMap = useMemo(() => {
-    const partsMap = new Map<string, Array<{ x: number; y: number; width: number; depth: number }>>();
+    const partsMap = new Map<
+      string,
+      Array<{ x: number; y: number; width: number; depth: number }>
+    >();
     Object.values(roomMap).forEach(room => {
       partsMap.set(room.id, resolveCompositeRoom(room));
     });
@@ -120,28 +135,36 @@ const FloorplanRendererComponent = ({ data, onPositioningErrors, onRoomClick, on
       // Check room objects bounds
       if (room.objects) {
         room.objects.forEach(obj => {
-          const roomAnchor = obj.roomAnchor || 'top-left';
-          const roomCorner = getCorner(room, roomAnchor);
+          // Anchor determines both which room corner AND which object point
+          const anchor = obj.anchor || 'top-left';
+          const roomCorner = getCorner(room, anchor);
 
-          // Direct addition - no direction inversion
+          // Object position is: room corner + x,y offset
           const absX = roomCorner.x + obj.x;
           const absY = roomCorner.y + obj.y;
 
           if (obj.type === 'circle') {
-            const radius = obj.radius || DEFAULT_OBJECT_RADIUS;
-            minX = Math.min(minX, absX - radius);
-            minY = Math.min(minY, absY - radius);
-            maxX = Math.max(maxX, absX + radius);
-            maxY = Math.max(maxY, absY + radius);
+            // For circles, width represents the diameter
+            const diameter = obj.width || DEFAULT_OBJECT_SIZE;
+            const radius = diameter / 2;
+
+            // Apply object anchor offset to position the circle
+            const objOffset = getObjectAnchorOffset(anchor, diameter, diameter);
+            const centerX = absX + objOffset.x + radius;
+            const centerY = absY + objOffset.y + radius;
+
+            minX = Math.min(minX, centerX - radius);
+            minY = Math.min(minY, centerY - radius);
+            maxX = Math.max(maxX, centerX + radius);
+            maxY = Math.max(maxY, centerY + radius);
           } else {
             // Square - calculate bounds including anchor offset
             const width = obj.width || DEFAULT_OBJECT_SIZE;
-            const height = obj.height || DEFAULT_OBJECT_SIZE;
-            const anchor = obj.anchor || 'top-left';
-            const offset = getObjectAnchorOffset(anchor, width, height);
+            const height = obj.height || width;
+            const objOffset = getObjectAnchorOffset(anchor, width, height);
 
-            const objX = absX + offset.x;
-            const objY = absY + offset.y;
+            const objX = absX + objOffset.x;
+            const objY = absY + objOffset.y;
             minX = Math.min(minX, objX);
             minY = Math.min(minY, objY);
             maxX = Math.max(maxX, objX + width);
@@ -160,7 +183,7 @@ const FloorplanRendererComponent = ({ data, onPositioningErrors, onRoomClick, on
       x: minX - padding,
       y: minY - padding,
       width: width + padding * 2,
-      depth: depth + padding * 2
+      depth: depth + padding * 2,
     };
   }, [roomMap, compositeRoomPartsMap]);
 
@@ -184,7 +207,7 @@ const FloorplanRendererComponent = ({ data, onPositioningErrors, onRoomClick, on
     // So to reverse: screen_val * 10
     return {
       x: svgPt.x * 10,
-      y: svgPt.y * 10
+      y: svgPt.y * 10,
     };
   };
 
@@ -213,7 +236,11 @@ const FloorplanRendererComponent = ({ data, onPositioningErrors, onRoomClick, on
   };
 
   // Find which corner of a room is closest to a point
-  const findClosestCorner = (room: ResolvedRoom, x: number, y: number): { corner: Anchor; distance: number } | null => {
+  const findClosestCorner = (
+    room: ResolvedRoom,
+    x: number,
+    y: number
+  ): { corner: Anchor; distance: number } | null => {
     const corners: { corner: Anchor; x: number; y: number }[] = [
       { corner: 'top-left', x: room.x, y: room.y },
       { corner: 'top-right', x: room.x + room.width, y: room.y },
@@ -246,24 +273,25 @@ const FloorplanRendererComponent = ({ data, onPositioningErrors, onRoomClick, on
   };
 
   // Check if point is inside room bounds (including parts)
-  const isPointInRoom = useCallback((room: ResolvedRoom, x: number, y: number): boolean => {
-    // Check main room
-    if (x >= room.x && x <= room.x + room.width &&
-        y >= room.y && y <= room.y + room.depth) {
-      return true;
-    }
-
-    // Check parts - use memoized parts
-    const parts = compositeRoomPartsMap.get(room.id) || [];
-    for (const part of parts) {
-      if (x >= part.x && x <= part.x + part.width &&
-          y >= part.y && y <= part.y + part.depth) {
+  const isPointInRoom = useCallback(
+    (room: ResolvedRoom, x: number, y: number): boolean => {
+      // Check main room
+      if (x >= room.x && x <= room.x + room.width && y >= room.y && y <= room.y + room.depth) {
         return true;
       }
-    }
 
-    return false;
-  }, [compositeRoomPartsMap]);
+      // Check parts - use memoized parts
+      const parts = compositeRoomPartsMap.get(room.id) || [];
+      for (const part of parts) {
+        if (x >= part.x && x <= part.x + part.width && y >= part.y && y <= part.y + part.depth) {
+          return true;
+        }
+      }
+
+      return false;
+    },
+    [compositeRoomPartsMap]
+  );
 
   // Mouse move handler for hover detection
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -332,65 +360,66 @@ const FloorplanRendererComponent = ({ data, onPositioningErrors, onRoomClick, on
   };
 
   // Handle drag movement with requestAnimationFrame for smooth performance
-  const handleDragMove = useCallback((x: number, y: number) => {
-    if (!dragState) return;
+  const handleDragMove = useCallback(
+    (x: number, y: number) => {
+      if (!dragState) return;
 
-    const room = roomMap[dragState.roomId];
-    if (!room) return;
+      const room = roomMap[dragState.roomId];
+      if (!room) return;
 
-    // Cancel any pending animation frame
-    if (dragAnimationFrame.current !== null) {
-      cancelAnimationFrame(dragAnimationFrame.current);
-    }
-
-    // Schedule update for next animation frame
-    dragAnimationFrame.current = requestAnimationFrame(() => {
-      let deltaX: number;
-      let deltaY: number;
-
-      if (dragState.dragType === 'corner' && dragState.anchor) {
-        // When dragging by corner, calculate offset to move that corner to mouse position
-        const cornerPos = getCorner(room, dragState.anchor);
-        deltaX = x - cornerPos.x;
-        deltaY = y - cornerPos.y;
-      } else {
-        // When dragging by center, use simple delta from start
-        deltaX = x - dragState.startMouseX;
-        deltaY = y - dragState.startMouseY;
+      // Cancel any pending animation frame
+      if (dragAnimationFrame.current !== null) {
+        cancelAnimationFrame(dragAnimationFrame.current);
       }
 
-      // Check for snap targets when dragging - only for the corner being dragged
-      let foundSnap = false;
-      let newSnapTarget: CornerHighlight | null = null;
+      // Schedule update for next animation frame
+      dragAnimationFrame.current = requestAnimationFrame(() => {
+        let deltaX: number;
+        let deltaY: number;
 
-      if (dragState.dragType === 'corner' && dragState.anchor) {
-        // Check all other rooms for snap targets
-        for (const otherRoom of Object.values(roomMap)) {
-          if (otherRoom.id === dragState.roomId) continue;
-
-          const otherCorners: Anchor[] = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
-          for (const otherCorner of otherCorners) {
-            const otherPos = getCorner(otherRoom, otherCorner);
-            // Check distance from current mouse position (where dragged corner is)
-            const dist = Math.sqrt(
-              Math.pow(x - otherPos.x, 2) + Math.pow(y - otherPos.y, 2)
-            );
-
-            if (dist < SNAP_DISTANCE) {
-              newSnapTarget = { roomId: otherRoom.id, corner: otherCorner };
-              foundSnap = true;
-              break;
-            }
-          }
-          if (foundSnap) break;
+        if (dragState.dragType === 'corner' && dragState.anchor) {
+          // When dragging by corner, calculate offset to move that corner to mouse position
+          const cornerPos = getCorner(room, dragState.anchor);
+          deltaX = x - cornerPos.x;
+          deltaY = y - cornerPos.y;
+        } else {
+          // When dragging by center, use simple delta from start
+          deltaX = x - dragState.startMouseX;
+          deltaY = y - dragState.startMouseY;
         }
-      }
 
-      // Batch state updates together to minimize re-renders
-      setDragOffset({ x: deltaX, y: deltaY });
-      setSnapTarget(foundSnap ? newSnapTarget : null);
-    });
-  }, [dragState, roomMap]);
+        // Check for snap targets when dragging - only for the corner being dragged
+        let foundSnap = false;
+        let newSnapTarget: CornerHighlight | null = null;
+
+        if (dragState.dragType === 'corner' && dragState.anchor) {
+          // Check all other rooms for snap targets
+          for (const otherRoom of Object.values(roomMap)) {
+            if (otherRoom.id === dragState.roomId) continue;
+
+            const otherCorners: Anchor[] = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+            for (const otherCorner of otherCorners) {
+              const otherPos = getCorner(otherRoom, otherCorner);
+              // Check distance from current mouse position (where dragged corner is)
+              const dist = Math.sqrt(Math.pow(x - otherPos.x, 2) + Math.pow(y - otherPos.y, 2));
+
+              if (dist < SNAP_DISTANCE) {
+                newSnapTarget = { roomId: otherRoom.id, corner: otherCorner };
+                foundSnap = true;
+                break;
+              }
+            }
+            if (foundSnap) break;
+          }
+        }
+
+        // Batch state updates together to minimize re-renders
+        setDragOffset({ x: deltaX, y: deltaY });
+        setSnapTarget(foundSnap ? newSnapTarget : null);
+      });
+    },
+    [dragState, roomMap]
+  );
 
   // Mouse up handler to finish dragging
   const handleMouseUp = () => {
@@ -418,10 +447,9 @@ const FloorplanRendererComponent = ({ data, onPositioningErrors, onRoomClick, on
 
     // Check if the room actually moved significantly (more than 100mm)
     const MOVEMENT_THRESHOLD = 100; // mm
-    const hasMoved = dragOffset && (
-      Math.abs(dragOffset.x) > MOVEMENT_THRESHOLD ||
-      Math.abs(dragOffset.y) > MOVEMENT_THRESHOLD
-    );
+    const hasMoved =
+      dragOffset &&
+      (Math.abs(dragOffset.x) > MOVEMENT_THRESHOLD || Math.abs(dragOffset.y) > MOVEMENT_THRESHOLD);
 
     const updatedRoom = { ...room };
     const resolvedRoom = roomMap[dragState.roomId];
@@ -498,7 +526,7 @@ const FloorplanRendererComponent = ({ data, onPositioningErrors, onRoomClick, on
     }
 
     // Update the room in data
-    const updatedRooms = data.rooms.map(r => r.id === dragState.roomId ? updatedRoom : r);
+    const updatedRooms = data.rooms.map(r => (r.id === dragState.roomId ? updatedRoom : r));
     onRoomUpdate({ ...data, rooms: updatedRooms });
 
     // Use startTransition to mark cleanup as low-priority (non-urgent)
@@ -529,7 +557,6 @@ const FloorplanRendererComponent = ({ data, onPositioningErrors, onRoomClick, on
       }
     };
   }, []);
-
 
   // Convert bounds to screen coordinates
   const viewBox = `${mm(bounds.x)} ${mm(bounds.y)} ${mm(bounds.width)} ${mm(bounds.depth)}`;
@@ -576,9 +603,10 @@ const FloorplanRendererComponent = ({ data, onPositioningErrors, onRoomClick, on
         {data.doors?.map((door, index) => {
           const roomId = door.room.split(':')[0];
           const isDragging = dragState?.roomId === roomId;
-          const transform = isDragging && dragOffset
-            ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})`
-            : undefined;
+          const transform =
+            isDragging && dragOffset
+              ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})`
+              : undefined;
           return (
             <g key={`door-${index}`} transform={transform}>
               <DoorRenderer
@@ -596,9 +624,10 @@ const FloorplanRendererComponent = ({ data, onPositioningErrors, onRoomClick, on
         {data.windows?.map((window, index) => {
           const roomId = window.room.split(':')[0];
           const isDragging = dragState?.roomId === roomId;
-          const transform = isDragging && dragOffset
-            ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})`
-            : undefined;
+          const transform =
+            isDragging && dragOffset
+              ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})`
+              : undefined;
           return (
             <g key={`window-${index}`} transform={transform}>
               <WindowRenderer
@@ -618,7 +647,6 @@ const FloorplanRendererComponent = ({ data, onPositioningErrors, onRoomClick, on
           dragState={dragState}
           dragOffset={dragOffset}
           mm={mm}
-          getCorner={getCorner}
           onObjectClick={onObjectClick}
         />
 

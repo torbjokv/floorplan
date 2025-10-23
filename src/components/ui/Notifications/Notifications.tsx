@@ -6,11 +6,7 @@ interface NotificationsProps {
   urlError?: string | null;
 }
 
-export function Notifications({
-  showUpdate,
-  showCopy,
-  urlError,
-}: NotificationsProps) {
+export function Notifications({ showUpdate, showCopy, urlError }: NotificationsProps) {
   return (
     <>
       {showUpdate && (

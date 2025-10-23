@@ -22,14 +22,15 @@ export function WindowRenderer({ window, index, roomMap, mm, onClick }: WindowRe
 
   // Calculate position and rotation based on wall
   let posX: number, posY: number, rotation: number;
-  let rectX = 0, rectY = 0;
+  let rectX = 0,
+    rectY = 0;
 
   switch (wall) {
     case 'left':
       posX = room.x;
       posY = room.y + offset;
       rotation = 90;
-      rectX = 0;  // Window thickness extends into room (rightward)
+      rectX = 0; // Window thickness extends into room (rightward)
       rectY = -d; // Shift up by window thickness (which is rotated)
       break;
 
@@ -46,7 +47,7 @@ export function WindowRenderer({ window, index, roomMap, mm, onClick }: WindowRe
       posY = room.y;
       rotation = 0;
       rectX = 0;
-      rectY = 0;  // Window extends into room (downward)
+      rectY = 0; // Window extends into room (downward)
       break;
 
     case 'bottom':

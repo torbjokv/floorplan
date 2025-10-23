@@ -3,29 +3,29 @@ import { expect } from '@playwright/test';
 import { FloorplanWorld } from '../support/world';
 
 // Background steps
-Given('I am on the floorplan designer page', async function(this: FloorplanWorld) {
+Given('I am on the floorplan designer page', async function (this: FloorplanWorld) {
   // Page is already loaded in Before hook
   await expect(this.page).toHaveTitle(/floorplan/i);
 });
 
-Given('localStorage is cleared', async function(this: FloorplanWorld) {
+Given('localStorage is cleared', async function (this: FloorplanWorld) {
   await this.page.evaluate(() => localStorage.clear());
 });
 
 // Project menu interaction steps
-When('I click on the {string} button', async function(this: FloorplanWorld, buttonText: string) {
+When('I click on the {string} button', async function (this: FloorplanWorld, buttonText: string) {
   await this.page.getByRole('button', { name: buttonText }).click();
 });
 
-When('I click on {string} in the menu', async function(this: FloorplanWorld, menuItem: string) {
+When('I click on {string} in the menu', async function (this: FloorplanWorld, menuItem: string) {
   // Map menu item names to test IDs
   const menuItemMap: Record<string, string> = {
     'New Project': 'project-menu-new',
     'Load Example': 'project-menu-load-example',
     'Upload JSON': 'project-menu-upload',
     'Download JSON': 'project-menu-download',
-    'Share': 'project-menu-share',
-    'Duplicate': 'project-menu-duplicate'
+    Share: 'project-menu-share',
+    Duplicate: 'project-menu-duplicate',
   };
 
   const testId = menuItemMap[menuItem];
@@ -37,7 +37,7 @@ When('I click on {string} in the menu', async function(this: FloorplanWorld, men
   }
 });
 
-When('I click on {string} for the project', async function(this: FloorplanWorld, action: string) {
+When('I click on {string} for the project', async function (this: FloorplanWorld, action: string) {
   if (action === 'Duplicate') {
     // First load the project (clicking it closes the menu)
     await this.page.getByTestId('project-menu-load-test-project-1').click();
@@ -55,11 +55,11 @@ When('I click on {string} for the project', async function(this: FloorplanWorld,
   }
 });
 
-When('I wait for {int}ms', async function(this: FloorplanWorld, ms: number) {
+When('I wait for {int}ms', async function (this: FloorplanWorld, ms: number) {
   await this.page.waitForTimeout(ms);
 });
 
-When('I upload the JSON file', async function(this: FloorplanWorld) {
+When('I upload the JSON file', async function (this: FloorplanWorld) {
   // Check if file chooser was already captured in a previous click step
   let fileChooser = (this as any).fileChooser;
 
@@ -74,20 +74,24 @@ When('I upload the JSON file', async function(this: FloorplanWorld) {
   await fileChooser.setFiles({
     name: 'test-floorplan.json',
     mimeType: 'application/json',
-    buffer: Buffer.from(JSON.stringify({
-      grid_step: 1000,
-      rooms: [{
-        id: 'test1',
-        name: 'Test Room',
-        width: 3000,
-        depth: 3000,
-        attachTo: 'zeropoint:top-left'
-      }]
-    }))
+    buffer: Buffer.from(
+      JSON.stringify({
+        grid_step: 1000,
+        rooms: [
+          {
+            id: 'test1',
+            name: 'Test Room',
+            width: 3000,
+            depth: 3000,
+            attachTo: 'zeropoint:top-left',
+          },
+        ],
+      })
+    ),
   });
 });
 
-When('I click outside the menu', async function(this: FloorplanWorld) {
+When('I click outside the menu', async function (this: FloorplanWorld) {
   // Click on the floorplan preview (outside the project header)
   const svg = this.page.locator('svg').first();
   if (await svg.isVisible()) {
@@ -100,12 +104,12 @@ When('I click outside the menu', async function(this: FloorplanWorld) {
   await this.page.waitForTimeout(300);
 });
 
-When('I click on {string}', async function(this: FloorplanWorld, buttonText: string) {
+When('I click on {string}', async function (this: FloorplanWorld, buttonText: string) {
   // Special handling for menu items to avoid ambiguity
   const menuItemMap: Record<string, string> = {
     'Download JSON': 'project-menu-download',
     'Upload JSON': 'project-menu-upload',
-    'Share': 'project-menu-share',
+    Share: 'project-menu-share',
   };
 
   if (menuItemMap[buttonText]) {
@@ -132,35 +136,41 @@ When('I click on {string}', async function(this: FloorplanWorld, buttonText: str
   }
 });
 
-When('I click on {string} button', async function(this: FloorplanWorld, buttonText: string) {
+When('I click on {string} button', async function (this: FloorplanWorld, buttonText: string) {
   // Alternative format for button clicks - also check for menu items
   const menuItemMap: Record<string, string> = {
-    'Share': 'share-btn', // Main share button outside menu
+    Share: 'share-btn', // Main share button outside menu
   };
 
   if (menuItemMap[buttonText]) {
     await this.page.getByTestId(menuItemMap[buttonText]).click();
   } else {
-    await this.page.getByRole('button', { name: new RegExp(buttonText, 'i') }).first().click();
+    await this.page
+      .getByRole('button', { name: new RegExp(buttonText, 'i') })
+      .first()
+      .click();
   }
 });
 
 // Assertion steps
-Then('the project menu should be visible', async function(this: FloorplanWorld) {
+Then('the project menu should be visible', async function (this: FloorplanWorld) {
   await expect(this.page.getByTestId('project-menu')).toBeVisible();
 });
 
-Then('the project menu should close', async function(this: FloorplanWorld) {
+Then('the project menu should close', async function (this: FloorplanWorld) {
   await expect(this.page.getByTestId('project-menu')).not.toBeVisible();
 });
 
-Then('the menu should contain {string} option', async function(this: FloorplanWorld, optionText: string) {
-  // Check if the menu contains the option by text
-  const menu = this.page.getByTestId('project-menu');
-  await expect(menu.getByText(optionText)).toBeVisible();
-});
+Then(
+  'the menu should contain {string} option',
+  async function (this: FloorplanWorld, optionText: string) {
+    // Check if the menu contains the option by text
+    const menu = this.page.getByTestId('project-menu');
+    await expect(menu.getByText(optionText)).toBeVisible();
+  }
+);
 
-Then('a new empty project should be created', async function(this: FloorplanWorld) {
+Then('a new empty project should be created', async function (this: FloorplanWorld) {
   // Wait for content to update (debounced auto-update is 500ms)
   await this.page.waitForTimeout(600);
   // Switch to JSON tab to check content
@@ -175,33 +185,36 @@ Then('a new empty project should be created', async function(this: FloorplanWorl
   expect(content).toContain('"rooms"');
 });
 
-Then('the project name should be {string}', async function(this: FloorplanWorld, expectedName: string) {
-  const nameInput = this.page.getByTestId('project-name-input');
-  await expect(nameInput).toHaveValue(expectedName);
-});
+Then(
+  'the project name should be {string}',
+  async function (this: FloorplanWorld, expectedName: string) {
+    const nameInput = this.page.getByTestId('project-name-input');
+    await expect(nameInput).toHaveValue(expectedName);
+  }
+);
 
-Then('the floorplan should be empty', async function(this: FloorplanWorld) {
+Then('the floorplan should be empty', async function (this: FloorplanWorld) {
   // Check that there are no room elements in the SVG
   const rooms = this.page.locator('.room-rect');
   await expect(rooms).toHaveCount(0);
 });
 
-Then('the example project should be loaded', async function(this: FloorplanWorld) {
+Then('the example project should be loaded', async function (this: FloorplanWorld) {
   const nameInput = this.page.getByTestId('project-name-input');
   await expect(nameInput).toHaveValue('Example Floorplan');
 });
 
-Then('the project should contain rooms', async function(this: FloorplanWorld) {
+Then('the project should contain rooms', async function (this: FloorplanWorld) {
   const rooms = this.page.locator('.room-rect');
   await expect(rooms.first()).toBeVisible();
 });
 
-Then('I should see the floorplan preview', async function(this: FloorplanWorld) {
+Then('I should see the floorplan preview', async function (this: FloorplanWorld) {
   const svg = this.page.locator('svg');
   await expect(svg).toBeVisible();
 });
 
-Then('the project should be saved to localStorage', async function(this: FloorplanWorld) {
+Then('the project should be saved to localStorage', async function (this: FloorplanWorld) {
   // Wait for auto-save to happen (it has a 500ms debounce)
   await this.page.waitForTimeout(600);
 
@@ -212,7 +225,7 @@ Then('the project should be saved to localStorage', async function(this: Floorpl
   expect(saved).toBe(true);
 });
 
-Then('localStorage should contain the project data', async function(this: FloorplanWorld) {
+Then('localStorage should contain the project data', async function (this: FloorplanWorld) {
   const hasData = await this.page.evaluate(() => {
     const data = localStorage.getItem('floorplan_projects');
     if (!data) return false;
@@ -222,14 +235,17 @@ Then('localStorage should contain the project data', async function(this: Floorp
   expect(hasData).toBe(true);
 });
 
-Then('a new project should be created with name {string}', async function(this: FloorplanWorld, projectName: string) {
-  // Wait for UI to update after duplicate
-  await this.page.waitForTimeout(600);
-  const nameInput = this.page.getByTestId('project-name-input');
-  await expect(nameInput).toHaveValue(projectName);
-});
+Then(
+  'a new project should be created with name {string}',
+  async function (this: FloorplanWorld, projectName: string) {
+    // Wait for UI to update after duplicate
+    await this.page.waitForTimeout(600);
+    const nameInput = this.page.getByTestId('project-name-input');
+    await expect(nameInput).toHaveValue(projectName);
+  }
+);
 
-Then('both projects should exist in localStorage', async function(this: FloorplanWorld) {
+Then('both projects should exist in localStorage', async function (this: FloorplanWorld) {
   const count = await this.page.evaluate(() => {
     const data = localStorage.getItem('floorplan_projects');
     if (!data) return 0;
@@ -238,13 +254,13 @@ Then('both projects should exist in localStorage', async function(this: Floorpla
   expect(count).toBeGreaterThanOrEqual(2);
 });
 
-Then('the project should be removed from the list', async function(this: FloorplanWorld) {
+Then('the project should be removed from the list', async function (this: FloorplanWorld) {
   // Project menu should not show the deleted project
   const projectItems = this.page.getByRole('menuitem').filter({ hasText: 'Test Project' });
   await expect(projectItems).toHaveCount(0);
 });
 
-Then('the project should not exist in localStorage', async function(this: FloorplanWorld) {
+Then('the project should not exist in localStorage', async function (this: FloorplanWorld) {
   // Wait for auto-save to complete deletion
   await this.page.waitForTimeout(600);
   const exists = await this.page.evaluate(() => {
@@ -256,7 +272,7 @@ Then('the project should not exist in localStorage', async function(this: Floorp
   expect(exists).toBe(false);
 });
 
-Then('a JSON file should be downloaded', async function(this: FloorplanWorld) {
+Then('a JSON file should be downloaded', async function (this: FloorplanWorld) {
   // Download was captured in the click step
   const download = (this as any).lastDownload;
   expect(download).toBeDefined();
@@ -265,24 +281,24 @@ Then('a JSON file should be downloaded', async function(this: FloorplanWorld) {
   await this.page.waitForTimeout(600);
 });
 
-Then('the file should contain the project data', async function(this: FloorplanWorld) {
+Then('the file should contain the project data', async function (this: FloorplanWorld) {
   // This would require saving and reading the download, skipping detailed check
   expect(true).toBe(true);
 });
 
-Then('the project should be loaded from the file', async function(this: FloorplanWorld) {
+Then('the project should be loaded from the file', async function (this: FloorplanWorld) {
   await this.page.waitForTimeout(500); // Wait for load
   const rooms = this.page.locator('.room-rect');
   await expect(rooms.first()).toBeVisible();
 });
 
-Then('the floorplan should match the uploaded data', async function(this: FloorplanWorld) {
+Then('the floorplan should match the uploaded data', async function (this: FloorplanWorld) {
   // Check that the test room is present
   const roomLabel = this.page.locator('text=Test Room');
   await expect(roomLabel).toBeVisible();
 });
 
-Then('the URL should be copied to clipboard', async function(this: FloorplanWorld) {
+Then('the URL should be copied to clipboard', async function (this: FloorplanWorld) {
   // Wait for share operation to complete
   await this.page.waitForTimeout(500);
   // Check for copy notification - might not appear in headless mode
@@ -297,12 +313,12 @@ Then('the URL should be copied to clipboard', async function(this: FloorplanWorl
   }
 });
 
-Then('the URL should contain the project data', async function(this: FloorplanWorld) {
+Then('the URL should contain the project data', async function (this: FloorplanWorld) {
   const url = this.page.url();
   expect(url).toContain('#');
 });
 
-Then('opening the URL in a new tab should load the project', async function(this: FloorplanWorld) {
+Then('opening the URL in a new tab should load the project', async function (this: FloorplanWorld) {
   const currentUrl = this.page.url();
   const newPage = await this.context.newPage();
   await newPage.goto(currentUrl);
@@ -311,38 +327,36 @@ Then('opening the URL in a new tab should load the project', async function(this
   await newPage.close();
 });
 
-Then('the projects should be listed in order: {string}, {string}, {string}', async function(
-  this: FloorplanWorld,
-  first: string,
-  second: string,
-  third: string
-) {
-  const menu = this.page.getByTestId('project-menu');
-  const items = menu.locator('button');
-  const texts = await items.allTextContents();
-  const projectTexts = texts.filter(t => t.includes('Project'));
+Then(
+  'the projects should be listed in order: {string}, {string}, {string}',
+  async function (this: FloorplanWorld, first: string, second: string, third: string) {
+    const menu = this.page.getByTestId('project-menu');
+    const items = menu.locator('button');
+    const texts = await items.allTextContents();
+    const projectTexts = texts.filter(t => t.includes('Project'));
 
-  const firstIndex = projectTexts.findIndex(t => t.includes(first));
-  const secondIndex = projectTexts.findIndex(t => t.includes(second));
-  const thirdIndex = projectTexts.findIndex(t => t.includes(third));
+    const firstIndex = projectTexts.findIndex(t => t.includes(first));
+    const secondIndex = projectTexts.findIndex(t => t.includes(second));
+    const thirdIndex = projectTexts.findIndex(t => t.includes(third));
 
-  // All should be found
-  expect(firstIndex).toBeGreaterThanOrEqual(0);
-  expect(secondIndex).toBeGreaterThanOrEqual(0);
-  expect(thirdIndex).toBeGreaterThanOrEqual(0);
+    // All should be found
+    expect(firstIndex).toBeGreaterThanOrEqual(0);
+    expect(secondIndex).toBeGreaterThanOrEqual(0);
+    expect(thirdIndex).toBeGreaterThanOrEqual(0);
 
-  // Check ordering
-  expect(firstIndex).toBeLessThan(secondIndex);
-  expect(secondIndex).toBeLessThan(thirdIndex);
-});
+    // Check ordering
+    expect(firstIndex).toBeLessThan(secondIndex);
+    expect(secondIndex).toBeLessThan(thirdIndex);
+  }
+);
 
-Then('the project should be in read-only mode', async function(this: FloorplanWorld) {
+Then('the project should be in read-only mode', async function (this: FloorplanWorld) {
   // Check for read-only indicator or disabled auto-save
   const url = this.page.url();
   expect(url).toContain('#');
 });
 
-Then('I should see a {string} message', async function(this: FloorplanWorld, message: string) {
+Then('I should see a {string} message', async function (this: FloorplanWorld, message: string) {
   // Wait for UI to render
   await this.page.waitForTimeout(500);
   const text = this.page.getByText(new RegExp(message, 'i'));
@@ -356,7 +370,7 @@ Then('I should see a {string} message', async function(this: FloorplanWorld, mes
   }
 });
 
-Then('changes should not be auto-saved', async function(this: FloorplanWorld) {
+Then('changes should not be auto-saved', async function (this: FloorplanWorld) {
   // Make a change and verify it's not saved
   const initialProjects = await this.page.evaluate(() => {
     const data = localStorage.getItem('floorplan_projects');
@@ -376,35 +390,42 @@ Then('changes should not be auto-saved', async function(this: FloorplanWorld) {
 });
 
 // Given steps with setup
-Given('I have created a room', async function(this: FloorplanWorld) {
+Given('I have created a room', async function (this: FloorplanWorld) {
   await this.page.getByTestId('add-room-btn').click();
   await this.page.waitForTimeout(100);
 });
 
-Given('I have a saved project named {string}', async function(this: FloorplanWorld, projectName: string) {
-  await this.page.evaluate((name) => {
-    const projects = [{
-      id: 'test-project-1',
-      name,
-      json: JSON.stringify({
-        grid_step: 1000,
-        rooms: [{
-          id: 'room1',
-          name: 'Room 1',
-          width: 3000,
-          depth: 3000,
-          attachTo: 'zeropoint:top-left'
-        }]
-      })
-    }];
-    localStorage.setItem('floorplan_projects', JSON.stringify(projects));
-  }, projectName);
+Given(
+  'I have a saved project named {string}',
+  async function (this: FloorplanWorld, projectName: string) {
+    await this.page.evaluate(name => {
+      const projects = [
+        {
+          id: 'test-project-1',
+          name,
+          json: JSON.stringify({
+            grid_step: 1000,
+            rooms: [
+              {
+                id: 'room1',
+                name: 'Room 1',
+                width: 3000,
+                depth: 3000,
+                attachTo: 'zeropoint:top-left',
+              },
+            ],
+          }),
+        },
+      ];
+      localStorage.setItem('floorplan_projects', JSON.stringify(projects));
+    }, projectName);
 
-  // Reload to pick up the saved project
-  await this.page.reload();
-});
+    // Reload to pick up the saved project
+    await this.page.reload();
+  }
+);
 
-Given('I have a project with rooms', async function(this: FloorplanWorld) {
+Given('I have a project with rooms', async function (this: FloorplanWorld) {
   // Use the default loaded project or create one
   const rooms = this.page.locator('.room-rect');
   const count = await rooms.count();
@@ -413,39 +434,42 @@ Given('I have a project with rooms', async function(this: FloorplanWorld) {
   }
 });
 
-Given('I have a valid floorplan JSON file', async function(this: FloorplanWorld) {
+Given('I have a valid floorplan JSON file', async function (this: FloorplanWorld) {
   // File will be created in the upload step
   this.attach('JSON file prepared for upload', 'text/plain');
 });
 
-Given('I have saved projects named {string}, {string}, and {string}', async function(
-  this: FloorplanWorld,
-  name1: string,
-  name2: string,
-  name3: string
-) {
-  await this.page.evaluate(([n1, n2, n3]) => {
-    const projects = [
-      { id: '1', name: n1, json: '{"grid_step":1000,"rooms":[]}' },
-      { id: '2', name: n2, json: '{"grid_step":1000,"rooms":[]}' },
-      { id: '3', name: n3, json: '{"grid_step":1000,"rooms":[]}' }
-    ];
-    localStorage.setItem('floorplan_projects', JSON.stringify(projects));
-  }, [name1, name2, name3]);
+Given(
+  'I have saved projects named {string}, {string}, and {string}',
+  async function (this: FloorplanWorld, name1: string, name2: string, name3: string) {
+    await this.page.evaluate(
+      ([n1, n2, n3]) => {
+        const projects = [
+          { id: '1', name: n1, json: '{"grid_step":1000,"rooms":[]}' },
+          { id: '2', name: n2, json: '{"grid_step":1000,"rooms":[]}' },
+          { id: '3', name: n3, json: '{"grid_step":1000,"rooms":[]}' },
+        ];
+        localStorage.setItem('floorplan_projects', JSON.stringify(projects));
+      },
+      [name1, name2, name3]
+    );
 
-  await this.page.reload();
-});
+    await this.page.reload();
+  }
+);
 
-Given('I open a shared project URL', async function(this: FloorplanWorld) {
+Given('I open a shared project URL', async function (this: FloorplanWorld) {
   const sharedData = {
     grid_step: 1000,
-    rooms: [{
-      id: 'shared1',
-      name: 'Shared Room',
-      width: 3000,
-      depth: 3000,
-      attachTo: 'zeropoint:top-left'
-    }]
+    rooms: [
+      {
+        id: 'shared1',
+        name: 'Shared Room',
+        width: 3000,
+        depth: 3000,
+        attachTo: 'zeropoint:top-left',
+      },
+    ],
   };
 
   const encoded = btoa(JSON.stringify(sharedData));
@@ -453,6 +477,6 @@ Given('I open a shared project URL', async function(this: FloorplanWorld) {
   await this.page.goto(url);
 });
 
-Given('the project menu is visible', async function(this: FloorplanWorld) {
+Given('the project menu is visible', async function (this: FloorplanWorld) {
   await expect(this.page.getByTestId('project-menu')).toBeVisible();
 });

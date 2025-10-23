@@ -80,15 +80,15 @@ import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { FloorplanWorld } from '../support/world';
 
-Given('I am on the page', async function(this: FloorplanWorld) {
+Given('I am on the page', async function (this: FloorplanWorld) {
   await this.page.goto('/');
 });
 
-When('I click the button', async function(this: FloorplanWorld) {
+When('I click the button', async function (this: FloorplanWorld) {
   await this.page.getByRole('button', { name: 'Submit' }).click();
 });
 
-Then('I should see the result', async function(this: FloorplanWorld) {
+Then('I should see the result', async function (this: FloorplanWorld) {
   await expect(this.page.getByText('Success')).toBeVisible();
 });
 ```
@@ -107,6 +107,7 @@ The application uses `data-testid` attributes for reliable element selection:
 ## CI/CD Integration
 
 Tests run automatically on:
+
 - Push to `main` or `develop` branches
 - Pull requests to `main` or `develop`
 
@@ -134,7 +135,7 @@ Enable trace recording by modifying `world.ts`:
 
 ```typescript
 this.context = await this.browser.newContext({
-  trace: 'on-first-retry'
+  trace: 'on-first-retry',
 });
 ```
 

@@ -7,12 +7,7 @@ interface UndoRedoControlsProps {
   onRedo: () => void;
 }
 
-export function UndoRedoControls({
-  canUndo,
-  canRedo,
-  onUndo,
-  onRedo,
-}: UndoRedoControlsProps) {
+export function UndoRedoControls({ canUndo, canRedo, onUndo, onRedo }: UndoRedoControlsProps) {
   return (
     <div className={styles.container} data-testid="undo-redo-controls">
       <button

@@ -31,7 +31,9 @@ export function JSONEditor({ value, onChange, error, warnings }: JSONEditorProps
     <div className="editor-container" data-testid="json-editor">
       <h2>📏 Floorplan JSON</h2>
       <div className="editor-wrapper">
-        <div className={`editor-with-lines ${error || (warnings && warnings.length > 0) ? 'has-error' : ''}`}>
+        <div
+          className={`editor-with-lines ${error || (warnings && warnings.length > 0) ? 'has-error' : ''}`}
+        >
           <div ref={lineNumbersRef} className="line-numbers" data-testid="line-numbers">
             {lineNumbers.map(num => (
               <div key={num} className="line-number">

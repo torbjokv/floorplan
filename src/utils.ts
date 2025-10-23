@@ -4,7 +4,7 @@ import type { Anchor, Point, Room, ResolvedRoom, RoomPart } from './types';
 const DISPLAY_SCALE = 1;
 
 export function mm(val: number): number {
-  return val * DISPLAY_SCALE / 10;
+  return (val * DISPLAY_SCALE) / 10;
 }
 
 export function getCorner(room: ResolvedRoom, corner: Anchor): Point {
@@ -58,10 +58,10 @@ export function resolveRoomPositions(rooms: Room[]): PositioningResult {
   // If first room has no valid attachTo or references a non-existent room, place it at 0,0
   if (rooms.length > 0 && unresolved.length > 0) {
     const firstRoom = unresolved[0];
-    const hasValidAttach = firstRoom.attachTo && (
-      firstRoom.attachTo.startsWith('zeropoint:') ||
-      rooms.some(r => r.id === firstRoom.attachTo?.split(':')[0])
-    );
+    const hasValidAttach =
+      firstRoom.attachTo &&
+      (firstRoom.attachTo.startsWith('zeropoint:') ||
+        rooms.some(r => r.id === firstRoom.attachTo?.split(':')[0]));
 
     if (!hasValidAttach) {
       // Place first room at 0,0
@@ -108,7 +108,9 @@ export function resolveRoomPositions(rooms: Room[]): PositioningResult {
     unresolved.forEach(room => {
       const refRoomId = room.attachTo?.split(':')[0];
       const displayName = room.name || room.id;
-      errors.push(`Room "${displayName}" could not be positioned. Referenced room "${refRoomId}" not found or circular dependency detected.`);
+      errors.push(
+        `Room "${displayName}" could not be positioned. Referenced room "${refRoomId}" not found or circular dependency detected.`
+      );
     });
   }
 

@@ -11,24 +11,27 @@ The test suite uses **Cucumber/Gherkin** for behavior-driven development (BDD) w
 All test commands use the centralized test runner at `scripts/run-cucumber.js` which handles Node.js configuration and environment setup.
 
 ### Run All Tests
+
 ```bash
 npm run test
 ```
 
 ### Run Tests in Headed Mode (see browser)
+
 ```bash
 npm run test:headed
 ```
 
 ### Run Specific Feature Tests
+
 ```bash
 npm run test:project-menu
-npm run test:gui-editor 
-npm run test:json-editor 
-npm run test:room-positioning  
-npm run test:architectural   
-npm run test:svg-rendering    
-npm run test:error-handling   
+npm run test:gui-editor
+npm run test:json-editor
+npm run test:room-positioning
+npm run test:architectural
+npm run test:svg-rendering
+npm run test:error-handling
 ```
 
 ### Advanced Test Running
@@ -36,27 +39,32 @@ npm run test:error-handling
 The test runner supports flexible test execution patterns:
 
 #### Run a specific feature file
+
 ```bash
 npm run test tests/features/project-menu.feature
 ```
 
 #### Run a specific scenario by line number
+
 ```bash
 npm run test tests/features/gui-editor.feature:42
 ```
 
 #### Run tests with specific tags
+
 ```bash
 npm run test -- --tags @smoke
 npm run test:ci -- --tags "@smoke and not @slow"
 ```
 
 #### Run in headed mode for any test
+
 ```bash
 npm run test:headed tests/features/error-handling.feature
 ```
 
 #### CI mode (sets CI=true environment variable)
+
 ```bash
 npm run test:ci
 npm run test:ci -- --tags @critical
@@ -75,6 +83,7 @@ Scenario: This scenario will be skipped
 ```
 
 All scenarios tagged with `@skip` will be automatically excluded from test runs. This is useful for:
+
 - Temporarily disabling flaky tests
 - Marking tests that depend on unimplemented features
 - Excluding tests during development
@@ -82,9 +91,10 @@ All scenarios tagged with `@skip` will be automatically excluded from test runs.
 ## Test Structure
 
 ### Feature Files (`tests/features/`)
+
 Human-readable test scenarios written in Gherkin syntax.
 
-1. **project-menu.feature** 
+1. **project-menu.feature**
    - Opening/closing project menu
    - Creating new projects
    - Loading examples
@@ -113,7 +123,7 @@ Human-readable test scenarios written in Gherkin syntax.
    - Error handling
    - Large JSON support
 
-4. **room-positioning.feature** 
+4. **room-positioning.feature**
    - Zero Point positioning system
    - Relative positioning
    - Anchor points
@@ -152,6 +162,7 @@ Human-readable test scenarios written in Gherkin syntax.
    - Invalid door/window references
 
 ### Support Files (`tests/support/`)
+
 - **world.ts** - Custom World class with browser context
 - **hooks.ts** - Before/After hooks for browser setup/teardown
 
@@ -160,23 +171,27 @@ Human-readable test scenarios written in Gherkin syntax.
 To enable robust testing, the following `data-testid` attributes were added:
 
 ### GUI Editor Components
+
 - Grid Settings: `grid-settings`, `grid-step-input`
 - Room Editor: `room-editor`, `add-room-button`, `room-card-{id}`, `room-name-input-{id}`, `room-width-{id}`, `room-depth-{id}`, `delete-room-button-{id}`, `room-attach-to-{id}`, `add-object-button-{id}`, `object-card-{id}-{index}`, `object-type-{id}-{index}`, `delete-object-button-{id}-{index}`
 - Door Editor: `door-editor`, `add-door-button`, `door-card-{index}`, `delete-door-button-{index}`, `door-type-{index}`, `door-swing-{index}`
 - Window Editor: `window-editor`, `add-window-button`, `window-card-{index}`, `delete-window-button-{index}`
 
 ### JSON Editor Components
+
 - Container: `json-editor`
 - Textarea: `json-textarea`
 - Line Numbers: `line-numbers`
 - Errors: `json-error`, `json-warnings`
 
 ### SVG Components
+
 - Rooms have: `data-room-id="{roomId}"`
 
 ### Optimization Opportunities
 
 To speed up tests:
+
 1. **Reuse browser context** across scenarios (requires Cucumber configuration changes)
 2. **Run tests in parallel** (Cucumber supports parallel execution)
 3. **Skip screenshots** for passing tests
@@ -185,6 +200,7 @@ To speed up tests:
 ## Test Configuration
 
 ### Cucumber Config (`.cucumber.cjs`)
+
 ```javascript
 {
   paths: ['tests/features/**/*.feature'],
@@ -195,11 +211,13 @@ To speed up tests:
 ```
 
 ### TypeScript Config (`tsconfig.cucumber.json`)
+
 Configured to use ES modules with ts-node loader.
 
 ## Continuous Integration
 
 Tests run in CI via GitHub Actions (`.github/workflows/deploy.yml`):
+
 - Tests must pass before deployment to GitHub Pages
 - Screenshots are uploaded as artifacts on failure
 - Headless mode is used in CI
@@ -207,6 +225,7 @@ Tests run in CI via GitHub Actions (`.github/workflows/deploy.yml`):
 ## Writing New Tests
 
 ### 1. Add a Gherkin Scenario
+
 ```gherkin
 Scenario: My new feature
   Given I have some initial state
@@ -215,26 +234,29 @@ Scenario: My new feature
 ```
 
 ### 2. Implement Step Definitions
+
 ```typescript
-Given('I have some initial state', async function(this: FloorplanWorld) {
+Given('I have some initial state', async function (this: FloorplanWorld) {
   // Setup code
 });
 
-When('I perform an action', async function(this: FloorplanWorld) {
+When('I perform an action', async function (this: FloorplanWorld) {
   await this.page.click('[data-testid="my-button"]');
 });
 
-Then('I should see expected result', async function(this: FloorplanWorld) {
+Then('I should see expected result', async function (this: FloorplanWorld) {
   await expect(this.page.locator('.result')).toBeVisible();
 });
 ```
 
 ### 3. Add Test IDs to Components
+
 ```tsx
 <button data-testid="my-button">Click Me</button>
 ```
 
 ### 4. Run and Debug
+
 ```bash
 npm run test:headed  # See the browser
 ```
@@ -264,6 +286,7 @@ The test suite uses a centralized Node.js script at `scripts/run-cucumber.js` to
 ### Architecture
 
 The runner script:
+
 1. **Configures Node.js options** - Automatically sets `--loader ts-node/esm` and `--experimental-specifier-resolution=node`
 2. **Sets TypeScript config** - Uses `tsconfig.cucumber.json` for test compilation
 3. **Passes through arguments** - Supports feature files, line numbers, tags, etc.
@@ -287,7 +310,7 @@ const nodeOptions = [
   '--loader',
   'ts-node/esm',
   '--experimental-specifier-resolution=node',
-  '--max-old-space-size=4096'  // Increase memory limit
+  '--max-old-space-size=4096', // Increase memory limit
 ];
 ```
 

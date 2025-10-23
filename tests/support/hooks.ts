@@ -5,17 +5,17 @@ import { FloorplanWorld } from './world';
 setDefaultTimeout(15000);
 
 // Global setup
-BeforeAll(async function() {
+BeforeAll(async function () {
   console.log('Starting test suite...');
 });
 
 // Global teardown
-AfterAll(async function() {
+AfterAll(async function () {
   console.log('Test suite completed');
 });
 
 // Before each scenario
-Before(async function(this: FloorplanWorld) {
+Before(async function (this: FloorplanWorld) {
   await this.init();
   // Navigate to the app (adjust URL based on your setup)
   const baseUrl = process.env.BASE_URL || 'http://localhost:5173/floorplan/';
@@ -23,7 +23,7 @@ Before(async function(this: FloorplanWorld) {
 });
 
 // After each scenario
-After(async function(this: FloorplanWorld, { result }) {
+After(async function (this: FloorplanWorld, { result }) {
   // Take screenshot on failure (only if page exists)
   if (result?.status === 'FAILED' && this.page) {
     try {

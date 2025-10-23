@@ -15,6 +15,7 @@ npm run format:check
 ```
 
 **Configuration**: [.prettierrc](.prettierrc)
+
 - Single quotes
 - Semicolons
 - 100 character line width
@@ -33,6 +34,7 @@ npm run lint:fix
 **Configuration**: [eslint.config.js](eslint.config.js)
 
 **Checks for**:
+
 - TypeScript errors and best practices
 - React hooks usage
 - **Unused imports** (automatically detected and flagged as errors)
@@ -49,6 +51,7 @@ npm run test:coverage
 **Configuration**: [vitest.config.ts](vitest.config.ts)
 
 Coverage reports are generated in:
+
 - `coverage/` directory (HTML report)
 - Console output (text summary)
 
@@ -62,6 +65,7 @@ npm run validate
 ```
 
 This command runs:
+
 1. ESLint checks
 2. Prettier format validation
 3. Full Cucumber test suite (121 scenarios)
@@ -74,6 +78,7 @@ npm run build
 ```
 
 The build process:
+
 1. Runs ESLint
 2. Checks code formatting
 3. Compiles TypeScript
@@ -99,10 +104,12 @@ npm install --save-dev husky lint-staged
 ### IDE Integration
 
 **VS Code**: Install these extensions for real-time feedback:
+
 - ESLint (dbaeumer.vscode-eslint)
 - Prettier (esbenp.prettier-vscode)
 
 Add to `.vscode/settings.json`:
+
 ```json
 {
   "editor.formatOnSave": true,
@@ -116,6 +123,7 @@ Add to `.vscode/settings.json`:
 ## Current Linting Results
 
 Run `npm run lint` to see detected issues:
+
 - Unused imports are automatically flagged
 - Unused variables are warned about
 - TypeScript type issues are caught

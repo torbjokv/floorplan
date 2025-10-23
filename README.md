@@ -12,6 +12,7 @@ A browser-based SVG floorplan designer for creating architectural floor plans th
 ## ✨ Features
 
 ### Core Functionality
+
 - **📝 Dual Editor** - JSON editor or visual GUI editor with form controls
 - **🔄 Real-Time Preview** - See changes instantly with automatic rendering (500ms debounce)
 - **🏛️ Zero Point System** - Unified positioning with virtual anchor point at (0,0)
@@ -25,11 +26,13 @@ A browser-based SVG floorplan designer for creating architectural floor plans th
 - **📏 Millimeter Precision** - All measurements in millimeters for architectural accuracy
 
 ### Interactive Features
+
 - **🖱️ Click-to-Edit** - Click rooms in SVG to jump to their configuration
 - **✨ Hover Effects** - Visual feedback on all elements (rooms, doors, windows, objects)
 - **🔗 Composite Highlighting** - Hover highlights all parts of composite rooms together
 
 ### Project Management
+
 - **💾 Auto-Save** - Projects automatically saved to localStorage
 - **🔗 Share URLs** - Share projects with URL including project ID and name
 - **🔒 Read-Only Sharing** - Shared projects load as read-only (duplicate to edit)
@@ -97,6 +100,7 @@ Create a simple floor plan anchored to the Zero Point:
 ```
 
 **Key Points:**
+
 - Rooms need unique `id` (required) and optional `name` (display name)
 - First room attaches to `"zeropoint:top-left"` (virtual anchor at 0,0)
 - Other rooms can attach to Zero Point or other rooms by ID
@@ -133,6 +137,7 @@ Create a simple floor plan anchored to the Zero Point:
 ```
 
 **Door Types:**
+
 - `"normal"` - Shows door rectangle and swing arc (default)
 - `"opening"` - Shows only door rectangle (no swing arc)
 
@@ -187,6 +192,7 @@ Add decorative objects like furniture:
 ```
 
 **Object Anchor System:**
+
 - `anchor` - Where on the object to position (top-left, top-right, bottom-left, bottom-right)
 - `roomAnchor` - Which room corner x,y is relative to
 
@@ -194,39 +200,39 @@ Add decorative objects like furniture:
 
 ### Room Properties
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `id` | string | **required** | Unique room identifier (e.g., "livingroom1") |
-| `name` | string | *optional* | Display name for the room |
-| `width` | number | **required** | Width in millimeters (x-axis) |
-| `depth` | number | **required** | Depth in millimeters (y-axis) |
-| `anchor` | string | "top-left" | Which corner of this room attaches to the reference point: `"top-left"`, `"top-right"`, `"bottom-left"`, `"bottom-right"` |
-| `attachTo` | string | **required** | Reference: `"roomId:corner"` or `"zeropoint:corner"` |
-| `offset` | [number, number] | [0, 0] | Position adjustment `[x, y]` |
-| `parts` | array | - | Sub-parts for composite rooms (each needs `id`) |
-| `objects` | array | - | Decorative objects (squares/circles) |
+| Property   | Type             | Default      | Description                                                                                                               |
+| ---------- | ---------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `id`       | string           | **required** | Unique room identifier (e.g., "livingroom1")                                                                              |
+| `name`     | string           | _optional_   | Display name for the room                                                                                                 |
+| `width`    | number           | **required** | Width in millimeters (x-axis)                                                                                             |
+| `depth`    | number           | **required** | Depth in millimeters (y-axis)                                                                                             |
+| `anchor`   | string           | "top-left"   | Which corner of this room attaches to the reference point: `"top-left"`, `"top-right"`, `"bottom-left"`, `"bottom-right"` |
+| `attachTo` | string           | **required** | Reference: `"roomId:corner"` or `"zeropoint:corner"`                                                                      |
+| `offset`   | [number, number] | [0, 0]       | Position adjustment `[x, y]`                                                                                              |
+| `parts`    | array            | -            | Sub-parts for composite rooms (each needs `id`)                                                                           |
+| `objects`  | array            | -            | Decorative objects (squares/circles)                                                                                      |
 
 ### Door Properties
 
 Doors have a fixed thickness of 100mm.
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `room` | string | **required** | Room ID with wall: `"roomId:wall"` where wall is `top`, `bottom`, `left`, or `right` |
-| `width` | number | **required** | Door width in mm |
-| `offset` | number | 0 | Distance along the wall from the wall's start in mm |
-| `swing` | string | "inwards-right" | `"inwards-left"`, `"inwards-right"`, `"outwards-left"`, or `"outwards-right"` |
-| `type` | string | "normal" | `"normal"` (with swing arc) or `"opening"` (without arc) |
+| Property | Type   | Default         | Description                                                                          |
+| -------- | ------ | --------------- | ------------------------------------------------------------------------------------ |
+| `room`   | string | **required**    | Room ID with wall: `"roomId:wall"` where wall is `top`, `bottom`, `left`, or `right` |
+| `width`  | number | **required**    | Door width in mm                                                                     |
+| `offset` | number | 0               | Distance along the wall from the wall's start in mm                                  |
+| `swing`  | string | "inwards-right" | `"inwards-left"`, `"inwards-right"`, `"outwards-left"`, or `"outwards-right"`        |
+| `type`   | string | "normal"        | `"normal"` (with swing arc) or `"opening"` (without arc)                             |
 
 ### Window Properties
 
 Windows have a fixed thickness of 100mm.
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `room` | string | **required** | Room ID with wall: `"roomId:wall"` where wall is `top`, `bottom`, `left`, or `right` |
-| `width` | number | **required** | Window width in mm |
-| `offset` | number | 0 | Distance along the wall from the wall's start in mm |
+| Property | Type   | Default      | Description                                                                          |
+| -------- | ------ | ------------ | ------------------------------------------------------------------------------------ |
+| `room`   | string | **required** | Room ID with wall: `"roomId:wall"` where wall is `top`, `bottom`, `left`, or `right` |
+| `width`  | number | **required** | Window width in mm                                                                   |
+| `offset` | number | 0            | Distance along the wall from the wall's start in mm                                  |
 
 ## 🎨 Positioning System
 
@@ -319,6 +325,7 @@ See [CLAUDE.md](CLAUDE.md) for detailed architecture documentation and developme
 ### JSON Syntax Errors (❌)
 
 Displayed immediately when JSON is invalid:
+
 ```
 ❌ Unexpected token } in JSON at position 123
 ```
@@ -326,6 +333,7 @@ Displayed immediately when JSON is invalid:
 ### Positioning Errors (⚠️)
 
 Displayed when rooms can't be positioned:
+
 ```
 ⚠️ Positioning Errors:
 • Room "Kitchen" could not be positioned. Referenced room "Bedroom" not found.
@@ -487,6 +495,7 @@ All test commands use a centralized runner at `scripts/run-cucumber.js` for cons
 ### Test Features
 
 The test suite covers:
+
 - ✅ Project management (100% passing)
 - ✅ GUI editor operations (100% passing)
 - ✅ JSON editor functionality (87% passing)

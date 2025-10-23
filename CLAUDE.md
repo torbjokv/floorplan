@@ -18,6 +18,7 @@ This is a browser-based SVG floorplan designer built with React, TypeScript, and
 ### Core Positioning System
 
 The application uses a **Zero Point positioning system** where all rooms use the same positioning logic:
+
 1. **Zero Point**: Virtual anchor point at (0,0) - `"attachTo": "zeropoint:top-left"`
 2. **Room-based positioning**: Attach to other rooms - `"attachTo": "roomId:top-right"`
 3. **Offset adjustment**: Fine-tune position with `offset: [x, y]`
@@ -25,6 +26,7 @@ The application uses a **Zero Point positioning system** where all rooms use the
 **Key Feature**: No special "first room" logic - all rooms treated equally. **All rooms must have `attachTo` property**. At least one room must connect to Zero Point to anchor the floorplan (enforced with error).
 
 This system is implemented in [src/utils.ts](src/utils.ts):
+
 - `resolveRoomPositions()`: Iteratively resolves room positions, handles Zero Point reference
 - `resolveCompositeRoom()`: Resolves positions for room parts that can reference parent or other parts
 - `getCorner()` and `getAnchorAdjustment()`: Calculate precise corner positions and anchor offsets
@@ -69,6 +71,7 @@ Rooms can have `parts` arrays for complex shapes. Parts use the same positioning
 ### Type System
 
 All core types are defined in [src/types.ts](src/types.ts):
+
 - `Room`: **BREAKING**: Now requires `id` field (e.g., "livingroom1") and `attachTo` field. `name` is optional display name. Must be positioned via Zero Point or other rooms using `attachTo`. No longer supports absolute x/y coordinates. Supports optional `parts[]` and `objects[]`. Has `width` (x-axis) and `depth` (y-axis) dimensions.
 - `RoomPart`: Nested room parts that can attach to parent or other parts. **BREAKING**: Now requires `id` field, `name` is optional.
 - `RoomObject`: Decorative objects inside rooms with dual anchor system:
@@ -93,6 +96,7 @@ All measurements are in **millimeters**. The `mm()` function in [src/utils.ts](s
 ### Error Handling
 
 The positioning system in [src/utils.ts](src/utils.ts) returns a `PositioningResult` object containing both the resolved room map and any positioning errors. Errors and warnings are displayed at the bottom of the preview window when:
+
 - A referenced room doesn't exist in `attachTo`
 - Circular dependencies are detected in room positioning
 - No room is connected to Zero Point (error - enforced)
@@ -104,67 +108,82 @@ The project is configured to deploy to GitHub Pages at the path `/floorplan/` (s
 ## JSON Schema
 
 Example floorplan structure with Zero Point and all features:
+
 ```json
 {
   "grid_step": 1000,
-  "rooms": [{
-    "id": "livingroom1",
-    "name": "Living Room",
-    "attachTo": "zeropoint:top-left",
-    "width": 4000,
-    "depth": 3000,
-    "objects": [{
-      "type": "square",
-      "x": 2000,
-      "y": 1500,
-      "width": 1000,
-      "height": 1000,
+  "rooms": [
+    {
+      "id": "livingroom1",
+      "name": "Living Room",
+      "attachTo": "zeropoint:top-left",
+      "width": 4000,
+      "depth": 3000,
+      "objects": [
+        {
+          "type": "square",
+          "x": 2000,
+          "y": 1500,
+          "width": 1000,
+          "height": 1000,
+          "anchor": "top-left",
+          "roomAnchor": "top-left",
+          "color": "#4caf50",
+          "text": "Table"
+        }
+      ]
+    },
+    {
+      "id": "kitchen1",
+      "name": "Kitchen",
       "anchor": "top-left",
-      "roomAnchor": "top-left",
-      "color": "#4caf50",
-      "text": "Table"
-    }]
-  }, {
-    "id": "kitchen1",
-    "name": "Kitchen",
-    "anchor": "top-left",
-    "attachTo": "livingroom1:top-right",
-    "offset": [0, 0],
-    "width": 4000,
-    "depth": 3000
-  }, {
-    "id": "composite1",
-    "name": "Composite Room",
-    "width": 3000,
-    "depth": 2000,
-    "attachTo": "livingroom1:bottom-left",
-    "parts": [{
-      "id": "part1",
-      "name": "Extension",
-      "width": 1000,
-      "depth": 1000,
-      "attachTo": "parent:bottom-left"
-    }]
-  }],
-  "doors": [{
-    "room": "livingroom1:bottom",
-    "offset": 1000,
-    "width": 800,
-    "swing": "inwards-right",
-    "type": "normal"
-  }, {
-    "room": "kitchen1:left",
-    "offset": 1000,
-    "width": 900,
-    "type": "opening"
-  }],
-  "windows": [{
-    "room": "kitchen1:top",
-    "offset": 1000,
-    "width": 1200
-  }]
+      "attachTo": "livingroom1:top-right",
+      "offset": [0, 0],
+      "width": 4000,
+      "depth": 3000
+    },
+    {
+      "id": "composite1",
+      "name": "Composite Room",
+      "width": 3000,
+      "depth": 2000,
+      "attachTo": "livingroom1:bottom-left",
+      "parts": [
+        {
+          "id": "part1",
+          "name": "Extension",
+          "width": 1000,
+          "depth": 1000,
+          "attachTo": "parent:bottom-left"
+        }
+      ]
+    }
+  ],
+  "doors": [
+    {
+      "room": "livingroom1:bottom",
+      "offset": 1000,
+      "width": 800,
+      "swing": "inwards-right",
+      "type": "normal"
+    },
+    {
+      "room": "kitchen1:left",
+      "offset": 1000,
+      "width": 900,
+      "type": "opening"
+    }
+  ],
+  "windows": [
+    {
+      "room": "kitchen1:top",
+      "offset": 1000,
+      "width": 1200
+    }
+  ]
 }
 ```
+
 ## Testing
 
 The project uses **Cucumber/Gherkin** for behavior-driven development (BDD) with **Playwright** for E2E browser automation.
@@ -215,6 +234,7 @@ When writing or updating tests:
 ### Test Coverage
 
 The test suite covers:
+
 1. **Project Menu** (100% passing ✅) - Project management, save/load, sharing
 2. **GUI Editor** (71% passing) - Form controls, room/door/window management
 3. **JSON Editor** - Text editing, validation, line numbers
@@ -233,14 +253,15 @@ The test suite covers:
 ### Skipping Tests
 
 Claude is not allowed to add `@skip` tags to tests. If tests are failing:
+
 1. Investigate the root cause
 2. Ask the user what should be done with failing tests
 3. User can manually add `@skip` tags if needed
 
-
 ## Recent Changes
 
 ### Latest Updates (Current Session)
+
 - **URL Update Fix**: Fixed bug where changing project name didn't update the URL - URL now updates when project ID, project name, or JSON changes
 - **Undo/Redo System**: Full history tracking for JSON changes with undo/redo controls in preview section
 - **Zero Point System** ⚫ (BREAKING CHANGE): Virtual anchor point at (0,0) for unified positioning
@@ -274,6 +295,7 @@ Claude is not allowed to add `@skip` tags to tests. If tests are failing:
 - **Dual Anchor System for Objects**: Objects have both `anchor` (object position) and `roomAnchor` (which room corner to attach to)
 
 ### Previous Updates
+
 - **Renamed `addition` to `parts`**: Room extensions now use `parts[]` instead of `addition[]` (BREAKING CHANGE)
 - **Added room objects**: Rooms can contain decorative objects (squares/circles) with customizable colors
 - **Wall-based door/window positioning**: Uses wall positions (`top`, `bottom`, `left`, `right`) with automatic rotation (BREAKING CHANGE)

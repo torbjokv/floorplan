@@ -26,7 +26,13 @@ interface CornerHighlightsProps {
 }
 
 // Helper function to create quarter-circle path
-function getQuarterCirclePath(cornerX: number, cornerY: number, anchor: Anchor, radius: number, mm: (val: number) => number): string {
+function getQuarterCirclePath(
+  cornerX: number,
+  cornerY: number,
+  anchor: Anchor,
+  radius: number,
+  mm: (val: number) => number
+): string {
   const r = mm(radius);
   const cx = mm(cornerX);
   const cy = mm(cornerY);
@@ -47,7 +53,15 @@ function getQuarterCirclePath(cornerX: number, cornerY: number, anchor: Anchor, 
   }
 }
 
-export function CornerHighlights({ roomMap, hoveredCorner, dragState, snapTarget, mm, getCorner, dragOffset }: CornerHighlightsProps) {
+export function CornerHighlights({
+  roomMap,
+  hoveredCorner,
+  dragState,
+  snapTarget,
+  mm,
+  getCorner,
+  dragOffset,
+}: CornerHighlightsProps) {
   const highlights = [];
 
   // When dragging, show only the grabbed corner

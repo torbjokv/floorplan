@@ -68,7 +68,7 @@ export function ProjectHeader({
       <input
         type="text"
         value={projectName}
-        onChange={(e) => onProjectNameChange(e.target.value)}
+        onChange={e => onProjectNameChange(e.target.value)}
         className={styles.nameInput}
         data-testid="project-name-input"
       />
@@ -89,7 +89,7 @@ export function ProjectHeader({
             onDuplicateProject={() => handleMenuAction(onDuplicateProject)}
             onDownloadJSON={() => handleMenuAction(onDownloadJSON)}
             onShare={() => handleMenuAction(onShare)}
-            onLoadProject={(project) => handleMenuAction(() => onLoadProject(project))}
+            onLoadProject={project => handleMenuAction(() => onLoadProject(project))}
             onDeleteProject={onDeleteProject}
           />
         )}

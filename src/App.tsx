@@ -1,24 +1,29 @@
-import { useState, useEffect, useCallback } from 'react'
-import './App.css'
+import { useState, useEffect, useCallback } from 'react';
+import './App.css';
 
 // Components
-import { JSONEditor } from './components/JSONEditor'
-import { GUIEditor } from './components/GUIEditor'
-import { FloorplanRenderer } from './components/FloorplanRenderer'
-import { ProjectHeader } from './components/ui/ProjectHeader/ProjectHeader'
-import { UndoRedoControls } from './components/ui/UndoRedoControls/UndoRedoControls'
-import { EditorTabs } from './components/ui/EditorTabs/EditorTabs'
-import { ErrorPanel } from './components/ui/ErrorPanel/ErrorPanel'
-import { Notifications } from './components/ui/Notifications/Notifications'
+import { JSONEditor } from './components/JSONEditor';
+import { GUIEditor } from './components/GUIEditor';
+import { FloorplanRenderer } from './components/FloorplanRenderer';
+import { ProjectHeader } from './components/ui/ProjectHeader/ProjectHeader';
+import { UndoRedoControls } from './components/ui/UndoRedoControls/UndoRedoControls';
+import { EditorTabs } from './components/ui/EditorTabs/EditorTabs';
+import { ErrorPanel } from './components/ui/ErrorPanel/ErrorPanel';
+import { Notifications } from './components/ui/Notifications/Notifications';
 
 // Types
-import type { SavedProject } from './components/ui/ProjectMenu/ProjectMenu'
-import type { FloorplanData, Room } from './types'
+import type { SavedProject } from './components/ui/ProjectMenu/ProjectMenu';
+import type { FloorplanData, Room } from './types';
 
 // Utilities and Hooks
-import { generateProjectId, parseHashData, loadSavedProjects, saveSavedProjects } from './utils/projectUtils'
-import { resolveRoomPositions } from './utils'
-import { useUndoRedo } from './hooks/useUndoRedo'
+import {
+  generateProjectId,
+  parseHashData,
+  loadSavedProjects,
+  saveSavedProjects,
+} from './utils/projectUtils';
+import { resolveRoomPositions } from './utils';
+import { useUndoRedo } from './hooks/useUndoRedo';
 
 const defaultJSON = `{
   "grid_step": 1000,
@@ -113,7 +118,15 @@ function App() {
     return defaultJSON;
   })();
 
-  const { value: jsonText, setValue: setJsonText, undo, redo, canUndo, canRedo, setValueDirect } = useUndoRedo(initialJsonValue);
+  const {
+    value: jsonText,
+    setValue: setJsonText,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    setValueDirect,
+  } = useUndoRedo(initialJsonValue);
 
   // Helper function to update JSON with history tracking
   const updateJsonText = (newText: string) => {
@@ -157,7 +170,7 @@ function App() {
     } catch {
       return {
         grid_step: 1000,
-        rooms: []
+        rooms: [],
       };
     }
   });
@@ -281,47 +294,56 @@ function App() {
     setPositioningErrors(errors);
   }, []);
 
-  const handleRoomClick = useCallback((roomId: string) => {
-    // Switch to GUI tab if not already there
-    if (activeTab !== 'gui') {
-      setActiveTab('gui');
-    }
-    // Wait for tab switch, then scroll to room
-    setTimeout(() => {
-      const roomElement = document.querySelector(`[data-room-id="${roomId}"]`);
-      if (roomElement) {
-        roomElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const handleRoomClick = useCallback(
+    (roomId: string) => {
+      // Switch to GUI tab if not already there
+      if (activeTab !== 'gui') {
+        setActiveTab('gui');
       }
-    }, 100);
-  }, [activeTab]);
+      // Wait for tab switch, then scroll to room
+      setTimeout(() => {
+        const roomElement = document.querySelector(`[data-room-id="${roomId}"]`);
+        if (roomElement) {
+          roomElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    },
+    [activeTab]
+  );
 
-  const handleDoorClick = useCallback((doorIndex: number) => {
-    // Switch to GUI tab if not already there
-    if (activeTab !== 'gui') {
-      setActiveTab('gui');
-    }
-    // Wait for tab switch, then scroll to door
-    setTimeout(() => {
-      const doorElement = document.querySelector(`[data-door-index="${doorIndex}"]`);
-      if (doorElement) {
-        doorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const handleDoorClick = useCallback(
+    (doorIndex: number) => {
+      // Switch to GUI tab if not already there
+      if (activeTab !== 'gui') {
+        setActiveTab('gui');
       }
-    }, 100);
-  }, [activeTab]);
+      // Wait for tab switch, then scroll to door
+      setTimeout(() => {
+        const doorElement = document.querySelector(`[data-door-index="${doorIndex}"]`);
+        if (doorElement) {
+          doorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    },
+    [activeTab]
+  );
 
-  const handleWindowClick = useCallback((windowIndex: number) => {
-    // Switch to GUI tab if not already there
-    if (activeTab !== 'gui') {
-      setActiveTab('gui');
-    }
-    // Wait for tab switch, then scroll to window
-    setTimeout(() => {
-      const windowElement = document.querySelector(`[data-window-index="${windowIndex}"]`);
-      if (windowElement) {
-        windowElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const handleWindowClick = useCallback(
+    (windowIndex: number) => {
+      // Switch to GUI tab if not already there
+      if (activeTab !== 'gui') {
+        setActiveTab('gui');
       }
-    }, 100);
-  }, [activeTab]);
+      // Wait for tab switch, then scroll to window
+      setTimeout(() => {
+        const windowElement = document.querySelector(`[data-window-index="${windowIndex}"]`);
+        if (windowElement) {
+          windowElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    },
+    [activeTab]
+  );
 
   const handleAddRoom = () => {
     const DEFAULT_ROOM_SIZE = 3000; // mm
@@ -396,49 +418,60 @@ function App() {
     updateJsonText(JSON.stringify(data, null, 2));
   };
 
-  const handleRoomUpdate = useCallback((data: FloorplanData) => {
-    // Immediately update floorplan data for instant visual feedback
-    setFloorplanData(data);
+  const handleRoomUpdate = useCallback(
+    (data: FloorplanData) => {
+      // Immediately update floorplan data for instant visual feedback
+      setFloorplanData(data);
 
-    // Defer JSON stringify to avoid blocking UI on drop
-    setTimeout(() => {
-      updateJsonText(JSON.stringify(data, null, 2));
-    }, 0);
-  }, [updateJsonText]);
+      // Defer JSON stringify to avoid blocking UI on drop
+      setTimeout(() => {
+        updateJsonText(JSON.stringify(data, null, 2));
+      }, 0);
+    },
+    [updateJsonText]
+  );
 
-  const handleRoomNameUpdate = useCallback((roomId: string, newName: string) => {
-    // Update room name in the floorplan data
-    // Parse current JSON to avoid dependency on floorplanData state
-    try {
-      const data = JSON.parse(jsonText);
-      const updatedRooms = data.rooms.map((room: Room) =>
-        room.id === roomId ? { ...room, name: newName } : room
-      );
-      updateJsonText(JSON.stringify({ ...data, rooms: updatedRooms }, null, 2));
-    } catch (e) {
-      console.error('Failed to update room name:', e);
-    }
-  }, [jsonText, updateJsonText]);
-
-  const handleObjectClick = useCallback((roomId: string, objectIndex: number) => {
-    // Switch to GUI tab and scroll to the specific object
-    if (activeTab !== 'gui') {
-      setActiveTab('gui');
-    }
-    setTimeout(() => {
-      // Try to find the specific object first
-      const objectElement = document.querySelector(`[data-room-id="${roomId}"][data-object-index="${objectIndex}"]`);
-      if (objectElement) {
-        objectElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      } else {
-        // Fallback to room if object not found
-        const roomElement = document.querySelector(`[data-room-id="${roomId}"]`);
-        if (roomElement) {
-          roomElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
+  const handleRoomNameUpdate = useCallback(
+    (roomId: string, newName: string) => {
+      // Update room name in the floorplan data
+      // Parse current JSON to avoid dependency on floorplanData state
+      try {
+        const data = JSON.parse(jsonText);
+        const updatedRooms = data.rooms.map((room: Room) =>
+          room.id === roomId ? { ...room, name: newName } : room
+        );
+        updateJsonText(JSON.stringify({ ...data, rooms: updatedRooms }, null, 2));
+      } catch (e) {
+        console.error('Failed to update room name:', e);
       }
-    }, 100);
-  }, [activeTab]);
+    },
+    [jsonText, updateJsonText]
+  );
+
+  const handleObjectClick = useCallback(
+    (roomId: string, objectIndex: number) => {
+      // Switch to GUI tab and scroll to the specific object
+      if (activeTab !== 'gui') {
+        setActiveTab('gui');
+      }
+      setTimeout(() => {
+        // Try to find the specific object first
+        const objectElement = document.querySelector(
+          `[data-room-id="${roomId}"][data-object-index="${objectIndex}"]`
+        );
+        if (objectElement) {
+          objectElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          // Fallback to room if object not found
+          const roomElement = document.querySelector(`[data-room-id="${roomId}"]`);
+          if (roomElement) {
+            roomElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
+      }, 100);
+    },
+    [activeTab]
+  );
 
   const handleDownloadJSON = () => {
     const blob = new Blob([jsonText], { type: 'application/json' });
@@ -494,12 +527,12 @@ function App() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'application/json,.json';
-    input.onchange = (e) => {
+    input.onchange = e => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
 
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = event => {
         try {
           const text = event.target?.result as string;
           const parsed = JSON.parse(text);
@@ -511,7 +544,11 @@ function App() {
           // If project with this ID already exists, show warning
           const existingProject = savedProjects.find(p => p.name === filename);
           if (existingProject) {
-            if (!confirm(`A project named "${filename}" already exists. This file will not be imported to prevent duplicates. Use the "Duplicate" button in the project menu to create a copy if needed.`)) {
+            if (
+              !confirm(
+                `A project named "${filename}" already exists. This file will not be imported to prevent duplicates. Use the "Duplicate" button in the project menu to create a copy if needed.`
+              )
+            ) {
               return;
             }
             // User confirmed, but we still won't overwrite - just load it without saving
@@ -570,7 +607,7 @@ function App() {
       id: projectId,
       name: projectName,
       json: jsonText,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     // Create a duplicate with a new ID and incremented name
@@ -588,7 +625,7 @@ function App() {
       id: newId,
       name: newName,
       json: sourceProject.json,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     const updated = [duplicatedProject, ...savedProjects];
@@ -622,46 +659,57 @@ function App() {
   };
 
   return (
-    <div className={`app-container ${editorCollapsed ? 'show-grid' : ''}`} data-testid="app-container">
-      <div className={`editor-section ${editorCollapsed ? 'collapsed' : ''}`} data-testid="editor-section">
+    <div
+      className={`app-container ${editorCollapsed ? 'show-grid' : ''}`}
+      data-testid="app-container"
+    >
+      <div
+        className={`editor-section ${editorCollapsed ? 'collapsed' : ''}`}
+        data-testid="editor-section"
+      >
         <button
           className={`collapse-toggle-btn ${editorCollapsed ? 'collapsed' : ''}`}
           onClick={() => setEditorCollapsed(!editorCollapsed)}
-          title={editorCollapsed ? "Expand editor" : "Collapse editor"}
+          title={editorCollapsed ? 'Expand editor' : 'Collapse editor'}
           data-testid="collapse-toggle-btn"
         >
           {editorCollapsed ? '▶' : '◀'}
         </button>
         {!editorCollapsed && (
           <>
-        <EditorTabs activeTab={activeTab} onTabChange={setActiveTab} />
-        {activeTab === 'json' ? (
-          <JSONEditor
-            value={jsonText}
-            onChange={updateJsonText}
-            error={jsonError}
-            warnings={positioningErrors}
-          />
-        ) : (
-          <GUIEditor
-            data={floorplanData}
-            onChange={handleGUIChange}
-          />
-        )}
-        <div className="button-row" data-testid="editor-button-row">
-          {activeTab === 'json' && (
-            <button className="format-button" onClick={handleFormatJSON} data-testid="format-json-btn">
-              Format JSON
-            </button>
-          )}
-          <button className="download-button" onClick={handleDownloadJSON} data-testid="download-json-btn">
-            💾 Download JSON
-          </button>
-          <button className="share-button" onClick={handleShare} data-testid="share-btn">
-            🔗 Share
-          </button>
-        </div>
-        </>
+            <EditorTabs activeTab={activeTab} onTabChange={setActiveTab} />
+            {activeTab === 'json' ? (
+              <JSONEditor
+                value={jsonText}
+                onChange={updateJsonText}
+                error={jsonError}
+                warnings={positioningErrors}
+              />
+            ) : (
+              <GUIEditor data={floorplanData} onChange={handleGUIChange} />
+            )}
+            <div className="button-row" data-testid="editor-button-row">
+              {activeTab === 'json' && (
+                <button
+                  className="format-button"
+                  onClick={handleFormatJSON}
+                  data-testid="format-json-btn"
+                >
+                  Format JSON
+                </button>
+              )}
+              <button
+                className="download-button"
+                onClick={handleDownloadJSON}
+                data-testid="download-json-btn"
+              >
+                💾 Download JSON
+              </button>
+              <button className="share-button" onClick={handleShare} data-testid="share-btn">
+                🔗 Share
+              </button>
+            </div>
+          </>
         )}
       </div>
       <div className="preview-section" data-testid="preview-section">
@@ -678,12 +726,7 @@ function App() {
           onLoadProject={handleLoadProject}
           onDeleteProject={handleDeleteProject}
         />
-        <UndoRedoControls
-          canUndo={canUndo}
-          canRedo={canRedo}
-          onUndo={undo}
-          onRedo={redo}
-        />
+        <UndoRedoControls canUndo={canUndo} canRedo={canRedo} onUndo={undo} onRedo={redo} />
         <Notifications
           showUpdate={showUpdateAnimation}
           showCopy={showCopyNotification}
@@ -699,19 +742,20 @@ function App() {
           onRoomNameUpdate={handleRoomNameUpdate}
           onObjectClick={handleObjectClick}
         />
-        <button className="download-svg-button" onClick={handleDownloadSVG} data-testid="download-svg-btn">
+        <button
+          className="download-svg-button"
+          onClick={handleDownloadSVG}
+          data-testid="download-svg-btn"
+        >
           📥 Download SVG
         </button>
         <button className="add-room-button" onClick={handleAddRoom} data-testid="add-room-btn">
           + Add Room
         </button>
-        <ErrorPanel
-          jsonError={jsonError}
-          positioningErrors={positioningErrors}
-        />
+        <ErrorPanel jsonError={jsonError} positioningErrors={positioningErrors} />
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

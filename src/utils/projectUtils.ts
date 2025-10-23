@@ -13,7 +13,11 @@ export interface SavedProject {
  * Generate a random project ID
  */
 export function generateProjectId(): string {
-  return 'proj_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  return (
+    'proj_' +
+    Math.random().toString(36).substring(2, 15) +
+    Math.random().toString(36).substring(2, 15)
+  );
 }
 
 /**
@@ -52,7 +56,7 @@ export function loadSavedProjects(): SavedProject[] {
         needsMigration = true;
         return {
           ...p,
-          id: generateProjectId()
+          id: generateProjectId(),
         };
       }
       return p;
@@ -83,6 +87,6 @@ export function saveSavedProjects(projects: SavedProject[]): void {
 export function naturalSort(a: SavedProject, b: SavedProject): number {
   return a.name.localeCompare(b.name, undefined, {
     numeric: true,
-    sensitivity: 'base'
+    sensitivity: 'base',
   });
 }

@@ -21,9 +21,7 @@ export function ErrorPanel({ jsonError, positioningErrors = [] }: ErrorPanelProp
         <div
           key={idx}
           className={
-            error.startsWith('Error:')
-              ? styles.positioningError
-              : styles.positioningWarning
+            error.startsWith('Error:') ? styles.positioningError : styles.positioningWarning
           }
           data-testid={`positioning-${error.startsWith('Error:') ? 'error' : 'warning'}-${idx}`}
         >
