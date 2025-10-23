@@ -1,4 +1,4 @@
-import { type ChangeEvent, useRef, useEffect, useState } from 'react';
+import { type ChangeEvent, useRef, useMemo } from 'react';
 
 interface JSONEditorProps {
   value: string;
@@ -10,7 +10,12 @@ interface JSONEditorProps {
 export function JSONEditor({ value, onChange, error, warnings }: JSONEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
-  const [lineNumbers, setLineNumbers] = useState<number[]>([]);
+
+  // Calculate line numbers directly from value
+  const lineNumbers = useMemo(() => {
+    const lines = value.split('\n').length;
+    return Array.from({ length: lines }, (_, i) => i + 1);
+  }, [value]);
 
   const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     onChange(e.target.value);
@@ -21,11 +26,6 @@ export function JSONEditor({ value, onChange, error, warnings }: JSONEditorProps
       lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
     }
   };
-
-  useEffect(() => {
-    const lines = value.split('\n').length;
-    setLineNumbers(Array.from({ length: lines }, (_, i) => i + 1));
-  }, [value]);
 
   return (
     <div className="editor-container" data-testid="json-editor">

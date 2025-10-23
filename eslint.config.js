@@ -36,5 +36,14 @@ export default tseslint.config(
         },
       ],
     },
+  },
+  // Relax rules for test files
+  {
+    files: ['tests/**/*.ts', 'tests/**/*.tsx'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off', // Allow 'any' in tests
+      '@typescript-eslint/no-unused-vars': 'off', // Allow unused vars in tests
+      'unused-imports/no-unused-vars': 'off', // Allow unused vars in tests
+    },
   }
 );

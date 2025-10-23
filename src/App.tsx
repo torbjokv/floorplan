@@ -106,7 +106,7 @@ function App() {
       try {
         JSON.parse(hashData); // Validate it's valid JSON
         return hashData;
-      } catch (e) {
+      } catch {
         setUrlError('Invalid JSON in URL - using default template');
       }
     }

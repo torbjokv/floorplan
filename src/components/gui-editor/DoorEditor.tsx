@@ -1,4 +1,4 @@
-import type { Door, Room } from '../../types';
+import type { Door, Room, SwingDirection } from '../../types';
 import './DoorEditor.css';
 
 interface RoomListItem {
@@ -103,7 +103,7 @@ export function DoorEditor({
                   Swing Direction:
                   <select
                     value={door.swing ?? 'inwards-right'}
-                    onChange={(e) => onUpdateDoor(index, { ...door, swing: e.target.value as any })}
+                    onChange={(e) => onUpdateDoor(index, { ...door, swing: e.target.value as SwingDirection })}
                     data-testid={`door-swing-${index}`}
                   >
                     <option value="inwards-left">Inwards Left</option>
