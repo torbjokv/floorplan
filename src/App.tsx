@@ -125,7 +125,10 @@ function App() {
   // ============================================================================
 
   const [activeTab, setActiveTab] = useState<'json' | 'gui'>('gui');
-  const [editorCollapsed, setEditorCollapsed] = useState(false);
+  const [editorCollapsed, setEditorCollapsed] = useState(() => {
+    const saved = localStorage.getItem('floorplan_editor_collapsed');
+    return saved ? JSON.parse(saved) : false;
+  });
   const [showUpdateAnimation, setShowUpdateAnimation] = useState(false);
   const [showCopyNotification, setShowCopyNotification] = useState(false);
 
@@ -239,6 +242,11 @@ function App() {
     }
     return false;
   });
+
+  // Save editor collapsed state to localStorage
+  useEffect(() => {
+    localStorage.setItem('floorplan_editor_collapsed', JSON.stringify(editorCollapsed));
+  }, [editorCollapsed]);
 
   // Auto-update on JSON changes with debounce
   useEffect(() => {
