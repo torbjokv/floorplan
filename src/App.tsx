@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import './App.css'
 
 // Components
@@ -269,11 +269,11 @@ function App() {
   // Event Handlers
   // ============================================================================
 
-  const handlePositioningErrors = (errors: string[]) => {
+  const handlePositioningErrors = useCallback((errors: string[]) => {
     setPositioningErrors(errors);
-  };
+  }, []);
 
-  const handleRoomClick = (roomId: string) => {
+  const handleRoomClick = useCallback((roomId: string) => {
     // Switch to GUI tab if not already there
     if (activeTab !== 'gui') {
       setActiveTab('gui');
@@ -285,9 +285,9 @@ function App() {
         roomElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }, 100);
-  };
+  }, [activeTab]);
 
-  const handleDoorClick = (doorIndex: number) => {
+  const handleDoorClick = useCallback((doorIndex: number) => {
     // Switch to GUI tab if not already there
     if (activeTab !== 'gui') {
       setActiveTab('gui');
@@ -299,9 +299,9 @@ function App() {
         doorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }, 100);
-  };
+  }, [activeTab]);
 
-  const handleWindowClick = (windowIndex: number) => {
+  const handleWindowClick = useCallback((windowIndex: number) => {
     // Switch to GUI tab if not already there
     if (activeTab !== 'gui') {
       setActiveTab('gui');
@@ -313,7 +313,7 @@ function App() {
         windowElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }, 100);
-  };
+  }, [activeTab]);
 
   const handleAddRoom = () => {
     const DEFAULT_ROOM_SIZE = 3000; // mm
@@ -388,20 +388,31 @@ function App() {
     updateJsonText(JSON.stringify(data, null, 2));
   };
 
-  const handleRoomUpdate = (data: FloorplanData) => {
-    // Update JSON text from drag and drop changes
-    updateJsonText(JSON.stringify(data, null, 2));
-  };
+  const handleRoomUpdate = useCallback((data: FloorplanData) => {
+    // Immediately update floorplan data for instant visual feedback
+    setFloorplanData(data);
 
-  const handleRoomNameUpdate = (roomId: string, newName: string) => {
+    // Defer JSON stringify to avoid blocking UI on drop
+    setTimeout(() => {
+      updateJsonText(JSON.stringify(data, null, 2));
+    }, 0);
+  }, [updateJsonText]);
+
+  const handleRoomNameUpdate = useCallback((roomId: string, newName: string) => {
     // Update room name in the floorplan data
-    const updatedRooms = floorplanData.rooms.map(room =>
-      room.id === roomId ? { ...room, name: newName } : room
-    );
-    updateJsonText(JSON.stringify({ ...floorplanData, rooms: updatedRooms }, null, 2));
-  };
+    // Parse current JSON to avoid dependency on floorplanData state
+    try {
+      const data = JSON.parse(jsonText);
+      const updatedRooms = data.rooms.map((room: Room) =>
+        room.id === roomId ? { ...room, name: newName } : room
+      );
+      updateJsonText(JSON.stringify({ ...data, rooms: updatedRooms }, null, 2));
+    } catch (e) {
+      console.error('Failed to update room name:', e);
+    }
+  }, [jsonText, updateJsonText]);
 
-  const handleObjectClick = (roomId: string, objectIndex: number) => {
+  const handleObjectClick = useCallback((roomId: string, objectIndex: number) => {
     // Switch to GUI tab and scroll to the specific object
     if (activeTab !== 'gui') {
       setActiveTab('gui');
@@ -419,7 +430,7 @@ function App() {
         }
       }
     }, 100);
-  };
+  }, [activeTab]);
 
   const handleDownloadJSON = () => {
     const blob = new Blob([jsonText], { type: 'application/json' });

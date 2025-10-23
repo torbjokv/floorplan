@@ -6,19 +6,6 @@ This document explains the comprehensive E2E test suite for the floorplan design
 
 The test suite uses **Cucumber/Gherkin** for behavior-driven development (BDD) with **Playwright** for browser automation. Tests are written in a human-readable format that describes application behavior.
 
-## Test Statistics
-
-- **Total Scenarios:** 124
-- **Total Steps:** 772
-- **Current Pass Rate:** 29 passing scenarios (23%), 382 passing steps (49%)
-- **Test Execution Time:** ~8 minutes for full suite
-
-### Status Breakdown
-- ✅ 29 passing scenarios (original project-menu tests)
-- ❌ 33 failed scenarios
-- ⚠️ 32 ambiguous scenarios (step patterns match multiple definitions)
-- ⏸️ 30 undefined scenarios (need implementation)
-
 ## Running Tests
 
 All test commands use the centralized test runner at `scripts/run-cucumber.js` which handles Node.js configuration and environment setup.
@@ -35,16 +22,14 @@ npm run test:headed
 
 ### Run Specific Feature Tests
 ```bash
-npm run test:project-menu      # Project management tests (12 scenarios) - ~20 seconds
-npm run test:gui-editor         # GUI editor tests (27 scenarios) - ~15 seconds
-npm run test:json-editor        # JSON editor tests (8 scenarios) - ~7 seconds
-npm run test:room-positioning   # Room positioning tests (15 scenarios) - ~25 seconds
-npm run test:architectural      # Doors & windows tests (13 scenarios) - ~22 seconds
-npm run test:svg-rendering      # SVG rendering tests (21 scenarios) - ~35 seconds
-npm run test:error-handling     # Error handling tests (21 scenarios) - ~50 seconds
+npm run test:project-menu
+npm run test:gui-editor 
+npm run test:json-editor 
+npm run test:room-positioning  
+npm run test:architectural   
+npm run test:svg-rendering    
+npm run test:error-handling   
 ```
-
-**✅ These now run ONLY the specified feature file** (not all tests) for much faster feedback during development!
 
 ### Advanced Test Running
 
@@ -99,7 +84,7 @@ All scenarios tagged with `@skip` will be automatically excluded from test runs.
 ### Feature Files (`tests/features/`)
 Human-readable test scenarios written in Gherkin syntax.
 
-1. **project-menu.feature** ✅ (12 scenarios, all passing)
+1. **project-menu.feature** 
    - Opening/closing project menu
    - Creating new projects
    - Loading examples
@@ -108,7 +93,7 @@ Human-readable test scenarios written in Gherkin syntax.
    - Duplicating projects
    - Project sorting and management
 
-2. **gui-editor.feature** (47 scenarios)
+2. **gui-editor.feature**
    - GUI editor visibility
    - Grid settings configuration
    - Room management (add, edit, delete)
@@ -120,7 +105,7 @@ Human-readable test scenarios written in Gherkin syntax.
    - Real-time synchronization with JSON
    - Click-to-scroll functionality
 
-3. **json-editor.feature** (13 scenarios)
+3. **json-editor.feature**
    - JSON editor visibility
    - Line numbers and scrolling
    - JSON validation
@@ -128,7 +113,7 @@ Human-readable test scenarios written in Gherkin syntax.
    - Error handling
    - Large JSON support
 
-4. **room-positioning.feature** (15 scenarios)
+4. **room-positioning.feature** 
    - Zero Point positioning system
    - Relative positioning
    - Anchor points
@@ -137,7 +122,7 @@ Human-readable test scenarios written in Gherkin syntax.
    - Circular dependency detection
    - Missing reference errors
 
-5. **architectural-elements.feature** (13 scenarios)
+5. **architectural-elements.feature**
    - Adding doors to room walls
    - Door swing directions (inwards/outwards, left/right)
    - Door types (normal with arc, opening without arc)
@@ -145,7 +130,7 @@ Human-readable test scenarios written in Gherkin syntax.
    - Wall positioning (top, bottom, left, right)
    - Multiple elements per room
 
-6. **svg-rendering.feature** (21 scenarios)
+6. **svg-rendering.feature**
    - Dynamic viewBox calculation
    - Grid overlay rendering
    - Room labels (editable on double-click)
@@ -156,7 +141,7 @@ Human-readable test scenarios written in Gherkin syntax.
    - Click interactions
    - Performance with 50+ rooms
 
-7. **error-handling.feature** (15 scenarios)
+7. **error-handling.feature**
    - JSON syntax errors
    - Positioning errors
    - Circular dependencies
@@ -166,22 +151,11 @@ Human-readable test scenarios written in Gherkin syntax.
    - Error recovery
    - Invalid door/window references
 
-### Step Definitions (`tests/step-definitions/`)
-TypeScript implementations that map Gherkin steps to Playwright actions.
-
-- **project-menu.steps.ts** ✅ - Fully implemented, all passing
-- **gui-editor.steps.ts** - Comprehensive implementations
-- **json-editor.steps.ts** - JSON editor interactions
-- **room-positioning.steps.ts** - Positioning logic tests
-- **architectural-elements.steps.ts** - Door & window tests
-- **svg-rendering.steps.ts** - SVG rendering tests
-- **error-handling.steps.ts** - Error scenario tests
-
 ### Support Files (`tests/support/`)
 - **world.ts** - Custom World class with browser context
 - **hooks.ts** - Before/After hooks for browser setup/teardown
 
-## Test IDs Added
+## Test IDs
 
 To enable robust testing, the following `data-testid` attributes were added:
 
@@ -198,24 +172,7 @@ To enable robust testing, the following `data-testid` attributes were added:
 - Errors: `json-error`, `json-warnings`
 
 ### SVG Components
-- Rooms already have: `data-room-id="{roomId}"`
-
-## Why Tests Take 8+ Minutes
-
-The full test suite takes approximately 8 minutes because:
-
-1. **124 scenarios** run sequentially
-2. Each scenario starts a fresh browser instance (Before hook)
-3. Each scenario loads the page and waits for it to be ready
-4. Screenshots are captured on failures
-5. Browser cleanup happens after each scenario (After hook)
-
-**Average time per scenario:** ~4 seconds
-
-### Performance Breakdown
-- Browser startup/shutdown: ~2s per scenario
-- Page load and interactions: ~2s per scenario
-- Screenshot capture (on failure): Additional time
+- Rooms have: `data-room-id="{roomId}"`
 
 ### Optimization Opportunities
 
@@ -224,29 +181,6 @@ To speed up tests:
 2. **Run tests in parallel** (Cucumber supports parallel execution)
 3. **Skip screenshots** for passing tests
 4. **Use tags** to run critical path tests only
-
-## Known Issues
-
-### Ambiguous Steps (32 scenarios)
-Some step definitions match multiple patterns. These need to be made more specific to avoid ambiguity.
-
-### Undefined Steps (241 steps)
-Many scenarios have steps that need implementation. These are stubs in the step definition files marked with TODO comments.
-
-### Failing Scenarios (33 scenarios)
-- Some timeouts occur when filling large JSON documents (50+ rooms)
-- Some assertions need adjustment based on actual application behavior
-- Some features may not be fully implemented yet
-
-## Next Steps
-
-To achieve 100% test coverage:
-
-1. **Fix ambiguous steps** - Refine step patterns to be unique
-2. **Implement undefined steps** - Complete the TODO items in step definition files
-3. **Fix failing scenarios** - Debug timeout issues and adjust assertions
-4. **Optimize test execution** - Enable parallel execution or browser reuse
-5. **Add missing test IDs** - If any UI elements need better selectors
 
 ## Test Configuration
 

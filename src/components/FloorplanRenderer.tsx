@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef, useCallback, memo, startTransition } from 'react';
 import type { FloorplanData, ResolvedRoom, Anchor } from '../types';
 import { mm, resolveRoomPositions, resolveCompositeRoom, getCorner } from '../utils';
 import { GridRenderer } from './floorplan/GridRenderer';
@@ -55,7 +55,7 @@ function getObjectAnchorOffset(anchor: Anchor, width: number, height: number): {
   }
 }
 
-export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDoorClick, onWindowClick, onRoomUpdate, onRoomNameUpdate, onObjectClick }: FloorplanRendererProps) {
+const FloorplanRendererComponent = ({ data, onPositioningErrors, onRoomClick, onDoorClick, onWindowClick, onRoomUpdate, onRoomNameUpdate, onObjectClick }: FloorplanRendererProps) => {
   const gridStep = data.grid_step || 1000;
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -65,6 +65,9 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
   const [snapTarget, setSnapTarget] = useState<CornerHighlight | null>(null);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number } | null>(null);
   const [connectedRooms, setConnectedRooms] = useState<Set<string>>(new Set());
+
+  // Use ref to track animation frame for drag updates
+  const dragAnimationFrame = useRef<number | null>(null);
 
   // Memoize room resolution to avoid recalculating on every render
   const { roomMap, errors } = useMemo(() => resolveRoomPositions(data.rooms), [data.rooms]);
@@ -76,15 +79,29 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
     }
   }, [errors, onPositioningErrors]);
 
-  // Calculate bounding box for all rooms and their parts
-  const calculateBounds = () => {
+  // Memoize composite room parts to avoid recalculating on every render
+  // ResolvedPart has x, y, width, depth properties just like ResolvedRoom
+  const compositeRoomPartsMap = useMemo(() => {
+    const partsMap = new Map<string, Array<{ x: number; y: number; width: number; depth: number }>>();
+    Object.values(roomMap).forEach(room => {
+      partsMap.set(room.id, resolveCompositeRoom(room));
+    });
+    return partsMap;
+  }, [roomMap]);
+
+  // Memoize bounds calculation to avoid recalculating on every render
+  const bounds = useMemo(() => {
+    if (Object.keys(roomMap).length === 0) {
+      return { x: 0, y: 0, width: 10000, depth: 10000 };
+    }
+
     let minX = Infinity;
     let minY = Infinity;
     let maxX = -Infinity;
     let maxY = -Infinity;
 
     Object.values(roomMap).forEach(room => {
-      const parts = resolveCompositeRoom(room);
+      const parts = compositeRoomPartsMap.get(room.id) || [];
 
       // Check main room bounds
       minX = Math.min(minX, room.x);
@@ -145,14 +162,7 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
       width: width + padding * 2,
       depth: depth + padding * 2
     };
-  };
-
-  // Memoize bounds calculation to avoid recalculating on every render
-  const bounds = useMemo(() => {
-    return Object.keys(roomMap).length > 0
-      ? calculateBounds()
-      : { x: 0, y: 0, width: 10000, depth: 10000 };
-  }, [roomMap]);
+  }, [roomMap, compositeRoomPartsMap]);
 
   // Calculate grid bounds based on actual content
   const gridMinX = Math.floor(bounds.x / gridStep) * gridStep;
@@ -236,15 +246,15 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
   };
 
   // Check if point is inside room bounds (including parts)
-  const isPointInRoom = (room: ResolvedRoom, x: number, y: number): boolean => {
+  const isPointInRoom = useCallback((room: ResolvedRoom, x: number, y: number): boolean => {
     // Check main room
     if (x >= room.x && x <= room.x + room.width &&
         y >= room.y && y <= room.y + room.depth) {
       return true;
     }
 
-    // Check parts
-    const parts = resolveCompositeRoom(room);
+    // Check parts - use memoized parts
+    const parts = compositeRoomPartsMap.get(room.id) || [];
     for (const part of parts) {
       if (x >= part.x && x <= part.x + part.width &&
           y >= part.y && y <= part.y + part.depth) {
@@ -253,7 +263,7 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
     }
 
     return false;
-  };
+  }, [compositeRoomPartsMap]);
 
   // Mouse move handler for hover detection
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -321,65 +331,75 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
     }
   };
 
-  // Handle drag movement
-  const handleDragMove = (x: number, y: number) => {
+  // Handle drag movement with requestAnimationFrame for smooth performance
+  const handleDragMove = useCallback((x: number, y: number) => {
     if (!dragState) return;
 
     const room = roomMap[dragState.roomId];
     if (!room) return;
 
-    let deltaX: number;
-    let deltaY: number;
-
-    if (dragState.dragType === 'corner' && dragState.anchor) {
-      // When dragging by corner, calculate offset to move that corner to mouse position
-      const cornerPos = getCorner(room, dragState.anchor);
-      deltaX = x - cornerPos.x;
-      deltaY = y - cornerPos.y;
-    } else {
-      // When dragging by center, use simple delta from start
-      deltaX = x - dragState.startMouseX;
-      deltaY = y - dragState.startMouseY;
+    // Cancel any pending animation frame
+    if (dragAnimationFrame.current !== null) {
+      cancelAnimationFrame(dragAnimationFrame.current);
     }
 
-    // Update visual drag offset
-    setDragOffset({ x: deltaX, y: deltaY });
+    // Schedule update for next animation frame
+    dragAnimationFrame.current = requestAnimationFrame(() => {
+      let deltaX: number;
+      let deltaY: number;
 
-    // Check for snap targets when dragging - only for the corner being dragged
-    let foundSnap = false;
-    if (dragState.dragType === 'corner' && dragState.anchor) {
-      // The dragged corner should now be at mouse position (x, y)
-      // because we calculated deltaX/Y to make corner move to mouse
-
-      // Check all other rooms for snap targets
-      for (const otherRoom of Object.values(roomMap)) {
-        if (otherRoom.id === dragState.roomId) continue;
-
-        const otherCorners: Anchor[] = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
-        for (const otherCorner of otherCorners) {
-          const otherPos = getCorner(otherRoom, otherCorner);
-          // Check distance from current mouse position (where dragged corner is)
-          const dist = Math.sqrt(
-            Math.pow(x - otherPos.x, 2) + Math.pow(y - otherPos.y, 2)
-          );
-
-          if (dist < SNAP_DISTANCE) {
-            setSnapTarget({ roomId: otherRoom.id, corner: otherCorner });
-            foundSnap = true;
-            break;
-          }
-        }
-        if (foundSnap) break;
+      if (dragState.dragType === 'corner' && dragState.anchor) {
+        // When dragging by corner, calculate offset to move that corner to mouse position
+        const cornerPos = getCorner(room, dragState.anchor);
+        deltaX = x - cornerPos.x;
+        deltaY = y - cornerPos.y;
+      } else {
+        // When dragging by center, use simple delta from start
+        deltaX = x - dragState.startMouseX;
+        deltaY = y - dragState.startMouseY;
       }
-    }
 
-    if (!foundSnap) {
-      setSnapTarget(null);
-    }
-  };
+      // Check for snap targets when dragging - only for the corner being dragged
+      let foundSnap = false;
+      let newSnapTarget: CornerHighlight | null = null;
+
+      if (dragState.dragType === 'corner' && dragState.anchor) {
+        // Check all other rooms for snap targets
+        for (const otherRoom of Object.values(roomMap)) {
+          if (otherRoom.id === dragState.roomId) continue;
+
+          const otherCorners: Anchor[] = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+          for (const otherCorner of otherCorners) {
+            const otherPos = getCorner(otherRoom, otherCorner);
+            // Check distance from current mouse position (where dragged corner is)
+            const dist = Math.sqrt(
+              Math.pow(x - otherPos.x, 2) + Math.pow(y - otherPos.y, 2)
+            );
+
+            if (dist < SNAP_DISTANCE) {
+              newSnapTarget = { roomId: otherRoom.id, corner: otherCorner };
+              foundSnap = true;
+              break;
+            }
+          }
+          if (foundSnap) break;
+        }
+      }
+
+      // Batch state updates together to minimize re-renders
+      setDragOffset({ x: deltaX, y: deltaY });
+      setSnapTarget(foundSnap ? newSnapTarget : null);
+    });
+  }, [dragState, roomMap]);
 
   // Mouse up handler to finish dragging
   const handleMouseUp = () => {
+    // Cancel any pending animation frame
+    if (dragAnimationFrame.current !== null) {
+      cancelAnimationFrame(dragAnimationFrame.current);
+      dragAnimationFrame.current = null;
+    }
+
     if (!dragState || !onRoomUpdate) {
       setDragState(null);
       setSnapTarget(null);
@@ -481,10 +501,13 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
     const updatedRooms = data.rooms.map(r => r.id === dragState.roomId ? updatedRoom : r);
     onRoomUpdate({ ...data, rooms: updatedRooms });
 
-    setDragState(null);
-    setSnapTarget(null);
-    setDragOffset(null);
-    setConnectedRooms(new Set());
+    // Use startTransition to mark cleanup as low-priority (non-urgent)
+    startTransition(() => {
+      setDragState(null);
+      setSnapTarget(null);
+      setDragOffset(null);
+      setConnectedRooms(new Set());
+    });
   };
 
   // Add global mouse up listener
@@ -498,8 +521,14 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
     return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
   }, [dragState]);
 
-
-
+  // Cleanup animation frame on unmount
+  useEffect(() => {
+    return () => {
+      if (dragAnimationFrame.current !== null) {
+        cancelAnimationFrame(dragAnimationFrame.current);
+      }
+    };
+  }, []);
 
 
   // Convert bounds to screen coordinates
@@ -606,4 +635,7 @@ export function FloorplanRenderer({ data, onPositioningErrors, onRoomClick, onDo
       </svg>
     </div>
   );
-}
+};
+
+// Memoize the component to prevent unnecessary re-renders
+export const FloorplanRenderer = memo(FloorplanRendererComponent);
