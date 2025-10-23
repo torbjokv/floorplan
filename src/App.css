@@ -31,7 +31,7 @@
 }
 
 .editor-section.collapsed {
-  min-width: 50px;
+  min-width: 0;
   max-width: 50px;
 }
 
@@ -350,7 +350,7 @@
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   z-index: 10;
 }

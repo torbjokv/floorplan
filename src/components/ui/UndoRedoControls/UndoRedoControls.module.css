@@ -6,6 +6,11 @@
   display: flex;
   gap: var(--spacing-sm);
   z-index: var(--z-header);
+  transition: left var(--transition-medium);
+}
+
+:global(.show-grid) .container {
+  left: 20px;
 }
 
 .button {
