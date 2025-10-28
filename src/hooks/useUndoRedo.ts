@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 /**
  * Custom hook for undo/redo functionality
@@ -34,20 +34,20 @@ export function useUndoRedo<T>(initialValue: T, maxHistory = 50) {
   /**
    * Undo to previous state
    */
-  const undo = () => {
+  const undo = useCallback(() => {
     if (historyIndex > 0) {
       setHistoryIndex(historyIndex - 1);
     }
-  };
+  }, [historyIndex]);
 
   /**
    * Redo to next state
    */
-  const redo = () => {
+  const redo = useCallback(() => {
     if (historyIndex < history.length - 1) {
       setHistoryIndex(historyIndex + 1);
     }
-  };
+  }, [historyIndex, history.length]);
 
   /**
    * Set value directly (bypasses history)
@@ -75,7 +75,7 @@ export function useUndoRedo<T>(initialValue: T, maxHistory = 50) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [historyIndex, history]);
+  }, [historyIndex, history, undo, redo]);
 
   return {
     value: currentValue,

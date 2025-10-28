@@ -1,0 +1,425 @@
+{{
+  // Helper functions for the parser
+  function extractList(head, tail) {
+    return [head, ...tail.map(t => t[1])];
+  }
+
+  function buildRoom(id, label, dimensions, anchor, attachInfo, offset, children) {
+    const room = {
+      id: id.toLowerCase(),
+      width: dimensions.width,
+      depth: dimensions.depth,
+      attachTo: `${attachInfo.target}:${attachInfo.anchor}`
+    };
+
+    if (label) {
+      room.name = label;
+    }
+
+    if (anchor) {
+      room.anchor = anchor;
+    }
+
+    if (offset) {
+      room.offset = offset;
+    }
+
+    // Process children
+    const parts = [];
+    const objects = [];
+
+    children.forEach(child => {
+      if (child.type === 'part') {
+        parts.push(child.data);
+      } else if (child.type === 'object') {
+        objects.push(child.data);
+      }
+    });
+
+    if (parts.length > 0) {
+      room.parts = parts;
+    }
+
+    if (objects.length > 0) {
+      room.objects = objects;
+    }
+
+    return room;
+  }
+
+  function buildPart(id, label, dimensions, anchor, attachInfo, offset, children) {
+    const part = {
+      id: id.toLowerCase(),
+      width: dimensions.width,
+      depth: dimensions.depth,
+      attachTo: `${attachInfo.target}:${attachInfo.anchor}`
+    };
+
+    if (label) {
+      part.name = label;
+    }
+
+    if (anchor) {
+      part.anchor = anchor;
+    }
+
+    if (offset) {
+      part.offset = offset;
+    }
+
+    const objects = children.filter(c => c.type === 'object').map(c => c.data);
+
+    if (objects.length > 0) {
+      part.objects = objects;
+    }
+
+    return part;
+  }
+}}
+
+// Main entry point
+FloorPlan
+  = _ grid:GridSetting? _ rooms:RoomList? _ {
+      const result = { rooms: [] };
+
+      if (grid) {
+        result.grid_step = grid;
+      }
+
+      // Separate rooms, doors, and windows
+      const doors = [];
+      const windows = [];
+
+      if (rooms) {
+        rooms.forEach(room => {
+          if (room && room.room) {
+            result.rooms.push(room.room);
+            if (room.doors) doors.push(...room.doors);
+            if (room.windows) windows.push(...room.windows);
+          }
+        });
+      }
+
+      if (doors.length > 0) {
+        result.doors = doors;
+      }
+
+      if (windows.length > 0) {
+        result.windows = windows;
+      }
+
+      return result;
+    }
+
+// Grid setting
+GridSetting
+  = "grid"i _ step:Integer {
+      return step;
+    }
+
+// Room list
+RoomList
+  = head:RoomDefinition tail:(_ RoomDefinition)* {
+      return extractList(head, tail);
+    }
+
+// Room definition
+RoomDefinition
+  = "room"i _ id:Identifier _ label:Label? _ dims:Dimensions _ anchor:Anchor? _ "at"i _ attach:AttachTo __ offset:Offset? children:RoomChildren? {
+      const roomId = id.toLowerCase();
+      const room = buildRoom(id, label, dims, anchor, attach, offset, children?.children || []);
+
+      // Replace room ID placeholders in doors and windows
+      const doors = (children?.doors || []).map(door => {
+        if (door && door.room) {
+          return {
+            ...door,
+            room: door.room.replace('{ROOM_ID}', roomId)
+          };
+        }
+        return door;
+      }).filter(d => d);
+
+      const windows = (children?.windows || []).map(window => {
+        if (window && window.room) {
+          return {
+            ...window,
+            room: window.room.replace('{ROOM_ID}', roomId)
+          };
+        }
+        return window;
+      }).filter(w => w);
+
+      return {
+        room,
+        doors,
+        windows
+      };
+    }
+
+// Room children (parts, doors, windows, objects)
+RoomChildren
+  = EOL items:(RoomChildItem EOL*)+ {
+      const children = [];
+      const doors = [];
+      const windows = [];
+
+      items.forEach(([item]) => {
+        if (item.type === 'part') {
+          children.push(item);
+          if (item.doors) doors.push(...item.doors);
+          if (item.windows) windows.push(...item.windows);
+        } else if (item.type === 'door') {
+          doors.push(item.data);
+        } else if (item.type === 'window') {
+          windows.push(item.data);
+        } else if (item.type === 'object') {
+          children.push(item);
+        }
+      });
+
+      return { children, doors, windows };
+    }
+
+RoomChildItem
+  = PartDefinition
+  / WindowDefinition
+  / DoorDefinition
+  / ObjectDefinition
+
+// Part definition
+PartDefinition
+  = Indent "part"i _ id:Identifier _ dims:Dimensions _ anchor:Anchor? _ "at"i _ attach:PartAttachTo __ offset:Offset? children:PartChildren? {
+      const partId = id.toLowerCase();
+      const target = attach.target === 'room' ? 'parent' : attach.target.toLowerCase();
+      const attachInfo = { target, anchor: attach.anchor };
+
+      // Convert children.objects array into proper format for buildPart
+      const childrenForBuild = (children?.objects || []).map(obj => ({ type: 'object', data: obj }));
+      const part = buildPart(id, null, dims, anchor, attachInfo, offset, childrenForBuild);
+
+      // Replace part ID placeholders in doors and windows
+      const doors = (children?.doors || []).map(door => {
+        if (door && door.room) {
+          return {
+            ...door,
+            room: door.room.replace('{ROOM_ID}', partId)
+          };
+        }
+        return door;
+      }).filter(d => d);
+
+      const windows = (children?.windows || []).map(window => {
+        if (window && window.room) {
+          return {
+            ...window,
+            room: window.room.replace('{ROOM_ID}', partId)
+          };
+        }
+        return window;
+      }).filter(w => w);
+
+      return {
+        type: 'part',
+        data: part,
+        doors,
+        windows
+      };
+    }
+
+// Part children (doors, windows, objects - no nested parts)
+PartChildren
+  = EOL items:(PartChildItem EOL*)+ {
+      const objects = [];
+      const doors = [];
+      const windows = [];
+
+      items.forEach(([item]) => {
+        if (item.type === 'door') {
+          doors.push(item.data);
+        } else if (item.type === 'window') {
+          windows.push(item.data);
+        } else if (item.type === 'object') {
+          objects.push(item.data);
+        }
+      });
+
+      return { objects, doors, windows };
+    }
+
+PartChildItem
+  = WindowDefinition
+  / DoorDefinition
+  / ObjectDefinition
+
+// Window definition
+WindowDefinition
+  = Indent "window"i _ width:Integer _ "at"i _ wall:Wall __ offset:Offset? {
+      return {
+        type: 'window',
+        data: {
+          room: `{ROOM_ID}:${wall}`,
+          width,
+          offset: offset?.[0] || 0
+        }
+      };
+    }
+
+// Door definition
+DoorDefinition
+  = Indent "door"i _ width:Integer _ swing:Swing? _ "at"i _ wall:Wall __ offset:Offset? {
+      const door = {
+        room: `{ROOM_ID}:${wall}`,
+        width,
+        swing: swing || 'inwards-left'
+      };
+
+      if (swing === 'opening') {
+        door.type = 'opening';
+        delete door.swing;
+      } else {
+        door.type = 'normal';
+      }
+
+      if (offset) {
+        door.offset = offset[0];
+      }
+
+      return {
+        type: 'door',
+        data: door
+      };
+    }
+
+// Object definition
+ObjectDefinition
+  = Indent "object"i _ objType:ObjectType _ label:Label? _ dims:ObjectDimensions ___ color:Color? ___ atClause:ObjectAtClause? {
+      const anchor = atClause?.anchor || 'top-left';
+      const offset = atClause?.offset;
+
+      const obj = {
+        type: objType,
+        anchor: anchor,
+        roomAnchor: anchor
+      };
+
+      if (objType === 'square') {
+        obj.width = dims.width;
+        obj.height = dims.height;
+      } else if (objType === 'circle') {
+        obj.width = dims.width; // For circles, width is the diameter
+      }
+
+      if (label) {
+        obj.text = label;
+      }
+
+      if (color) {
+        obj.color = color;
+      }
+
+      if (offset) {
+        obj.x = offset[0];
+        obj.y = offset[1];
+      } else {
+        obj.x = 0;
+        obj.y = 0;
+      }
+
+      return {
+        type: 'object',
+        data: obj
+      };
+    }
+
+// Object "at" clause (anchor and/or offset)
+ObjectAtClause
+  = "at"i _ anchor:Anchor __ offset:Offset { return { anchor, offset }; }
+  / "at"i _ offset:Offset { return { anchor: 'top-left', offset }; }
+  / "at"i _ anchor:Anchor ![ \t] { return { anchor, offset: null }; } // No horizontal space = end of clause
+
+// Primitives
+Identifier
+  = first:[a-zA-Z] rest:[a-zA-Z0-9_]* { return first + rest.join(''); }
+
+Label
+  = '"' chars:[^"]* '"' { return chars.join(''); }
+  / "'" chars:[^']* "'" { return chars.join(''); }
+
+Dimensions
+  = width:Integer "x" depth:Integer { return { width, depth }; }
+
+ObjectDimensions
+  = width:Integer "x" height:Integer { return { width, height }; }
+  / width:Integer { return { width }; }
+
+Anchor
+  = "top-left"i { return 'top-left'; }
+  / "top-right"i { return 'top-right'; }
+  / "bottom-left"i { return 'bottom-left'; }
+  / "bottom-right"i { return 'bottom-right'; }
+
+AttachTo
+  = "zeropoint"i anchor:(":" Anchor)? {
+      return { target: 'zeropoint', anchor: anchor ? anchor[1] : 'top-left' };
+    }
+  / target:Identifier anchor:(":" Anchor)? {
+      return { target: target.toLowerCase(), anchor: anchor ? anchor[1] : 'bottom-right' };
+    }
+
+PartAttachTo
+  = "room"i anchor:(":" Anchor)? {
+      return { target: 'room', anchor: anchor ? anchor[1] : 'bottom-right' };
+    }
+  / target:Identifier anchor:(":" Anchor)? {
+      return { target: target.toLowerCase(), anchor: anchor ? anchor[1] : 'bottom-right' };
+    }
+
+Offset
+  = "(" _ x:Integer _ "," _ y:Integer _ ")" { return [x, y]; }
+  / "(" _ offset:Integer _ ")" { return [offset]; }
+
+Wall
+  = "top"i { return 'top'; }
+  / "bottom"i { return 'bottom'; }
+  / "left"i { return 'left'; }
+  / "right"i { return 'right'; }
+
+Swing
+  = "inwards-left"i { return 'inwards-left'; }
+  / "inwards-right"i { return 'inwards-right'; }
+  / "outwards-left"i { return 'outwards-left'; }
+  / "outwards-right"i { return 'outwards-right'; }
+  / "opening"i { return 'opening'; }
+
+ObjectType
+  = "square"i { return 'square'; }
+  / "circle"i { return 'circle'; }
+
+Color
+  = "#" hex:[0-9a-fA-F]+ { return '#' + hex.join(''); }
+
+Integer
+  = sign:"-"? digits:[0-9]+ { return parseInt((sign || '') + digits.join(''), 10); }
+
+// Whitespace and comments
+_
+  = (Whitespace / Comment / EOL)*
+
+__
+  = (Whitespace / Comment)*
+
+___
+  = Whitespace*
+
+Whitespace
+  = [ \t]+
+
+Indent
+  = [ \t]+
+
+Comment
+  = "#" [^\n\r]*
+
+EOL
+  = "\r\n" / "\n" / "\r"

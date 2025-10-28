@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import './App.css';
 
 // Components
-import { JSONEditor } from './components/JSONEditor';
 import { GUIEditor } from './components/GUIEditor';
+import { DSLEditor } from './components/DSLEditor';
 import { FloorplanRenderer } from './components/FloorplanRenderer';
 import { ProjectHeader } from './components/ui/ProjectHeader/ProjectHeader';
 import { UndoRedoControls } from './components/ui/UndoRedoControls/UndoRedoControls';
@@ -24,120 +24,73 @@ import {
 } from './utils/projectUtils';
 import { resolveRoomPositions } from './utils';
 import { useUndoRedo } from './hooks/useUndoRedo';
+import { parseDSL, jsonToDSL, type DSLError } from './dslUtils';
 
-const defaultJSON = `{
-  "grid_step": 1000,
-  "rooms": [
-    {
-      "id": "livingroom1",
-      "name": "Living Room",
-      "attachTo": "zeropoint:top-left",
-      "width": 4000,
-      "depth": 3000
-    },
-    {
-      "id": "kitchen1",
-      "name": "Kitchen",
-      "attachTo": "livingroom1:top-right",
-      "width": 4000,
-      "depth": 3000
-    },
-    {
-      "id": "composite1",
-      "name": "Composite Room",
-      "width": 3000,
-      "depth": 2000,
-      "attachTo": "livingroom1:bottom-left",
-      "parts": [
-        {
-          "id": "part1",
-          "name": "1",
-          "width": 1000,
-          "depth": 1000,
-          "attachTo": "parent:bottom-left"
-        },
-        {
-          "id": "part2",
-          "name": "2",
-          "width": 500,
-          "depth": 500,
-          "attachTo": "part1:bottom-left"
-        }
-      ]
-    }
-  ],
-  "doors": [
-    {
-      "room": "livingroom1:bottom",
-      "offset": 1000,
-      "width": 800,
-      "swing": "inwards-right"
-    },
-    {
-      "room": "kitchen1:left",
-      "offset": 1000,
-      "width": 800,
-      "swing": "inwards-left"
-    }
-  ],
-  "windows": [
-    {
-      "room": "kitchen1:top",
-      "offset": 1000,
-      "width": 1200
-    },
-    {
-      "room": "livingroom1:top",
-      "offset": 1000,
-      "width": 1200
-    }
-  ]
-}`;
+const defaultDSL = `grid 1000
+
+room Livingroom1 "Living Room" 4000x3000 at zeropoint:top-left
+    window 1200 at top (1000)
+    door 800 inwards-right at bottom (1000)
+
+room Kitchen1 "Kitchen" 4000x3000 at Livingroom1:top-right
+    window 1200 at top (1000)
+    door 800 inwards-left at left (1000)
+
+room Composite1 "Composite Room" 3000x2000 at Livingroom1:bottom-left
+    part Part1 1000x1000 at room:bottom-left
+    part Part2 500x500 at Part1:bottom-left`;
 
 // ============================================================================
 // Main App Component
 // ============================================================================
 
 function App() {
-  const [urlError, setUrlError] = useState<string | null>(null);
+  const [urlError] = useState<string | null>(null);
 
   // ============================================================================
-  // Undo/Redo State
+  // Undo/Redo State (DSL is now primary)
   // ============================================================================
 
-  const initialJsonValue = (() => {
+  const initialDslValue = (() => {
     const hashData = parseHashData();
     if (hashData) {
       try {
-        JSON.parse(hashData); // Validate it's valid JSON
-        return hashData;
+        // Try to parse as JSON first (backward compatibility)
+        const parsed = JSON.parse(hashData);
+        // Convert JSON to DSL
+        return jsonToDSL(parsed);
       } catch {
-        setUrlError('Invalid JSON in URL - using default template');
+        // If not JSON, treat as DSL
+        return hashData;
       }
     }
-    return defaultJSON;
+    return defaultDSL;
   })();
 
   const {
-    value: jsonText,
-    setValue: setJsonText,
+    value: dslText,
+    setValue: setDslText,
     undo,
     redo,
     canUndo,
     canRedo,
     setValueDirect,
-  } = useUndoRedo(initialJsonValue);
+  } = useUndoRedo(initialDslValue);
 
-  // Helper function to update JSON with history tracking
-  const updateJsonText = (newText: string) => {
-    setJsonText(newText);
-  };
+  // Helper function to update DSL with history tracking
+  const updateDslText = useCallback(
+    (newText: string) => {
+      setDslText(newText);
+    },
+    [setDslText]
+  );
 
   // ============================================================================
   // UI State
   // ============================================================================
 
-  const [activeTab, setActiveTab] = useState<'json' | 'gui'>('gui');
+  const [activeTab, setActiveTab] = useState<'gui' | 'dsl'>('dsl'); // Default to DSL
+  const [dslErrors, setDslErrors] = useState<DSLError[]>([]);
   const [editorCollapsed, setEditorCollapsed] = useState(() => {
     const saved = localStorage.getItem('floorplan_editor_collapsed');
     return saved ? JSON.parse(saved) : false;
@@ -146,33 +99,19 @@ function App() {
   const [showCopyNotification, setShowCopyNotification] = useState(false);
 
   // ============================================================================
-  // Floorplan Data State
+  // Floorplan Data State (derived from DSL)
   // ============================================================================
 
   const [floorplanData, setFloorplanData] = useState<FloorplanData>(() => {
-    const hashData = parseHashData();
-    if (hashData) {
-      try {
-        const parsed = JSON.parse(hashData);
-        // Validate it has required fields
-        if (!parsed.rooms || !Array.isArray(parsed.rooms)) {
-          setUrlError('Invalid floorplan data in URL - missing rooms array');
-          return JSON.parse(defaultJSON);
-        }
-        return parsed;
-      } catch {
-        setUrlError('Failed to parse JSON from URL - using default template');
-        // Fall through to default
-      }
+    const { config, errors } = parseDSL(initialDslValue);
+    if (config && errors.length === 0) {
+      return config;
     }
-    try {
-      return JSON.parse(defaultJSON);
-    } catch {
-      return {
-        grid_step: 1000,
-        rooms: [],
-      };
-    }
+    // Fallback to empty floorplan
+    return {
+      grid_step: 1000,
+      rooms: [],
+    };
   });
   const [jsonError, setJsonError] = useState<string>('');
   const [positioningErrors, setPositioningErrors] = useState<string[]>([]);
@@ -235,7 +174,6 @@ function App() {
     return generateProjectId();
   });
 
-  // Track if this is an existing project loaded from URL (don't auto-save these)
   const [isExistingProject, setIsExistingProject] = useState<boolean>(() => {
     const hash = window.location.hash.slice(1);
     if (hash) {
@@ -261,30 +199,35 @@ function App() {
     localStorage.setItem('floorplan_editor_collapsed', JSON.stringify(editorCollapsed));
   }, [editorCollapsed]);
 
-  // Auto-update on JSON changes with debounce
+  // Auto-update on DSL changes with debounce
   useEffect(() => {
     const timer = setTimeout(() => {
-      try {
-        const data = JSON.parse(jsonText);
-        setFloorplanData(data);
+      const { config, errors } = parseDSL(dslText);
+      setDslErrors(errors);
+
+      if (config && errors.length === 0) {
+        setFloorplanData(config);
         setJsonError('');
         setPositioningErrors([]);
         setShowUpdateAnimation(true);
         setTimeout(() => setShowUpdateAnimation(false), 1000);
 
-        // Update URL hash with project ID, name and encoded JSON
+        // Update URL hash with project ID, name and encoded DSL
         const params = new URLSearchParams();
         params.set('id', encodeURIComponent(projectId));
         params.set('name', encodeURIComponent(projectName));
-        params.set('data', encodeURIComponent(jsonText));
+        params.set('data', encodeURIComponent(dslText));
         window.history.replaceState(null, '', '#' + params.toString());
-      } catch (e) {
-        setJsonError((e as Error).message);
+      } else {
+        // On parse error, show error but keep old floorplan data
+        setJsonError(errors.map(e => e.message).join('\n'));
       }
     }, 500); // Debounce 500ms
 
     return () => clearTimeout(timer);
-  }, [jsonText, projectId, projectName]);
+  }, [dslText, projectId, projectName]);
+
+  // No more sync effects needed - DSL is the source of truth!
 
   // ============================================================================
   // Event Handlers
@@ -399,7 +342,8 @@ function App() {
       rooms: [...floorplanData.rooms, newRoom],
     };
 
-    updateJsonText(JSON.stringify(updatedData, null, 2));
+    const dsl = jsonToDSL(updatedData);
+    updateDslText(dsl);
 
     // Switch to GUI tab and scroll to new room
     if (activeTab !== 'gui') {
@@ -414,8 +358,9 @@ function App() {
   };
 
   const handleGUIChange = (data: FloorplanData) => {
-    // Update JSON text from GUI changes
-    updateJsonText(JSON.stringify(data, null, 2));
+    // Convert FloorplanData to DSL
+    const dsl = jsonToDSL(data);
+    updateDslText(dsl);
   };
 
   const handleRoomUpdate = useCallback(
@@ -423,29 +368,28 @@ function App() {
       // Immediately update floorplan data for instant visual feedback
       setFloorplanData(data);
 
-      // Defer JSON stringify to avoid blocking UI on drop
+      // Defer DSL conversion to avoid blocking UI on drop
       setTimeout(() => {
-        updateJsonText(JSON.stringify(data, null, 2));
+        const dsl = jsonToDSL(data);
+        updateDslText(dsl);
       }, 0);
     },
-    [updateJsonText]
+    [updateDslText]
   );
 
   const handleRoomNameUpdate = useCallback(
     (roomId: string, newName: string) => {
       // Update room name in the floorplan data
-      // Parse current JSON to avoid dependency on floorplanData state
-      try {
-        const data = JSON.parse(jsonText);
-        const updatedRooms = data.rooms.map((room: Room) =>
+      const { config } = parseDSL(dslText);
+      if (config) {
+        const updatedRooms = config.rooms.map((room: Room) =>
           room.id === roomId ? { ...room, name: newName } : room
         );
-        updateJsonText(JSON.stringify({ ...data, rooms: updatedRooms }, null, 2));
-      } catch (e) {
-        console.error('Failed to update room name:', e);
+        const dsl = jsonToDSL({ ...config, rooms: updatedRooms });
+        updateDslText(dsl);
       }
     },
-    [jsonText, updateJsonText]
+    [dslText, updateDslText]
   );
 
   const handleObjectClick = useCallback(
@@ -473,12 +417,13 @@ function App() {
     [activeTab]
   );
 
-  const handleDownloadJSON = () => {
-    const blob = new Blob([jsonText], { type: 'application/json' });
+  const handleDownloadDSL = () => {
+    // Download the DSL source
+    const blob = new Blob([dslText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'floorplan.json';
+    a.download = 'floorplan.dsl';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -512,21 +457,19 @@ function App() {
     }
   };
 
-  const handleFormatJSON = () => {
-    try {
-      const parsed = JSON.parse(jsonText);
-      const formatted = JSON.stringify(parsed, null, 2);
-      setJsonText(formatted);
-    } catch (err) {
-      // If parsing fails, do nothing
-      console.error('Cannot format invalid JSON:', err);
+  const handleFormatDSL = () => {
+    // Format DSL by re-converting it (this will normalize formatting)
+    const { config } = parseDSL(dslText);
+    if (config) {
+      const normalized = jsonToDSL(config);
+      updateDslText(normalized);
     }
   };
 
   const handleUploadJSON = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'application/json,.json';
+    input.accept = 'application/json,.json,.dsl';
     input.onchange = e => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
@@ -535,13 +478,19 @@ function App() {
       reader.onload = event => {
         try {
           const text = event.target?.result as string;
-          const parsed = JSON.parse(text);
+          const filename = file.name.replace(/\.(json|dsl)$/, '');
+
+          let dsl: string;
+          if (file.name.endsWith('.dsl')) {
+            // Already DSL format
+            dsl = text;
+          } else {
+            // Convert JSON to DSL
+            const parsed = JSON.parse(text);
+            dsl = jsonToDSL(parsed);
+          }
 
           // Check if this project already exists in localStorage
-          // Look for project ID in URL format if the file was exported with ID
-          const filename = file.name.replace('.json', '');
-
-          // If project with this ID already exists, show warning
           const existingProject = savedProjects.find(p => p.name === filename);
           if (existingProject) {
             if (
@@ -551,10 +500,9 @@ function App() {
             ) {
               return;
             }
-            // User confirmed, but we still won't overwrite - just load it without saving
           }
 
-          setJsonText(JSON.stringify(parsed, null, 2));
+          setValueDirect(dsl);
           // Generate new project ID for uploaded file
           setProjectId(generateProjectId());
 
@@ -563,7 +511,7 @@ function App() {
             setProjectName(filename);
           }
         } catch (err) {
-          alert('Failed to parse JSON file: ' + (err as Error).message);
+          alert('Failed to parse file: ' + (err as Error).message);
         }
       };
       reader.readAsText(file);
@@ -571,7 +519,7 @@ function App() {
     input.click();
   };
 
-  // Auto-save whenever jsonText or projectName changes
+  // Auto-save whenever dslText or projectName changes
   useEffect(() => {
     // Don't save if:
     // - project name is empty or it's the default example
@@ -582,7 +530,7 @@ function App() {
       const newProject: SavedProject = {
         id: projectId,
         name: projectName,
-        json: jsonText,
+        json: dslText, // Store DSL in the json field (rename later)
         timestamp: Date.now(),
       };
       // Update by ID, not name
@@ -592,12 +540,23 @@ function App() {
     }, 1000); // Debounce 1s
 
     return () => clearTimeout(timer);
-  }, [jsonText, projectName, projectId, isExistingProject]);
+  }, [dslText, projectName, projectId, isExistingProject, savedProjects]);
 
   const handleLoadProject = (project: SavedProject) => {
     setProjectId(project.id);
     setProjectName(project.name);
-    setValueDirect(project.json); // Bypass history when loading projects
+
+    // Check if stored data is DSL or JSON
+    let dsl = project.json;
+    try {
+      const parsed = JSON.parse(project.json);
+      // It's JSON, convert to DSL
+      dsl = jsonToDSL(parsed);
+    } catch {
+      // It's already DSL, use as-is
+    }
+
+    setValueDirect(dsl); // Bypass history when loading projects
     setIsExistingProject(false); // Allow auto-save for loaded projects from localStorage
   };
 
@@ -606,7 +565,7 @@ function App() {
     const sourceProject = project || {
       id: projectId,
       name: projectName,
-      json: jsonText,
+      json: dslText,
       timestamp: Date.now(),
     };
 
@@ -635,7 +594,17 @@ function App() {
     // Load the duplicated project
     setProjectId(newId);
     setProjectName(newName);
-    setValueDirect(sourceProject.json); // Bypass history when loading projects
+
+    // Ensure it's DSL format
+    let dsl = sourceProject.json;
+    try {
+      const parsed = JSON.parse(sourceProject.json);
+      dsl = jsonToDSL(parsed);
+    } catch {
+      // Already DSL
+    }
+
+    setValueDirect(dsl); // Bypass history when loading projects
     setIsExistingProject(false); // New copy, allow auto-save
   };
 
@@ -648,14 +617,14 @@ function App() {
   const handleNewProject = () => {
     setProjectId(generateProjectId());
     setProjectName('Untitled Project');
-    setValueDirect(defaultJSON); // Bypass history when creating new project
+    setValueDirect(defaultDSL); // Bypass history when creating new project
     setIsExistingProject(false); // New project, allow auto-save
   };
 
   const handleLoadExample = () => {
     setProjectId(generateProjectId());
     setProjectName('Example Floorplan');
-    setValueDirect(defaultJSON); // Bypass history when loading example
+    setValueDirect(defaultDSL); // Bypass history when loading example
   };
 
   return (
@@ -678,32 +647,27 @@ function App() {
         {!editorCollapsed && (
           <>
             <EditorTabs activeTab={activeTab} onTabChange={setActiveTab} />
-            {activeTab === 'json' ? (
-              <JSONEditor
-                value={jsonText}
-                onChange={updateJsonText}
-                error={jsonError}
-                warnings={positioningErrors}
-              />
+            {activeTab === 'dsl' ? (
+              <DSLEditor value={dslText} onChange={updateDslText} readOnly={false} />
             ) : (
               <GUIEditor data={floorplanData} onChange={handleGUIChange} />
             )}
             <div className="button-row" data-testid="editor-button-row">
-              {activeTab === 'json' && (
+              {activeTab === 'dsl' && (
                 <button
                   className="format-button"
-                  onClick={handleFormatJSON}
-                  data-testid="format-json-btn"
+                  onClick={handleFormatDSL}
+                  data-testid="format-dsl-btn"
                 >
-                  Format JSON
+                  Format DSL
                 </button>
               )}
               <button
                 className="download-button"
-                onClick={handleDownloadJSON}
-                data-testid="download-json-btn"
+                onClick={handleDownloadDSL}
+                data-testid="download-dsl-btn"
               >
-                💾 Download JSON
+                💾 Download DSL
               </button>
               <button className="share-button" onClick={handleShare} data-testid="share-btn">
                 🔗 Share
@@ -721,7 +685,6 @@ function App() {
           onLoadExample={handleLoadExample}
           onUploadJSON={handleUploadJSON}
           onDuplicateProject={() => handleDuplicateProject()}
-          onDownloadJSON={handleDownloadJSON}
           onShare={handleShare}
           onLoadProject={handleLoadProject}
           onDeleteProject={handleDeleteProject}
@@ -752,7 +715,11 @@ function App() {
         <button className="add-room-button" onClick={handleAddRoom} data-testid="add-room-btn">
           + Add Room
         </button>
-        <ErrorPanel jsonError={jsonError} positioningErrors={positioningErrors} />
+        <ErrorPanel
+          jsonError={jsonError}
+          positioningErrors={positioningErrors}
+          dslErrors={dslErrors}
+        />
       </div>
     </div>
   );

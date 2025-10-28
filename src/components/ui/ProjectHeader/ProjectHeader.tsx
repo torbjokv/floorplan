@@ -11,7 +11,6 @@ interface ProjectHeaderProps {
   onLoadExample: () => void;
   onUploadJSON: () => void;
   onDuplicateProject: () => void;
-  onDownloadJSON: () => void;
   onShare: () => void;
   onLoadProject: (project: SavedProject) => void;
   onDeleteProject: (projectId: string) => void;
@@ -25,7 +24,6 @@ export function ProjectHeader({
   onLoadExample,
   onUploadJSON,
   onDuplicateProject,
-  onDownloadJSON,
   onShare,
   onLoadProject,
   onDeleteProject,
@@ -87,7 +85,6 @@ export function ProjectHeader({
             onLoadExample={() => handleMenuAction(onLoadExample)}
             onUploadJSON={() => handleMenuAction(onUploadJSON)}
             onDuplicateProject={() => handleMenuAction(onDuplicateProject)}
-            onDownloadJSON={() => handleMenuAction(onDownloadJSON)}
             onShare={() => handleMenuAction(onShare)}
             onLoadProject={project => handleMenuAction(() => onLoadProject(project))}
             onDeleteProject={onDeleteProject}

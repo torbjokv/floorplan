@@ -1,19 +1,21 @@
 # 🏠 Floorplan Designer
 
-A browser-based SVG floorplan designer for creating architectural floor plans through JSON input with real-time visual feedback.
+A browser-based SVG floorplan designer for creating architectural floor plans through a custom DSL (Domain-Specific Language) with real-time visual feedback.
 
 **🌐 Live Demo: [https://torbjokv.github.io/floorplan/](https://torbjokv.github.io/floorplan/)**
 
 ![React](https://img.shields.io/badge/React-19.1-blue.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)
 ![Vite](https://img.shields.io/badge/Vite-7.1-646CFF.svg)
+![Tests](https://img.shields.io/badge/tests-145%20passing-success.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 ## ✨ Features
 
 ### Core Functionality
 
-- **📝 Dual Editor** - JSON editor or visual GUI editor with form controls
+- **📝 DSL Editor** - Concise domain-specific language with syntax highlighting
+- **🎨 GUI Editor** - Visual form-based editor as alternative to DSL
 - **🔄 Real-Time Preview** - See changes instantly with automatic rendering (500ms debounce)
 - **🏛️ Zero Point System** - Unified positioning with virtual anchor point at (0,0)
 - **🎯 Room ID System** - Stable references with unique IDs and optional display names
@@ -21,24 +23,23 @@ A browser-based SVG floorplan designer for creating architectural floor plans th
 - **🎨 Room Objects** - Add decorative objects (squares/circles) with dual anchor system
 - **🚪 Doors** - Normal doors with swing arcs or opening-only type without blade
 - **🪟 Windows** - Wall-based window positioning with automatic rotation
-- **⚠️ Smart Error Handling** - Clear validation messages and Zero Point warnings
+- **⚠️ Smart Error Handling** - Clear validation messages with line/column information
 - **📐 Dynamic Grid** - Configurable grid overlay for precise measurements
 - **📏 Millimeter Precision** - All measurements in millimeters for architectural accuracy
 
 ### Interactive Features
 
-- **🖱️ Click-to-Edit** - Click rooms in SVG to jump to their configuration
+- **🖱️ Click-to-Edit** - Click rooms in SVG to jump to their configuration in GUI editor
 - **✨ Hover Effects** - Visual feedback on all elements (rooms, doors, windows, objects)
 - **🔗 Composite Highlighting** - Hover highlights all parts of composite rooms together
+- **↩️ Undo/Redo** - Full history tracking with keyboard shortcuts (Ctrl+Z/Ctrl+Shift+Z)
 
 ### Project Management
 
-- **💾 Auto-Save** - Projects automatically saved to localStorage
+- **💾 Auto-Save** - Projects automatically saved to localStorage (1s debounce)
 - **🔗 Share URLs** - Share projects with URL including project ID and name
-- **🔒 Read-Only Sharing** - Shared projects load as read-only (duplicate to edit)
-- **📁 Upload/Download** - Import and export JSON files
+- **📁 Upload/Download** - Import and export DSL files
 - **📋 Duplicate** - Create copies of existing projects
-- **↩️ Undo/Redo** - Full history tracking with undo/redo controls
 
 ## 🚀 Quick Start
 
@@ -73,205 +74,168 @@ npm run preview
 
 ## 📖 Usage
 
-### Basic Floor Plan with Zero Point
+### DSL Syntax (Primary Interface)
 
-Create a simple floor plan anchored to the Zero Point:
+Create floor plans using the concise DSL syntax:
 
-```json
-{
-  "grid_step": 1000,
-  "rooms": [
-    {
-      "id": "livingroom1",
-      "name": "Living Room",
-      "attachTo": "zeropoint:top-left",
-      "width": 4000,
-      "depth": 3000
-    },
-    {
-      "id": "kitchen1",
-      "name": "Kitchen",
-      "attachTo": "livingroom1:top-right",
-      "width": 3000,
-      "depth": 3000
-    }
-  ]
-}
+```dsl
+grid 1000
+
+room LivingRoom "Living Room" 5000x4000 at zeropoint
+    window 1200 at top (300)
+    door 900 inwards-right at right (1000)
+    object square "Coffee Table" 800x800 #33d17a at bottom-left (1000, 2000)
+
+room Kitchen 4000x3000 at LivingRoom:bottom-right (100, 100)
+    window 1000 at left (500)
+    door 800 opening at bottom (300)
+
+room Bedroom 5000x4000 top-left at zeropoint:top-right
+    part Closet 2000x1500 at parent:bottom-left
+        door 800 inwards-left at right (400)
+        object square "Shelf" 500x1200 #9141ac at top-left (100, 100)
 ```
 
-**Key Points:**
+**DSL Features:**
 
-- Rooms need unique `id` (required) and optional `name` (display name)
-- First room attaches to `"zeropoint:top-left"` (virtual anchor at 0,0)
-- Other rooms can attach to Zero Point or other rooms by ID
+- **Syntax Highlighting** - Keywords, identifiers, numbers, strings, and comments
+- **Flexible Indentation** - Any amount of whitespace for nested elements
+- **Case-Insensitive Keywords** - `room`, `ROOM`, `Room` all work
+- **Comments** - Lines starting with `#`
+- **Error Display** - Line and column information for syntax errors
+- **Auto-Completion** - Works seamlessly with GUI editor
 
-### Adding Doors and Windows
+### DSL Syntax Reference
 
-```json
-{
-  "grid_step": 1000,
-  "rooms": [...],
-  "doors": [
-    {
-      "room": "livingroom1:bottom",
-      "offset": 1000,
-      "width": 800,
-      "swing": "inwards-right",
-      "type": "normal"
-    },
-    {
-      "room": "kitchen1:left",
-      "offset": 500,
-      "width": 900,
-      "type": "opening"
-    }
-  ],
-  "windows": [
-    {
-      "room": "kitchen1:top",
-      "offset": 1000,
-      "width": 1200
-    }
-  ]
-}
+**Grid Setting:**
+
+```
+grid STEP
 ```
 
-**Door Types:**
+**Room Definition:**
 
-- `"normal"` - Shows door rectangle and swing arc (default)
-- `"opening"` - Shows only door rectangle (no swing arc)
-
-### Creating Composite Rooms
-
-Build L-shaped or complex room layouts:
-
-```json
-{
-  "id": "composite1",
-  "name": "L-Shaped Room",
-  "attachTo": "zeropoint:top-left",
-  "width": 3000,
-  "depth": 2000,
-  "parts": [
-    {
-      "id": "part1",
-      "name": "Extension",
-      "width": 1000,
-      "depth": 1500,
-      "attachTo": "parent:bottom-left"
-    }
-  ]
-}
+```
+room RoomId [LABEL] WxD [SELF_ANCHOR] at TargetId [TARGET_ANCHOR] [(OFFSET_X, OFFSET_Y)]
 ```
 
-### Adding Room Objects
+**Part Definition (inside room):**
 
-Add decorative objects like furniture:
-
-```json
-{
-  "id": "livingroom1",
-  "name": "Living Room",
-  "attachTo": "zeropoint:top-left",
-  "width": 4000,
-  "depth": 3000,
-  "objects": [
-    {
-      "type": "square",
-      "x": 2000,
-      "y": 1500,
-      "width": 1000,
-      "height": 1000,
-      "anchor": "top-left",
-      "roomAnchor": "top-left",
-      "color": "#4caf50",
-      "text": "Table"
-    }
-  ]
-}
+```
+    part PartId [LABEL] WxD [SELF_ANCHOR] at Target [TARGET_ANCHOR] [(OFFSET_X, OFFSET_Y)]
 ```
 
-**Object Anchor System:**
+**Window (inside room or part):**
 
-- `anchor` - Where on the object to position (top-left, top-right, bottom-left, bottom-right)
-- `roomAnchor` - Which room corner x,y is relative to
+```
+    window W at WALL [(OFFSET)]
+```
 
-## 📚 JSON Schema Reference
+**Door (inside room or part):**
 
-### Room Properties
+```
+    door W [SWING] at WALL [(OFFSET)]
+```
 
-| Property   | Type             | Default      | Description                                                                                                               |
-| ---------- | ---------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| `id`       | string           | **required** | Unique room identifier (e.g., "livingroom1")                                                                              |
-| `name`     | string           | _optional_   | Display name for the room                                                                                                 |
-| `width`    | number           | **required** | Width in millimeters (x-axis)                                                                                             |
-| `depth`    | number           | **required** | Depth in millimeters (y-axis)                                                                                             |
-| `anchor`   | string           | "top-left"   | Which corner of this room attaches to the reference point: `"top-left"`, `"top-right"`, `"bottom-left"`, `"bottom-right"` |
-| `attachTo` | string           | **required** | Reference: `"roomId:corner"` or `"zeropoint:corner"`                                                                      |
-| `offset`   | [number, number] | [0, 0]       | Position adjustment `[x, y]`                                                                                              |
-| `parts`    | array            | -            | Sub-parts for composite rooms (each needs `id`)                                                                           |
-| `objects`  | array            | -            | Decorative objects (squares/circles)                                                                                      |
+**Object (inside room or part):**
 
-### Door Properties
+```
+    object TYPE [LABEL] WxD [COLOR] at [ANCHOR] [(OFFSET_X, OFFSET_Y)]
+```
 
-Doors have a fixed thickness of 100mm.
+**Parameters:**
 
-| Property | Type   | Default         | Description                                                                          |
-| -------- | ------ | --------------- | ------------------------------------------------------------------------------------ |
-| `room`   | string | **required**    | Room ID with wall: `"roomId:wall"` where wall is `top`, `bottom`, `left`, or `right` |
-| `width`  | number | **required**    | Door width in mm                                                                     |
-| `offset` | number | 0               | Distance along the wall from the wall's start in mm                                  |
-| `swing`  | string | "inwards-right" | `"inwards-left"`, `"inwards-right"`, `"outwards-left"`, or `"outwards-right"`        |
-| `type`   | string | "normal"        | `"normal"` (with swing arc) or `"opening"` (without arc)                             |
+- `STEP`: Grid step in millimeters (e.g., `1000`)
+- `RoomId/PartId`: Identifier (converted to lowercase)
+- `LABEL`: Optional string in quotes (e.g., `"Living Room"`)
+- `WxD`: Width x Depth in mm (e.g., `5000x4000`)
+- `W`: Width in mm (e.g., `1200`)
+- `SELF_ANCHOR`: `top-left` | `top-right` | `bottom-left` | `bottom-right` (default: `top-left`)
+- `TARGET_ANCHOR`: Same as SELF_ANCHOR (default: `bottom-right`)
+- `Target`: `zeropoint`, `parent`, or room/part ID
+- `WALL`: `top` | `bottom` | `left` | `right`
+- `SWING`: `inwards-left` | `inwards-right` | `outwards-left` | `outwards-right` | `opening`
+- `TYPE`: `square` | `circle`
+- `COLOR`: Hex color (e.g., `#33d17a`)
+- `OFFSET`, `OFFSET_X`, `OFFSET_Y`: Values in mm (default: 0)
+- `ANCHOR`: Corner point for objects
 
-### Window Properties
+### GUI Editor (Alternative Interface)
 
-Windows have a fixed thickness of 100mm.
+The visual form-based editor provides:
 
-| Property | Type   | Default      | Description                                                                          |
-| -------- | ------ | ------------ | ------------------------------------------------------------------------------------ |
-| `room`   | string | **required** | Room ID with wall: `"roomId:wall"` where wall is `top`, `bottom`, `left`, or `right` |
-| `width`  | number | **required** | Window width in mm                                                                   |
-| `offset` | number | 0            | Distance along the wall from the wall's start in mm                                  |
+- **Grid Settings** - Configure grid step size
+- **Room Management** - Add, edit, delete rooms with visual anchor selectors
+- **Automatic IDs** - Auto-generates unique room IDs
+- **Object Editor** - Add decorative objects with color picker
+- **Door/Window Editors** - Configure architectural elements
+- **DSL Sync** - Changes automatically convert to DSL
+
+### Zero Point System
+
+All floor plans anchor to a virtual Zero Point at (0,0):
+
+```dsl
+room LivingRoom 4000x3000 at zeropoint
+room Kitchen 3000x3000 at LivingRoom:top-right
+```
+
+**Key Benefits:**
+
+- No special "first room" logic
+- All rooms use same positioning system
+- At least one room must connect to Zero Point (enforced)
+- Rooms can reference Zero Point or other rooms
+
+### Composite Rooms
+
+Create L-shaped or complex layouts:
+
+```dsl
+room MainArea 6000x5000 at zeropoint
+    part Extension 2000x3000 at parent:bottom-right
+        window 1200 at top (500)
+        door 900 at left (800)
+```
+
+Parts can contain windows, doors, and objects just like rooms!
+
+### Room Objects
+
+Add decorative elements with dual anchor system:
+
+```dsl
+object square "Dining Table" 1600x900 #8b5a3c at top-left (1000, 1500)
+object circle "Light" 500 #f5c211 at center (2000, 2000)
+```
+
+**Dual Anchor System:**
+
+- First `at` position: Where object is positioned
+- Second parameter: Room corner to measure from
 
 ## 🎨 Positioning System
 
-### Zero Point (Recommended)
+### Zero Point (Required)
 
-Anchor the first room to the virtual Zero Point at (0,0):
+At least one room must attach to the virtual Zero Point:
 
-```json
-{
-  "id": "livingroom1",
-  "name": "Living Room",
-  "attachTo": "zeropoint:top-left",
-  "width": 4000,
-  "depth": 3000
-}
+```dsl
+room LivingRoom 5000x4000 at zeropoint
 ```
-
-**Key Feature**: No special "first room" logic - all rooms use the same positioning system!
 
 ### Room-to-Room Positioning
 
-Attach rooms to other rooms using their IDs:
+Attach rooms to other rooms:
 
-```json
-{
-  "id": "kitchen1",
-  "name": "Kitchen",
-  "attachTo": "livingroom1:top-right",
-  "offset": [0, 0],
-  "width": 3000,
-  "depth": 3000
-}
+```dsl
+room Kitchen 4000x3000 at LivingRoom:top-right
+room Bedroom 4000x3500 at LivingRoom:bottom-left (0, 500)
 ```
 
-**Anchor Points**: `top-left` (default), `top-right`, `bottom-left`, `bottom-right`
+**Anchor Points:** `top-left`, `top-right`, `bottom-left`, `bottom-right`
 
-**Offset**: Fine-tune position with `[x, y]` adjustments in millimeters
-
-**Important**: At least one room must connect to Zero Point for a stable floorplan. The system will show an error if no rooms are anchored to Zero Point.
+**Offsets:** Fine-tune position with `(x, y)` adjustments in millimeters
 
 ## 🏗️ Architecture
 
@@ -281,8 +245,11 @@ Attach rooms to other rooms using their IDs:
 src/
 ├── components/
 │   ├── FloorplanRenderer.tsx  # Interactive SVG rendering engine
-│   ├── JSONEditor.tsx          # JSON editor with line numbers and validation
-│   └── GUIEditor.tsx           # Visual form-based editor
+│   ├── DSLEditor.tsx           # DSL editor with syntax highlighting
+│   ├── GUIEditor.tsx           # Visual form-based editor
+│   └── floorplan/              # Rendering components
+├── floorplan.peggy             # PEG grammar for DSL parser
+├── dslUtils.ts                 # DSL parsing and JSON conversion
 ├── types.ts                    # TypeScript type definitions
 ├── utils.ts                    # Positioning logic with Zero Point
 └── App.tsx                     # Main app with project management
@@ -290,22 +257,28 @@ src/
 
 ### Key Components
 
-- **FloorplanRenderer**: Interactive SVG with click handlers, hover effects, composite highlighting, and drag-and-drop room positioning
-- **GUIEditor**: Visual form editor with dropdowns, anchor selectors, object editor, and collapsible sections
-- **JSONEditor**: Text editor with line numbers, synchronized scrolling, and error overlay
-- **Positioning System**: Zero Point-based positioning with dependency resolution and offset support
-- **Project Management**: localStorage with auto-save, sharing, read-only mode for shared projects, and URL-based persistence
-- **Undo/Redo System**: Full history tracking with keyboard shortcuts (Ctrl+Z/Ctrl+Shift+Z)
+- **DSL Editor**: Text editor with syntax highlighting, line numbers, and error display
+- **FloorplanRenderer**: Interactive SVG with click handlers, hover effects, composite highlighting
+- **GUIEditor**: Visual form editor with dropdowns, anchor selectors, object editor
+- **PEG Parser**: Grammar-based DSL parser (generated from floorplan.peggy)
+- **Positioning System**: Zero Point-based positioning with dependency resolution
+- **Project Management**: localStorage with auto-save, sharing, and URL-based persistence
+- **Undo/Redo System**: Full history tracking with keyboard shortcuts
 
 ## 🛠️ Development
 
 ### Available Scripts
 
 ```bash
-npm run dev      # Start development server with HMR
-npm run build    # Build for production
-npm run lint     # Run ESLint
-npm run preview  # Preview production build
+npm run dev           # Start development server with HMR
+npm run build         # Full build pipeline (peggy, lint, format, build)
+npm run lint          # Run ESLint
+npm run format        # Format code with Prettier
+npm run format:check  # Check code formatting
+npm run peggy:generate # Generate parser from grammar
+npm run preview       # Preview production build
+npm test              # Run all tests (~5 minutes, 145 scenarios)
+npm run test:headed   # Run tests in headed mode
 ```
 
 ### Technology Stack
@@ -313,7 +286,11 @@ npm run preview  # Preview production build
 - **React 19** - UI library
 - **TypeScript 5.9** - Type safety
 - **Vite 7** - Build tool and dev server
+- **PEG.js** - Parser Expression Grammar for DSL
+- **Playwright** - E2E testing
+- **Cucumber** - BDD test framework
 - **ESLint** - Code linting
+- **Prettier** - Code formatting
 - **SVG** - Vector graphics rendering
 
 ### Development Guidelines
@@ -322,22 +299,22 @@ See [CLAUDE.md](CLAUDE.md) for detailed architecture documentation and developme
 
 ## 🐛 Error Handling
 
-### JSON Syntax Errors (❌)
+### DSL Syntax Errors
 
-Displayed immediately when JSON is invalid:
+Displayed with line and column information:
 
 ```
-❌ Unexpected token } in JSON at position 123
+Syntax Error: Expected identifier but "}" found. (Line 5, Column 12)
 ```
 
-### Positioning Errors (⚠️)
+### Positioning Errors
 
 Displayed when rooms can't be positioned:
 
 ```
 ⚠️ Positioning Errors:
-• Room "Kitchen" could not be positioned. Referenced room "Bedroom" not found.
-• Room "Hallway" needs either x/y coordinates or both anchor and attachTo properties.
+• Room "kitchen" could not be positioned. Referenced room "bedroom" not found.
+• No room is connected to Zero Point - floor plan needs an anchor point
 ```
 
 **Note**: Positioning errors don't block rendering - successfully positioned rooms will still display.
@@ -348,6 +325,7 @@ Displayed when rooms can't be positioned:
 - **Coordinate System**: Origin (0, 0) at top-left
 - **Y-Axis**: Increases downward (standard SVG)
 - **Display Scale**: Fixed 2:1 ratio (1mm = 0.2px)
+- **Doors/Windows**: Fixed 100mm thickness
 
 ## 🌐 Deployment
 
@@ -362,79 +340,6 @@ npm run build
 
 **Base Path**: Configured for `/floorplan/` in `vite.config.ts`
 
-## 📝 Examples
-
-### Complete Floor Plan
-
-```json
-{
-  "grid_step": 1000,
-  "rooms": [
-    {
-      "name": "Living Room",
-      "width": 5000,
-      "depth": 4000
-    },
-    {
-      "name": "Kitchen",
-      "attachTo": "Living Room:top-right",
-      "width": 3000,
-      "depth": 4000
-    },
-    {
-      "name": "Bedroom",
-      "attachTo": "Living Room:bottom-left",
-      "offset": [0, 500],
-      "width": 4000,
-      "depth": 3500
-    }
-  ],
-  "doors": [
-    {
-      "room": "Living Room:bottom",
-      "offset": 2000,
-      "width": 900,
-      "swing": "inwards-right"
-    },
-    {
-      "room": "Bedroom:top",
-      "offset": 1000,
-      "width": 800,
-      "swing": "inwards-left"
-    }
-  ],
-  "windows": [
-    {
-      "room": "Living Room:top",
-      "offset": 1000,
-      "width": 1500
-    },
-    {
-      "room": "Kitchen:right",
-      "offset": 1000,
-      "width": 1200
-    }
-  ]
-}
-```
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Code Style
-
-- Use TypeScript for type safety
-- Follow existing code formatting
-- Add comments for complex logic
-- Update tests if applicable
-
 ## 🧪 Testing
 
 The project uses a comprehensive E2E test suite with **Cucumber/Gherkin** and **Playwright**.
@@ -442,67 +347,43 @@ The project uses a comprehensive E2E test suite with **Cucumber/Gherkin** and **
 ### Running Tests
 
 ```bash
-# Run all tests
-npm run test
+# Run all tests (~5 minutes, 145 scenarios)
+npm test
 
 # Run tests in headed mode (see browser)
 npm run test:headed
 
 # Run specific feature tests
-npm run test:project-menu      # Project management (12 scenarios) - 100% passing ✅
-npm run test:gui-editor         # GUI editor (27 scenarios) - 100% passing ✅
-npm run test:json-editor        # JSON editor (8 scenarios) - 100% passing ✅
-npm run test:room-positioning   # Room positioning (14 scenarios)
-npm run test:architectural      # Doors & windows (13 scenarios)
-npm run test:svg-rendering      # SVG rendering (21 scenarios)
-npm run test:error-handling     # Error handling (21 scenarios)
+npm run test:project-menu      # Project management (11 scenarios)
+npm run test:dsl-editor         # DSL editor (33 scenarios) ✅ 100%
+npm run test:gui-editor         # GUI editor
+npm run test:room-positioning   # Room positioning
+npm run test:architectural      # Doors & windows
+npm run test:svg-rendering      # SVG rendering
+npm run test:error-handling     # Error handling
 ```
-
-### Advanced Test Commands
-
-```bash
-# Run a specific feature file
-npm run test tests/features/project-menu.feature
-
-# Run a specific scenario by line number
-npm run test tests/features/gui-editor.feature:42
-
-# Run tests with specific tags
-npm run test -- --tags @smoke
-npm run test:ci -- --tags "@smoke and not @slow"
-
-# Run in headed mode for any test
-npm run test:headed tests/features/error-handling.feature
-
-# CI mode (sets CI=true environment variable)
-npm run test:ci
-```
-
-All test commands use a centralized runner at `scripts/run-cucumber.js` for consistent configuration.
 
 ### Test Statistics
 
-- **Total Scenarios:** 68
-- **Current Pass Rate:** 53 scenarios passing (78%)
-- **Full Suite Time:** ~90 seconds
-- **Individual Features:** 7-50 seconds each
+- **Total Scenarios:** 145 scenarios ✅ 100% passing
+- **Total Steps:** 959 steps passing
+- **Full Suite Time:** ~5 minutes
+- **Individual Features:** 20-90 seconds each
+- **No Warnings:** Clean test output with suppressed Node.js warnings
 
-### Documentation
-
-- See [TESTING.md](TESTING.md) for comprehensive testing guide
-- See [TEST-STATUS.md](TEST-STATUS.md) for current test status and known issues
-
-### Test Features
+### Test Coverage
 
 The test suite covers:
 
-- ✅ Project management (100% passing)
-- ✅ GUI editor operations (100% passing)
-- ✅ JSON editor functionality (87% passing)
-- Room positioning and Zero Point system
-- Door and window placement
-- SVG rendering and interactions
-- Error handling and validation
+1. **Project Menu** ✅ - Project management, save/load, sharing, URL persistence
+2. **DSL Editor** ✅ - Text editing, syntax highlighting, parsing, error display, undo/redo, parts support
+3. **GUI Editor** ✅ - Form controls, room/door/window management, DSL sync
+4. **Room Positioning** ✅ - Zero Point system, relative positioning, offsets
+5. **Architectural Elements** ✅ - Doors, windows, wall positioning, parts support
+6. **SVG Rendering** ✅ - ViewBox, grid, hover effects, click handlers
+7. **Error Handling** ✅ - DSL syntax errors, positioning errors, validation
+
+See [TESTING.md](TESTING.md) for comprehensive testing guide.
 
 ## 📄 License
 
@@ -510,26 +391,26 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🔮 Future Enhancements
 
-- [ ] Interactive drag-and-drop positioning
 - [ ] Export to PNG/PDF
 - [ ] Room rotation support
 - [ ] Curved walls and non-rectangular rooms
 - [ ] Furniture library
 - [ ] Area calculations and measurements
-- [ ] Undo/redo functionality
 - [ ] Multi-floor support
 - [ ] 3D visualization mode
 - [ ] Template library
+- [ ] Collaborative editing
 
 ## 📞 Support
 
-- **Documentation**: See [requirements.md](requirements.md) for detailed specifications
-- **Architecture Guide**: See [CLAUDE.md](CLAUDE.md) for development guidance
+- **Documentation**: See [CLAUDE.md](CLAUDE.md) for development guidance
+- **Testing Guide**: See [TESTING.md](TESTING.md) for testing documentation
 - **Issues**: Report bugs via GitHub Issues
 
 ## 🙏 Acknowledgments
 
 - Built with React, TypeScript, and Vite
+- Powered by PEG.js for DSL parsing
 - Inspired by architectural CAD tools
 - SVG rendering for precision and scalability
 

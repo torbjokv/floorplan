@@ -1,0 +1,160 @@
+.dsl-editor-container {
+  height: 100%;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+.dsl-editor-wrapper {
+  display: flex;
+  height: 100%;
+  position: relative;
+}
+
+.dsl-line-numbers {
+  background-color: #252525;
+  color: #858585;
+  padding: 10px;
+  text-align: right;
+  user-select: none;
+  min-width: 50px;
+  border-right: 1px solid #3e3e42;
+  overflow-y: hidden;
+  overflow-x: hidden;
+}
+
+.dsl-line-numbers div {
+  padding-right: 10px;
+  line-height: 1.5;
+}
+
+.dsl-editor-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.dsl-highlight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 10px;
+  overflow: auto;
+  pointer-events: none;
+  white-space: pre;
+  word-wrap: normal;
+  overflow-wrap: normal;
+  z-index: 0;
+}
+
+.dsl-highlight pre {
+  margin: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.dsl-highlight code {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.dsl-textarea {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 10px;
+  margin: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: transparent;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  resize: none;
+  overflow: auto;
+  white-space: pre;
+  word-wrap: normal;
+  overflow-wrap: normal;
+  caret-color: #fff;
+  z-index: 1;
+  -webkit-text-fill-color: transparent;
+}
+
+.dsl-textarea::selection {
+  background-color: rgba(58, 113, 207, 0.5);
+  color: transparent;
+}
+
+.dsl-textarea::-moz-selection {
+  background-color: rgba(58, 113, 207, 0.5);
+  color: transparent;
+}
+
+.dsl-textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Syntax highlighting colors */
+.dsl-keyword {
+  color: #569cd6; /* Blue for keywords */
+  font-weight: bold;
+}
+
+.dsl-identifier {
+  color: #4ec9b0; /* Teal for identifiers */
+}
+
+.dsl-number {
+  color: #b5cea8; /* Light green for numbers */
+}
+
+.dsl-string {
+  color: #ce9178; /* Orange for strings */
+}
+
+.dsl-comment {
+  color: #6a9955; /* Green for comments */
+  font-style: italic;
+}
+
+.dsl-wall {
+  color: #c586c0; /* Purple for walls */
+}
+
+.dsl-swing {
+  color: #c586c0; /* Purple for swing directions */
+}
+
+.dsl-anchor {
+  color: #ffd700; /* Bright gold for anchors - more visible */
+  font-weight: 500;
+}
+
+.dsl-object-type {
+  color: #4ec9b0; /* Teal for object types */
+}
+
+.dsl-color {
+  color: #ce9178; /* Orange for colors */
+}
+
+.dsl-punctuation {
+  color: #ffffff; /* White for punctuation - more visible */
+  font-weight: 500;
+}
+
+.dsl-whitespace {
+  /* No special styling for whitespace */
+}

@@ -1,13 +1,14 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import type { FloorplanWorld } from '../support/world';
+import { fillDSLFromJSON } from '../support/dsl-helper';
 
 // Dynamic ViewBox
 When(
   'I create a room with dimensions {int}x{int} at position {int},{int}',
   async function (this: FloorplanWorld, width: number, depth: number, x: number, y: number) {
-    await this.page.getByTestId('tab-json').click();
-    const jsonTextarea = this.page.getByTestId('json-textarea');
+    await this.page.getByTestId('tab-dsl').click();
+    const jsonTextarea = this.page.getByTestId('dsl-textarea');
 
     const json = {
       grid_step: 1000,
@@ -23,7 +24,7 @@ When(
       ],
     };
 
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
+    await fillDSLFromJSON(this, json);
     await this.page.waitForTimeout(600);
 
     (this as any).currentJson = json;
@@ -77,9 +78,9 @@ When('I add rooms at different positions', async function (this: FloorplanWorld)
     ],
   };
 
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(600);
 
   (this as any).currentJson = json;
@@ -112,9 +113,9 @@ When('I change grid_step to {int}', async function (this: FloorplanWorld, gridSt
   const currentJson = (this as any).currentJson || { rooms: [] };
   currentJson.grid_step = gridStep;
 
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
+  await fillDSLFromJSON(this, currentJson);
   await this.page.waitForTimeout(600);
 
   (this as any).currentJson = currentJson;
@@ -188,9 +189,9 @@ When('I create a composite room', async function (this: FloorplanWorld) {
     ],
   };
 
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(600);
 
   (this as any).currentJson = json;
@@ -256,9 +257,9 @@ When('I add objects to a room', async function (this: FloorplanWorld) {
     ],
   };
 
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(600);
 
   (this as any).currentJson = json;
@@ -311,9 +312,9 @@ When('I have a {int}mm room', async function (this: FloorplanWorld, size: number
     ],
   };
 
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(600);
 
   (this as any).currentJson = json;
@@ -390,9 +391,9 @@ When(
       rooms: rooms,
     };
 
-    await this.page.getByTestId('tab-json').click();
-    const jsonTextarea = this.page.getByTestId('json-textarea');
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
+    await this.page.getByTestId('tab-dsl').click();
+    const jsonTextarea = this.page.getByTestId('dsl-textarea');
+    await fillDSLFromJSON(this, json);
 
     (this as any).renderStartTime = Date.now();
     await this.page.waitForTimeout(1000); // Wait for render
@@ -465,9 +466,9 @@ When('I add objects outside room bounds', async function (this: FloorplanWorld) 
     ],
   };
 
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(600);
 
   (this as any).currentJson = json;
@@ -492,9 +493,9 @@ Given('I have an empty floorplan', async function (this: FloorplanWorld) {
     rooms: [],
   };
 
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(600);
 
   (this as any).currentJson = json;
@@ -531,10 +532,10 @@ Then('the SVG should have a valid viewBox', async function (this: FloorplanWorld
 When(
   'I create a room with dimensions {int}x{int} attached to Zero Point',
   async function (this: FloorplanWorld, width: number, depth: number) {
-    await this.page.getByTestId('tab-json').click();
+    await this.page.getByTestId('tab-dsl').click();
     await this.page.waitForTimeout(200);
 
-    const jsonTextarea = this.page.getByTestId('json-textarea');
+    const jsonTextarea = this.page.getByTestId('dsl-textarea');
     const json = {
       grid_step: 1000,
       rooms: [
@@ -548,7 +549,7 @@ When(
       ],
     };
 
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
+    await fillDSLFromJSON(this, json);
     await this.page.waitForTimeout(700);
 
     (this as any).currentRooms = json.rooms;
@@ -558,10 +559,10 @@ When(
 Given(
   'I have a room attached to Zero Point with size {int}x{int}',
   async function (this: FloorplanWorld, width: number, depth: number) {
-    await this.page.getByTestId('tab-json').click();
+    await this.page.getByTestId('tab-dsl').click();
     await this.page.waitForTimeout(200);
 
-    const jsonTextarea = this.page.getByTestId('json-textarea');
+    const jsonTextarea = this.page.getByTestId('dsl-textarea');
     const json = {
       grid_step: 1000,
       rooms: [
@@ -575,7 +576,7 @@ Given(
       ],
     };
 
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
+    await fillDSLFromJSON(this, json);
     await this.page.waitForTimeout(700);
 
     (this as any).currentRooms = json.rooms;
@@ -596,13 +597,13 @@ When(
       offset: [2000, 0],
     });
 
-    const jsonTextarea = this.page.getByTestId('json-textarea');
+    const jsonTextarea = this.page.getByTestId('dsl-textarea');
     const json = {
       grid_step: 1000,
       rooms: currentRooms,
     };
 
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
+    await fillDSLFromJSON(this, json);
     await this.page.waitForTimeout(700);
 
     (this as any).currentRooms = currentRooms;
@@ -619,10 +620,10 @@ Then('the viewBox should expand to include both rooms', async function (this: Fl
 });
 
 When('I set grid_step to {int}', async function (this: FloorplanWorld, gridStep: number) {
-  await this.page.getByTestId('tab-json').click();
+  await this.page.getByTestId('tab-dsl').click();
   await this.page.waitForTimeout(200);
 
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
   const json = {
     grid_step: gridStep,
     rooms: [
@@ -636,7 +637,7 @@ When('I set grid_step to {int}', async function (this: FloorplanWorld, gridStep:
     ],
   };
 
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(700);
 });
 
@@ -649,10 +650,10 @@ Then('grid lines should be spaced 1000mm apart', async function (this: Floorplan
 When(
   'I change grid_step from {int} to {int}',
   async function (this: FloorplanWorld, fromStep: number, toStep: number) {
-    await this.page.getByTestId('tab-json').click();
+    await this.page.getByTestId('tab-dsl').click();
     await this.page.waitForTimeout(200);
 
-    const jsonTextarea = this.page.getByTestId('json-textarea');
+    const jsonTextarea = this.page.getByTestId('dsl-textarea');
     const json = {
       grid_step: toStep,
       rooms: [
@@ -666,7 +667,7 @@ When(
       ],
     };
 
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
+    await fillDSLFromJSON(this, json);
     await this.page.waitForTimeout(700);
 
     (this as any).currentJson = json;
@@ -680,12 +681,12 @@ Then('the grid should be denser', async function (this: FloorplanWorld) {
 });
 
 When('I create a room named {string}', async function (this: FloorplanWorld, roomName: string) {
-  await this.page.getByTestId('tab-json').click();
+  await this.page.getByTestId('tab-dsl').click();
   await this.page.waitForTimeout(200);
 
   const roomId = roomName.toLowerCase().replace(/\s+/g, '');
 
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
   const json = {
     grid_step: 1000,
     rooms: [
@@ -699,7 +700,7 @@ When('I create a room named {string}', async function (this: FloorplanWorld, roo
     ],
   };
 
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(700);
 
   (this as any).lastRoomName = roomName;
@@ -732,10 +733,10 @@ Then('the label should be visible', async function (this: FloorplanWorld) {
 });
 
 When('I create a room', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
+  await this.page.getByTestId('tab-dsl').click();
   await this.page.waitForTimeout(200);
 
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
   const json = {
     grid_step: 1000,
     rooms: [
@@ -749,7 +750,7 @@ When('I create a room', async function (this: FloorplanWorld) {
     ],
   };
 
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(700);
 });
 
@@ -832,10 +833,10 @@ Then(
 
 Given('I am viewing the floorplan preview', async function (this: FloorplanWorld) {
   // Create a basic room to view
-  await this.page.getByTestId('tab-json').click();
+  await this.page.getByTestId('tab-dsl').click();
   await this.page.waitForTimeout(200);
 
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
   const json = {
     grid_step: 1000,
     rooms: [
@@ -849,7 +850,7 @@ Given('I am viewing the floorplan preview', async function (this: FloorplanWorld
     ],
   };
 
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(700);
 });
 
@@ -881,10 +882,10 @@ Then("the room's fields should be visible", async function (this: FloorplanWorld
 });
 
 When('I modify the JSON', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
+  await this.page.getByTestId('tab-dsl').click();
   await this.page.waitForTimeout(200);
 
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
   const json = {
     grid_step: 1000,
     rooms: [
@@ -898,7 +899,7 @@ When('I modify the JSON', async function (this: FloorplanWorld) {
     ],
   };
 
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await fillDSLFromJSON(this, json);
 });
 
 Then('an update indicator should briefly appear', async function (this: FloorplanWorld) {
@@ -945,10 +946,10 @@ Given(
       ],
     };
 
-    await this.page.getByTestId('tab-json').click();
+    await this.page.getByTestId('tab-dsl').click();
     await this.page.waitForTimeout(200);
-    const jsonTextarea = this.page.getByTestId('json-textarea');
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
+    const jsonTextarea = this.page.getByTestId('dsl-textarea');
+    await fillDSLFromJSON(this, json);
     await this.page.waitForTimeout(700);
   }
 );
@@ -997,10 +998,10 @@ When('I add a square object to a room', async function (this: FloorplanWorld) {
     ],
   };
 
-  await this.page.getByTestId('tab-json').click();
+  await this.page.getByTestId('tab-dsl').click();
   await this.page.waitForTimeout(200);
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(700);
 });
 
@@ -1049,10 +1050,10 @@ When('I add a circle object to a room', async function (this: FloorplanWorld) {
     ],
   };
 
-  await this.page.getByTestId('tab-json').click();
+  await this.page.getByTestId('tab-dsl').click();
   await this.page.waitForTimeout(200);
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(700);
 });
 
@@ -1075,7 +1076,7 @@ Then('the circle should display the text label if provided', async function (thi
 
 When(
   'I add an object with anchor {string} and roomAnchor {string}',
-  async function (this: FloorplanWorld, anchor: string) {
+  async function (this: FloorplanWorld, anchor: string, roomAnchor: string) {
     const json = {
       grid_step: 1000,
       rooms: [
@@ -1093,6 +1094,7 @@ When(
               width: 1000,
               height: 1000,
               anchor: anchor,
+              roomAnchor: roomAnchor,
               color: '#ff9800',
               text: 'Anchor Test',
             },
@@ -1101,10 +1103,10 @@ When(
       ],
     };
 
-    await this.page.getByTestId('tab-json').click();
+    await this.page.getByTestId('tab-dsl').click();
     await this.page.waitForTimeout(200);
-    const jsonTextarea = this.page.getByTestId('json-textarea');
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
+    const jsonTextarea = this.page.getByTestId('dsl-textarea');
+    await fillDSLFromJSON(this, json);
     await this.page.waitForTimeout(700);
   }
 );
@@ -1127,10 +1129,10 @@ Then(
 );
 
 When('I create a room attached to Zero Point', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
+  await this.page.getByTestId('tab-dsl').click();
   await this.page.waitForTimeout(200);
 
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
   const json = {
     grid_step: 1000,
     rooms: [
@@ -1144,7 +1146,7 @@ When('I create a room attached to Zero Point', async function (this: FloorplanWo
     ],
   };
 
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(700);
 });
 
@@ -1180,10 +1182,10 @@ When('I create a room at y=0 and another at y=3000', async function (this: Floor
     ],
   };
 
-  await this.page.getByTestId('tab-json').click();
+  await this.page.getByTestId('tab-dsl').click();
   await this.page.waitForTimeout(200);
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(700);
 });
 
@@ -1214,10 +1216,10 @@ When(
       ],
     };
 
-    await this.page.getByTestId('tab-json').click();
+    await this.page.getByTestId('tab-dsl').click();
     await this.page.waitForTimeout(200);
-    const jsonTextarea = this.page.getByTestId('json-textarea');
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
+    const jsonTextarea = this.page.getByTestId('dsl-textarea');
+    await fillDSLFromJSON(this, json);
     await this.page.waitForTimeout(700);
 
     (this as any).roomWidth = width;
@@ -1284,10 +1286,10 @@ When(
       rooms: rooms,
     };
 
-    await this.page.getByTestId('tab-json').click();
+    await this.page.getByTestId('tab-dsl').click();
     await this.page.waitForTimeout(200);
-    const jsonTextarea = this.page.getByTestId('json-textarea');
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
+    const jsonTextarea = this.page.getByTestId('dsl-textarea');
+    await fillDSLFromJSON(this, json);
     await this.page.waitForTimeout(700);
   }
 );
@@ -1317,10 +1319,10 @@ When('I create a floorplan with no rooms', async function (this: FloorplanWorld)
     rooms: [],
   };
 
-  await this.page.getByTestId('tab-json').click();
+  await this.page.getByTestId('tab-dsl').click();
   await this.page.waitForTimeout(200);
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(700);
 });
 

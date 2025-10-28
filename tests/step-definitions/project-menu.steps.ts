@@ -173,16 +173,16 @@ Then(
 Then('a new empty project should be created', async function (this: FloorplanWorld) {
   // Wait for content to update (debounced auto-update is 500ms)
   await this.page.waitForTimeout(600);
-  // Switch to JSON tab to check content
-  await this.page.getByTestId('tab-json').click();
+  // Switch to DSL tab to check content
+  await this.page.getByTestId('tab-dsl').click();
   await this.page.waitForTimeout(300);
-  // Check the JSON editor content - find any textarea
-  const jsonEditor = this.page.locator('textarea').first();
-  await expect(jsonEditor).toBeVisible();
-  const content = await jsonEditor.inputValue();
-  // New projects actually have a default room ("Living Room"), not empty
-  expect(content).toContain('"grid_step"');
-  expect(content).toContain('"rooms"');
+  // Check the DSL editor content
+  const dslEditor = this.page.getByTestId('dsl-textarea');
+  await expect(dslEditor).toBeVisible();
+  const content = await dslEditor.inputValue();
+  // New projects have a default room configuration in DSL format
+  expect(content).toContain('grid');
+  expect(content).toContain('room');
 });
 
 Then(
@@ -293,9 +293,15 @@ Then('the project should be loaded from the file', async function (this: Floorpl
 });
 
 Then('the floorplan should match the uploaded data', async function (this: FloorplanWorld) {
-  // Check that the test room is present
-  const roomLabel = this.page.locator('text=Test Room');
-  await expect(roomLabel).toBeVisible();
+  // Check that the test room is present in the SVG rendering
+  const svg = this.page.locator('.floorplan-svg');
+  await expect(svg).toBeVisible();
+
+  // Verify the DSL editor contains the uploaded room data
+  const dslTextarea = this.page.getByTestId('dsl-textarea');
+  const dslContent = await dslTextarea.inputValue();
+  expect(dslContent).toContain('Test Room');
+  expect(dslContent).toContain('3000x3000');
 });
 
 Then('the URL should be copied to clipboard', async function (this: FloorplanWorld) {

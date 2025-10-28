@@ -14,7 +14,6 @@ interface ProjectMenuProps {
   onLoadExample: () => void;
   onUploadJSON: () => void;
   onDuplicateProject: () => void;
-  onDownloadJSON: () => void;
   onShare: () => void;
   onLoadProject: (project: SavedProject) => void;
   onDeleteProject: (projectId: string) => void;
@@ -26,7 +25,6 @@ export function ProjectMenu({
   onLoadExample,
   onUploadJSON,
   onDuplicateProject,
-  onDownloadJSON,
   onShare,
   onLoadProject,
   onDeleteProject,
@@ -56,13 +54,6 @@ export function ProjectMenu({
 
       <div className={styles.divider} />
 
-      <button
-        onClick={onDownloadJSON}
-        className={styles.menuItem}
-        data-testid="project-menu-download"
-      >
-        💾 Download JSON
-      </button>
       <button onClick={onShare} className={styles.menuItem} data-testid="project-menu-share">
         🔗 Share
       </button>

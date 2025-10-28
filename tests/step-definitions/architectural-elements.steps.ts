@@ -1,12 +1,10 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import type { FloorplanWorld } from '../support/world';
+import { fillDSLFromJSON } from '../support/dsl-helper';
 
-// Helper function to create a basic room setup
+// Helper function to create a basic room setup using DSL
 async function createBasicRoom(world: FloorplanWorld, roomId: string, roomName: string) {
-  await world.page.getByTestId('tab-json').click();
-  const jsonTextarea = world.page.getByTestId('json-textarea');
-
   const json = {
     grid_step: 1000,
     rooms: [
@@ -20,9 +18,7 @@ async function createBasicRoom(world: FloorplanWorld, roomId: string, roomName: 
     ],
   };
 
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
-  await world.page.waitForTimeout(600);
-
+  await fillDSLFromJSON(world, json);
   return json;
 }
 
@@ -30,9 +26,6 @@ async function createBasicRoom(world: FloorplanWorld, roomId: string, roomName: 
 Given(
   'I have a room named {string} with dimensions {int}x{int}',
   async function (this: FloorplanWorld, roomName: string, width: number, depth: number) {
-    await this.page.getByTestId('tab-json').click();
-    const jsonTextarea = this.page.getByTestId('json-textarea');
-
     const roomId = roomName.toLowerCase().replace(/\s+/g, '');
 
     const json = {
@@ -48,8 +41,7 @@ Given(
       ],
     };
 
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
-    await this.page.waitForTimeout(600);
+    await fillDSLFromJSON(this, json);
 
     (this as any).currentRoomId = roomId;
     (this as any).currentJson = json;
@@ -72,9 +64,7 @@ When(
       swing: 'inwards-right',
     });
 
-    const jsonTextarea = this.page.getByTestId('json-textarea');
-    await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
-    await this.page.waitForTimeout(600);
+    await fillDSLFromJSON(this, currentJson);
 
     (this as any).currentJson = currentJson;
   }
@@ -129,10 +119,7 @@ When('I add a door with swing {string}', async function (this: FloorplanWorld, s
     swing: swing,
   });
 
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
-  await this.page.waitForTimeout(600);
+  await fillDSLFromJSON(this, currentJson);
 
   (this as any).currentJson = currentJson;
 });
@@ -169,9 +156,7 @@ When(
       swing: swing,
     });
 
-    const jsonTextarea = this.page.getByTestId('json-textarea');
-    await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
-    await this.page.waitForTimeout(600);
+    await fillDSLFromJSON(this, currentJson);
 
     (this as any).currentJson = currentJson;
   }
@@ -212,10 +197,7 @@ Given('I have a door on a wall', async function (this: FloorplanWorld) {
     ],
   };
 
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
-  await this.page.waitForTimeout(600);
+  await fillDSLFromJSON(this, json);
 
   (this as any).currentJson = json;
 });
@@ -230,9 +212,7 @@ When('I set door type to {string}', async function (this: FloorplanWorld, doorTy
       delete currentJson.doors[0].swing;
     }
 
-    const jsonTextarea = this.page.getByTestId('json-textarea');
-    await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
-    await this.page.waitForTimeout(600);
+    await fillDSLFromJSON(this, currentJson);
 
     (this as any).currentJson = currentJson;
   }
@@ -275,9 +255,7 @@ When(
       width: width,
     });
 
-    const jsonTextarea = this.page.getByTestId('json-textarea');
-    await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
-    await this.page.waitForTimeout(600);
+    await fillDSLFromJSON(this, currentJson);
 
     (this as any).currentJson = currentJson;
   }
@@ -321,9 +299,7 @@ When('I add a door to the {string} wall', async function (this: FloorplanWorld, 
     swing: 'inwards-right',
   });
 
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
-  await this.page.waitForTimeout(600);
+  await fillDSLFromJSON(this, currentJson);
 
   (this as any).currentJson = currentJson;
 });
@@ -351,9 +327,7 @@ When('I add a window to the {string} wall', async function (this: FloorplanWorld
     width: 1200,
   });
 
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
-  await this.page.waitForTimeout(600);
+  await fillDSLFromJSON(this, currentJson);
 
   (this as any).currentJson = currentJson;
 });
@@ -393,9 +367,7 @@ When('I add multiple doors to the same room', async function (this: FloorplanWor
     },
   ];
 
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
-  await this.page.waitForTimeout(600);
+  await fillDSLFromJSON(this, currentJson);
 
   (this as any).currentJson = currentJson;
 });
@@ -430,9 +402,7 @@ When('I add multiple windows to different walls', async function (this: Floorpla
     },
   ];
 
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
-  await this.page.waitForTimeout(600);
+  await fillDSLFromJSON(this, currentJson);
 
   (this as any).currentJson = currentJson;
 });
@@ -481,10 +451,7 @@ Given('I have doors and windows configured', async function (this: FloorplanWorl
     ],
   };
 
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
-  await this.page.waitForTimeout(600);
+  await fillDSLFromJSON(this, json);
 
   (this as any).currentJson = json;
 });
@@ -543,10 +510,7 @@ When('I add a door with type {string}', async function (this: FloorplanWorld, do
 
   currentJson.doors.push(door);
 
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
-  await this.page.waitForTimeout(600);
+  await fillDSLFromJSON(this, currentJson);
 
   (this as any).currentJson = currentJson;
 });
@@ -595,9 +559,7 @@ When(
       { room: `${roomId}:right`, offset: 1000, width: 800, swing: 'inwards-right' },
     ];
 
-    const jsonTextarea = this.page.getByTestId('json-textarea');
-    await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
-    await this.page.waitForTimeout(600);
+    await fillDSLFromJSON(this, currentJson);
 
     (this as any).currentJson = currentJson;
   }
@@ -644,9 +606,7 @@ When('I add a door at offset {int}', async function (this: FloorplanWorld, offse
     swing: 'inwards-right',
   });
 
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
-  await this.page.waitForTimeout(600);
+  await fillDSLFromJSON(this, currentJson);
 
   (this as any).currentJson = currentJson;
 });
@@ -676,9 +636,7 @@ When(
       { room: `${roomId}:right`, offset: 1000, width: 1200 },
     ];
 
-    const jsonTextarea = this.page.getByTestId('json-textarea');
-    await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
-    await this.page.waitForTimeout(600);
+    await fillDSLFromJSON(this, currentJson);
 
     (this as any).currentJson = currentJson;
   }
@@ -729,9 +687,7 @@ When(
       });
     }
 
-    const jsonTextarea = this.page.getByTestId('json-textarea');
-    await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
-    await this.page.waitForTimeout(600);
+    await fillDSLFromJSON(this, currentJson);
 
     (this as any).currentJson = currentJson;
   }
@@ -778,9 +734,7 @@ When(
       });
     }
 
-    const jsonTextarea = this.page.getByTestId('json-textarea');
-    await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
-    await this.page.waitForTimeout(600);
+    await fillDSLFromJSON(this, currentJson);
 
     (this as any).currentJson = currentJson;
   }
@@ -832,9 +786,7 @@ When(
       },
     ];
 
-    const jsonTextarea = this.page.getByTestId('json-textarea');
-    await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
-    await this.page.waitForTimeout(600);
+    await fillDSLFromJSON(this, currentJson);
 
     (this as any).currentJson = currentJson;
   }
@@ -881,10 +833,7 @@ When('I add a door with any width', async function (this: FloorplanWorld) {
     swing: 'inwards-right',
   });
 
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
-  await this.page.waitForTimeout(600);
+  await fillDSLFromJSON(this, currentJson);
 
   (this as any).currentJson = currentJson;
 });
@@ -929,10 +878,7 @@ When('I add a window with any width', async function (this: FloorplanWorld) {
     width: 1500, // Any width
   });
 
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
-  await this.page.waitForTimeout(600);
+  await fillDSLFromJSON(this, currentJson);
 
   (this as any).currentJson = currentJson;
 });
@@ -984,10 +930,7 @@ Given(
       });
     }
 
-    await this.page.getByTestId('tab-json').click();
-    const jsonTextarea = this.page.getByTestId('json-textarea');
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
-    await this.page.waitForTimeout(600);
+    await fillDSLFromJSON(this, json);
 
     (this as any).currentJson = json;
   }
@@ -1005,9 +948,7 @@ When("I add a door to the second part's wall", async function (this: FloorplanWo
     },
   ];
 
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
-  await this.page.waitForTimeout(600);
+  await fillDSLFromJSON(this, currentJson);
 
   (this as any).currentJson = currentJson;
 });
@@ -1035,9 +976,7 @@ When('I try to add a door to {string}', async function (this: FloorplanWorld, ro
     },
   ];
 
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
-  await this.page.waitForTimeout(600);
+  await fillDSLFromJSON(this, currentJson);
 
   (this as any).currentJson = currentJson;
 });
@@ -1053,15 +992,13 @@ When('I try to add a window to {string}', async function (this: FloorplanWorld, 
     },
   ];
 
-  const jsonTextarea = this.page.getByTestId('json-textarea');
-  await jsonTextarea.fill(JSON.stringify(currentJson, null, 2));
-  await this.page.waitForTimeout(600);
+  await fillDSLFromJSON(this, currentJson);
 
   (this as any).currentJson = currentJson;
 });
 
 Then('the error should mention the invalid room reference', async function (this: FloorplanWorld) {
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   const isVisible = await warnings.isVisible().catch(() => false);
 
   if (isVisible) {

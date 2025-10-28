@@ -13,7 +13,12 @@ const cucumberArgs = [
 ];
 
 // Base Node options
-const nodeOptions = ['--loader', 'ts-node/esm', '--experimental-specifier-resolution=node'];
+const nodeOptions = [
+  '--loader',
+  'ts-node/esm',
+  '--experimental-specifier-resolution=node',
+  '--no-warnings',
+];
 
 // Inherit environment and customize per run
 const env = {

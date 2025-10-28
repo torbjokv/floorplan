@@ -422,7 +422,7 @@ const FloorplanRendererComponent = ({
   );
 
   // Mouse up handler to finish dragging
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     // Cancel any pending animation frame
     if (dragAnimationFrame.current !== null) {
       cancelAnimationFrame(dragAnimationFrame.current);
@@ -536,7 +536,7 @@ const FloorplanRendererComponent = ({
       setDragOffset(null);
       setConnectedRooms(new Set());
     });
-  };
+  }, [dragState, dragOffset, snapTarget, data, onRoomUpdate, roomMap]);
 
   // Add global mouse up listener
   useEffect(() => {
@@ -547,7 +547,7 @@ const FloorplanRendererComponent = ({
     };
     window.addEventListener('mouseup', handleGlobalMouseUp);
     return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
-  }, [dragState]);
+  }, [dragState, handleMouseUp]);
 
   // Cleanup animation frame on unmount
   useEffect(() => {

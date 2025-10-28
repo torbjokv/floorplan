@@ -146,12 +146,12 @@ Feature: GUI Editor Interface
     And text should be readable on dark background
     And form elements should match the dark theme
 
-  Scenario: Real-time synchronization with JSON
+  Scenario: Real-time synchronization with DSL
     When I change a value in the GUI editor
     And I wait for 600ms
-    Then the JSON editor should reflect the change
-    When I switch to the JSON tab
-    Then the JSON should contain the updated value
+    Then the DSL editor should reflect the change
+    When I switch to the DSL editor
+    Then the DSL should contain the updated value
 
   Scenario: Validation feedback in GUI
     When I enter an invalid value in the GUI

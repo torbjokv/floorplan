@@ -1,11 +1,38 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import type { FloorplanWorld } from '../support/world';
+import { fillDSLFromJSON } from '../support/dsl-helper';
 
-// JSON Syntax Errors
+// DSL Tab Navigation
+When('I switch to the DSL tab', async function (this: FloorplanWorld) {
+  await this.page.getByTestId('tab-dsl').click();
+  await this.page.waitForTimeout(300);
+});
+
+// DSL Syntax Errors
+When('I enter invalid DSL with a syntax error', async function (this: FloorplanWorld) {
+  const dslTextarea = this.page.getByTestId('dsl-textarea');
+  await dslTextarea.fill('room LivingRoom 5000x4000'); // Missing "at" clause
+  await this.page.waitForTimeout(300);
+});
+
+When('I enter DSL with a missing keyword', async function (this: FloorplanWorld) {
+  const dslTextarea = this.page.getByTestId('dsl-textarea');
+  await dslTextarea.fill('LivingRoom 5000x4000 at zeropoint'); // Missing "room" keyword
+  await this.page.waitForTimeout(300);
+});
+
+Then('a DSL syntax error should be displayed with ❌ icon', async function (this: FloorplanWorld) {
+  const errorPanel = this.page.getByTestId('error-panel').first();
+  await expect(errorPanel).toBeVisible({ timeout: 2000 });
+  const errorText = await errorPanel.textContent();
+  expect(errorText).toMatch(/error|expected/i);
+});
+
+// JSON Syntax Errors (legacy)
 When('I enter JSON with a syntax error', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
   await jsonTextarea.fill('{ "grid_step": 1000, "rooms": [ } '); // Missing closing bracket
   await this.page.waitForTimeout(300);
 });
@@ -29,8 +56,8 @@ Then('the preview should show the last valid state', async function (this: Floor
 
 // Positioning Errors
 When('I create a room with invalid attachTo reference', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
 
   const json = {
     grid_step: 1000,
@@ -45,14 +72,14 @@ When('I create a room with invalid attachTo reference', async function (this: Fl
     ],
   };
 
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(600);
 
   (this as any).currentJson = json;
 });
 
 Then('a positioning error should be displayed', async function (this: FloorplanWorld) {
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   const isVisible = await warnings.isVisible({ timeout: 2000 }).catch(() => false);
 
   if (isVisible) {
@@ -65,7 +92,7 @@ Then('a positioning error should be displayed', async function (this: FloorplanW
 });
 
 Then('the error should explain the invalid reference', async function (this: FloorplanWorld) {
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   const warningText = await warnings.textContent();
   expect(warningText).toBeTruthy();
 });
@@ -80,8 +107,8 @@ Then('the room should not appear in the preview', async function (this: Floorpla
 
 // Circular Dependencies
 When('I create circular room dependencies', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
 
   const json = {
     grid_step: 1000,
@@ -103,21 +130,21 @@ When('I create circular room dependencies', async function (this: FloorplanWorld
     ],
   };
 
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(600);
 
   (this as any).currentJson = json;
 });
 
 Then('a circular dependency error should be shown', async function (this: FloorplanWorld) {
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   await expect(warnings).toBeVisible({ timeout: 2000 });
 });
 
 Then(
   'the error should list the rooms involved in the cycle',
   async function (this: FloorplanWorld) {
-    const warnings = this.page.getByTestId('json-warnings').first();
+    const warnings = this.page.getByTestId('error-panel').first();
     const warningText = await warnings.textContent();
     expect(warningText).toBeTruthy();
     // Should mention the circular dependency
@@ -137,8 +164,8 @@ Then('affected rooms should not render', async function (this: FloorplanWorld) {
 
 // Missing Zero Point
 When('no room connects to zero point', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
 
   const json = {
     grid_step: 1000,
@@ -160,27 +187,27 @@ When('no room connects to zero point', async function (this: FloorplanWorld) {
     ],
   };
 
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(600);
 
   (this as any).currentJson = json;
 });
 
 Then('a validation warning should be displayed', async function (this: FloorplanWorld) {
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   await expect(warnings).toBeVisible({ timeout: 2000 });
 });
 
 Then('the warning should mention zero point requirement', async function (this: FloorplanWorld) {
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   const warningText = await warnings.textContent();
   expect(warningText?.toLowerCase()).toContain('zero point');
 });
 
 // Missing Required Fields
 When('I create a room without required fields', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
 
   const json = {
     grid_step: 1000,
@@ -192,7 +219,7 @@ When('I create a room without required fields', async function (this: FloorplanW
     ],
   };
 
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(600);
 
   (this as any).currentJson = json;
@@ -204,7 +231,7 @@ Then('validation errors should be displayed', async function (this: FloorplanWor
     const errorOverlay = this.page.getByTestId('json-error').first();
     await expect(errorOverlay).toBeVisible({ timeout: 1000 });
   } catch {
-    const warnings = this.page.getByTestId('json-warnings').first();
+    const warnings = this.page.getByTestId('error-panel').first();
     await expect(warnings).toBeVisible({ timeout: 2000 });
   }
 });
@@ -243,15 +270,15 @@ Given(
       });
     }
 
-    await this.page.getByTestId('tab-json').click();
-    const jsonTextarea = this.page.getByTestId('json-textarea');
+    await this.page.getByTestId('tab-dsl').click();
+    const jsonTextarea = this.page.getByTestId('dsl-textarea');
 
     const json = {
       grid_step: 1000,
       rooms: rooms,
     };
 
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
+    await fillDSLFromJSON(this, json);
     await this.page.waitForTimeout(600);
 
     (this as any).currentJson = json;
@@ -286,7 +313,7 @@ Then(
 Then(
   'errors for the {int} invalid rooms should be displayed',
   async function (this: FloorplanWorld, expectedErrorRooms: number) {
-    const warnings = this.page.getByTestId('json-warnings').first();
+    const warnings = this.page.getByTestId('error-panel').first();
     await expect(warnings).toBeVisible({ timeout: 2000 });
 
     const warningText = await warnings.textContent();
@@ -296,14 +323,14 @@ Then(
 
 // Error Recovery
 Given('I have JSON with multiple errors', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
   await jsonTextarea.fill('{ invalid json');
   await this.page.waitForTimeout(300);
 });
 
 When('I fix all errors', async function (this: FloorplanWorld) {
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
 
   const validJson = {
     grid_step: 1000,
@@ -328,7 +355,7 @@ Then('all error messages should disappear', async function (this: FloorplanWorld
   const errorOverlay = this.page.getByTestId('json-error').first();
   await expect(errorOverlay).not.toBeVisible();
 
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   await expect(warnings).not.toBeVisible();
 });
 
@@ -342,8 +369,8 @@ Then('the floorplan should render normally', async function (this: FloorplanWorl
 
 // Error Panel Display
 Given('I have errors in my floorplan', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
 
   const json = {
     grid_step: 1000,
@@ -358,27 +385,27 @@ Given('I have errors in my floorplan', async function (this: FloorplanWorld) {
     ],
   };
 
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(600);
 });
 
 Then(
   'the error panel should be visible at the bottom of the preview',
   async function (this: FloorplanWorld) {
-    const warnings = this.page.getByTestId('json-warnings').first();
+    const warnings = this.page.getByTestId('error-panel').first();
     await expect(warnings).toBeVisible({ timeout: 2000 });
   }
 );
 
 Then('errors should be listed with clear descriptions', async function (this: FloorplanWorld) {
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   const warningText = await warnings.textContent();
   expect(warningText).toBeTruthy();
   expect(warningText?.length || 0).toBeGreaterThan(0);
 });
 
 When('I switch between JSON and GUI tabs', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
+  await this.page.getByTestId('tab-dsl').click();
   await this.page.waitForTimeout(200);
   await this.page.getByTestId('tab-gui').click();
   await this.page.waitForTimeout(200);
@@ -386,7 +413,7 @@ When('I switch between JSON and GUI tabs', async function (this: FloorplanWorld)
 
 Then('errors should remain visible in both views', async function (this: FloorplanWorld) {
   // Check in GUI view
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   try {
     await expect(warnings).toBeVisible({ timeout: 1000 });
   } catch {
@@ -397,8 +424,8 @@ Then('errors should remain visible in both views', async function (this: Floorpl
 
 // Invalid Door/Window References
 When('I add a door to a non-existent room', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
 
   const json = {
     grid_step: 1000,
@@ -413,7 +440,7 @@ When('I add a door to a non-existent room', async function (this: FloorplanWorld
     ],
   };
 
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(600);
 
   (this as any).currentJson = json;
@@ -431,8 +458,8 @@ Then('no error should be shown for the missing door room', async function (this:
 });
 
 When('I add a window to an invalid wall position', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
 
   const json = {
     grid_step: 1000,
@@ -454,7 +481,7 @@ When('I add a window to an invalid wall position', async function (this: Floorpl
     ],
   };
 
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(600);
 
   (this as any).currentJson = json;
@@ -488,15 +515,15 @@ When(
       });
     }
 
-    await this.page.getByTestId('tab-json').click();
-    const jsonTextarea = this.page.getByTestId('json-textarea');
+    await this.page.getByTestId('tab-dsl').click();
+    const jsonTextarea = this.page.getByTestId('dsl-textarea');
 
     const json = {
       grid_step: 1000,
       rooms: rooms,
     };
 
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
+    await fillDSLFromJSON(this, json);
     await this.page.waitForTimeout(1000);
 
     (this as any).currentJson = json;
@@ -520,7 +547,7 @@ Then('some rooms may not resolve', async function (this: FloorplanWorld) {
 // Additional step definitions for error-handling scenarios
 
 When('I enter invalid JSON with a syntax error', async function (this: FloorplanWorld) {
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
   await jsonTextarea.fill('{ "grid_step": 1000, "rooms": [ } '); // Missing closing bracket
 });
 
@@ -546,7 +573,7 @@ Then('the floorplan should not render until fixed', async function (this: Floorp
 });
 
 When('I enter JSON with a missing comma', async function (this: FloorplanWorld) {
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
   await jsonTextarea.fill('{"grid_step": 1000 "rooms": []}'); // Missing comma between properties
 });
 
@@ -566,8 +593,8 @@ Then('the error should indicate the approximate location', async function (this:
 When(
   'I create a room with attachTo referencing non-existent room',
   async function (this: FloorplanWorld) {
-    await this.page.getByTestId('tab-json').click();
-    const jsonTextarea = this.page.getByTestId('json-textarea');
+    await this.page.getByTestId('tab-dsl').click();
+    const jsonTextarea = this.page.getByTestId('dsl-textarea');
     const json = {
       grid_step: 1000,
       rooms: [
@@ -580,7 +607,7 @@ When(
         },
       ],
     };
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
+    await fillDSLFromJSON(this, json);
     // Wait for debounce + rendering
     await this.page.waitForTimeout(800);
   }
@@ -589,7 +616,7 @@ When(
 Then('a positioning error should be displayed with ⚠️ icon', async function (this: FloorplanWorld) {
   // Wait longer for warnings to appear after rendering
   await this.page.waitForTimeout(200);
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   // Warnings may not always appear if room simply doesn't render
   const isVisible = await warnings.isVisible().catch(() => false);
   if (isVisible) {
@@ -617,7 +644,7 @@ Then('valid rooms should still render successfully', async function (this: Floor
 When(
   'I create {int} rooms with different positioning errors',
   async function (this: FloorplanWorld, count: number) {
-    await this.page.getByTestId('tab-json').click();
+    await this.page.getByTestId('tab-dsl').click();
     const rooms = [];
     for (let i = 1; i <= count; i++) {
       rooms.push({
@@ -629,16 +656,16 @@ When(
       });
     }
 
-    const jsonTextarea = this.page.getByTestId('json-textarea');
+    const jsonTextarea = this.page.getByTestId('dsl-textarea');
     const json = { grid_step: 1000, rooms };
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
+    await fillDSLFromJSON(this, json);
   }
 );
 
 Then(
   'all {int} errors should be listed separately',
   async function (this: FloorplanWorld, count: number) {
-    const warnings = this.page.getByTestId('json-warnings').first();
+    const warnings = this.page.getByTestId('error-panel').first();
     await expect(warnings).toBeVisible({ timeout: 2000 });
     const warningText = await warnings.textContent();
     expect(warningText).toBeTruthy();
@@ -646,13 +673,13 @@ Then(
 );
 
 Then('each error should identify the specific room', async function (this: FloorplanWorld) {
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   const warningText = await warnings.textContent();
   expect(warningText).toBeTruthy();
 });
 
 Then('each error should describe the specific problem', async function (this: FloorplanWorld) {
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   const warningText = await warnings.textContent();
   expect(warningText).toBeTruthy();
 });
@@ -674,13 +701,13 @@ When(
 
     // If we have 2 rooms (circular dependency), write the JSON
     if ((this as any).rooms.length === 2) {
-      await this.page.getByTestId('tab-json').click();
-      const jsonTextarea = this.page.getByTestId('json-textarea');
+      await this.page.getByTestId('tab-dsl').click();
+      const jsonTextarea = this.page.getByTestId('dsl-textarea');
       const json = {
         grid_step: 1000,
         rooms: (this as any).rooms,
       };
-      await jsonTextarea.fill(JSON.stringify(json, null, 2));
+      await fillDSLFromJSON(this, json);
       (this as any).rooms = []; // Reset for next scenario
     }
   }
@@ -689,7 +716,7 @@ When(
 Then(
   'the error should mention both {string} and {string}',
   async function (this: FloorplanWorld, nameA: string, nameB: string) {
-    const warnings = this.page.getByTestId('json-warnings').first();
+    const warnings = this.page.getByTestId('error-panel').first();
     const warningText = await warnings.textContent();
     expect(warningText).toBeTruthy();
     // May mention the rooms involved
@@ -697,7 +724,7 @@ Then(
 );
 
 Then('the error should explain the circular reference', async function (this: FloorplanWorld) {
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   const warningText = await warnings.textContent();
   expect(warningText).toBeTruthy();
 });
@@ -705,8 +732,8 @@ Then('the error should explain the circular reference', async function (this: Fl
 When(
   'I create a room with invalid reference {string}',
   async function (this: FloorplanWorld, attachTo: string) {
-    await this.page.getByTestId('tab-json').click();
-    const jsonTextarea = this.page.getByTestId('json-textarea');
+    await this.page.getByTestId('tab-dsl').click();
+    const jsonTextarea = this.page.getByTestId('dsl-textarea');
     const json = {
       grid_step: 1000,
       rooms: [
@@ -719,13 +746,13 @@ When(
         },
       ],
     };
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
+    await fillDSLFromJSON(this, json);
     await this.page.waitForTimeout(800);
   }
 );
 
 Then("an error should indicate the room doesn't exist", async function (this: FloorplanWorld) {
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   // Warnings may not appear if room simply doesn't render
   const isVisible = await warnings.isVisible().catch(() => false);
   if (!isVisible) {
@@ -736,7 +763,7 @@ Then("an error should indicate the room doesn't exist", async function (this: Fl
 });
 
 Then('the error should mention {string}', async function (this: FloorplanWorld, text: string) {
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   const isVisible = await warnings.isVisible().catch(() => false);
   if (isVisible) {
     const warningText = await warnings.textContent();
@@ -753,7 +780,7 @@ Then('the error should mention {string}', async function (this: FloorplanWorld, 
 });
 
 Then("the error should be clear about what's wrong", async function (this: FloorplanWorld) {
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   const isVisible = await warnings.isVisible().catch(() => false);
   if (isVisible) {
     const warningText = await warnings.textContent();
@@ -768,8 +795,8 @@ Then("the error should be clear about what's wrong", async function (this: Floor
 When(
   'I create a room missing the {string} property',
   async function (this: FloorplanWorld, property: string) {
-    await this.page.getByTestId('tab-json').click();
-    const jsonTextarea = this.page.getByTestId('json-textarea');
+    await this.page.getByTestId('tab-dsl').click();
+    const jsonTextarea = this.page.getByTestId('dsl-textarea');
     const room: any = {
       id: 'testroom1',
       name: 'Test Room',
@@ -780,7 +807,7 @@ When(
     // Remove the specified property
     delete room[property];
     const json = { grid_step: 1000, rooms: [room] };
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
+    await fillDSLFromJSON(this, json);
   }
 );
 
@@ -797,8 +824,8 @@ Then('the error should specify which property is missing', async function (this:
 });
 
 When('I create a room with malformed anchor reference', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
   const json = {
     grid_step: 1000,
     rooms: [
@@ -811,11 +838,11 @@ When('I create a room with malformed anchor reference', async function (this: Fl
       },
     ],
   };
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await fillDSLFromJSON(this, json);
 });
 
 Then('an error should describe the invalid anchor syntax', async function (this: FloorplanWorld) {
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   const isVisible = await warnings.isVisible({ timeout: 2000 }).catch(() => false);
 
   if (isVisible) {
@@ -830,7 +857,7 @@ Then('an error should describe the invalid anchor syntax', async function (this:
 Then(
   'the error should provide an example of correct syntax',
   async function (this: FloorplanWorld) {
-    const warnings = this.page.getByTestId('json-warnings').first();
+    const warnings = this.page.getByTestId('error-panel').first();
     const isVisible = await warnings.isVisible().catch(() => false);
 
     if (isVisible) {
@@ -844,8 +871,8 @@ Then(
 );
 
 When('I create rooms without any Zero Point attachment', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
   const json = {
     grid_step: 1000,
     rooms: [
@@ -865,11 +892,11 @@ When('I create rooms without any Zero Point attachment', async function (this: F
       },
     ],
   };
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await fillDSLFromJSON(this, json);
 });
 
 Then('an error should be displayed', async function (this: FloorplanWorld) {
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   const isVisible = await warnings.isVisible({ timeout: 2000 }).catch(() => false);
 
   if (isVisible) {
@@ -884,7 +911,7 @@ Then('an error should be displayed', async function (this: FloorplanWorld) {
 Then(
   'the error should explain that at least one room must attach to Zero Point',
   async function (this: FloorplanWorld) {
-    const warnings = this.page.getByTestId('json-warnings').first();
+    const warnings = this.page.getByTestId('error-panel').first();
     const warningText = await warnings.textContent();
     // App doesn't enforce Zero Point anymore, so accept circular dependency or positioning errors
     expect(warningText?.toLowerCase()).toMatch(
@@ -896,7 +923,7 @@ Then(
 When(
   'I create dependencies that cannot be resolved in {int} iterations',
   async function (this: FloorplanWorld, maxIterations: number) {
-    await this.page.getByTestId('tab-json').click();
+    await this.page.getByTestId('tab-dsl').click();
     // Create a very long chain that exceeds max iterations
     const rooms = [];
     for (let i = 1; i <= 25; i++) {
@@ -908,9 +935,9 @@ When(
         attachTo: i === 1 ? 'zeropoint:top-left' : `room${i - 1}:top-right`,
       });
     }
-    const jsonTextarea = this.page.getByTestId('json-textarea');
+    const jsonTextarea = this.page.getByTestId('dsl-textarea');
     const json = { grid_step: 1000, rooms };
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
+    await fillDSLFromJSON(this, json);
   }
 );
 
@@ -936,8 +963,8 @@ Then('successfully positioned rooms should still render', async function (this: 
 });
 
 Given('I have a JSON syntax error displayed', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
   await jsonTextarea.fill('{ invalid json');
   await this.page.waitForTimeout(700);
   const errorOverlay = this.page.getByTestId('json-error').first();
@@ -945,7 +972,6 @@ Given('I have a JSON syntax error displayed', async function (this: FloorplanWor
 });
 
 When('I fix the syntax error in the editor', async function (this: FloorplanWorld) {
-  const jsonTextarea = this.page.getByTestId('json-textarea');
   const validJson = {
     grid_step: 1000,
     rooms: [
@@ -958,8 +984,7 @@ When('I fix the syntax error in the editor', async function (this: FloorplanWorl
       },
     ],
   };
-  await jsonTextarea.fill(JSON.stringify(validJson, null, 2));
-  await this.page.waitForTimeout(700); // Wait for JSON to be processed
+  await fillDSLFromJSON(this, validJson);
 });
 
 Then('the error message should disappear', async function (this: FloorplanWorld) {
@@ -980,15 +1005,15 @@ Then('the floorplan should render successfully', async function (this: Floorplan
 Then('no error indicators should be visible', async function (this: FloorplanWorld) {
   const errorOverlay = this.page.getByTestId('json-error').first();
   await expect(errorOverlay).not.toBeVisible();
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   await expect(warnings).not.toBeVisible();
 });
 
 Given(
   'I have a positioning error for room {string}',
   async function (this: FloorplanWorld, roomId: string) {
-    await this.page.getByTestId('tab-json').click();
-    const jsonTextarea = this.page.getByTestId('json-textarea');
+    await this.page.getByTestId('tab-dsl').click();
+    const jsonTextarea = this.page.getByTestId('dsl-textarea');
     const json = {
       grid_step: 1000,
       rooms: [
@@ -1001,7 +1026,7 @@ Given(
         },
       ],
     };
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
+    await fillDSLFromJSON(this, json);
     await this.page.waitForTimeout(700);
 
     // App may not show warnings - just store the JSON for later fix
@@ -1010,14 +1035,14 @@ Given(
 );
 
 When('I fix the positioning reference', async function (this: FloorplanWorld) {
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
   const currentJson = await jsonTextarea.inputValue();
   const newJson = currentJson.replace('nonexistent:top-left', 'zeropoint:top-left');
   await jsonTextarea.fill(newJson);
 });
 
 Then('the positioning error should disappear', async function (this: FloorplanWorld) {
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   await expect(warnings).not.toBeVisible();
 });
 
@@ -1032,8 +1057,8 @@ Then('the preview should show the partial floor plan', async function (this: Flo
 });
 
 When('I create a valid floor plan with multiple rooms', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
   const json = {
     grid_step: 1000,
     rooms: [
@@ -1060,14 +1085,14 @@ When('I create a valid floor plan with multiple rooms', async function (this: Fl
       },
     ],
   };
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(700); // Wait for JSON to be processed
 });
 
 Then('no errors should be displayed', async function (this: FloorplanWorld) {
   const errorOverlay = this.page.getByTestId('json-error').first();
   await expect(errorOverlay).not.toBeVisible();
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   await expect(warnings).not.toBeVisible();
 });
 
@@ -1082,8 +1107,8 @@ Then('all rooms should render successfully', async function (this: FloorplanWorl
 });
 
 When('an error occurs', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
   await jsonTextarea.fill('{ invalid json');
   await this.page.waitForTimeout(700);
 });
@@ -1101,15 +1126,15 @@ Then('the error should be clearly visible to the user', async function (this: Fl
 });
 
 Then('the error should not obstruct the editing area', async function (this: FloorplanWorld) {
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
   await expect(jsonTextarea).toBeVisible();
 });
 
 When('I have both JSON errors and positioning warnings', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
+  await this.page.getByTestId('tab-dsl').click();
   // This is tricky - we can't have both at once since JSON error prevents parsing
   // So we'll just create a positioning error
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
   const json = {
     grid_step: 1000,
     rooms: [
@@ -1122,7 +1147,7 @@ When('I have both JSON errors and positioning warnings', async function (this: F
       },
     ],
   };
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(700);
 });
 
@@ -1133,7 +1158,7 @@ Then('JSON errors should display with ❌ icon', async function (this: Floorplan
 });
 
 Then('positioning warnings should display with ⚠️ icon', async function (this: FloorplanWorld) {
-  const warnings = this.page.getByTestId('json-warnings').first();
+  const warnings = this.page.getByTestId('error-panel').first();
   const isVisible = await warnings.isVisible({ timeout: 2000 }).catch(() => false);
 
   if (isVisible) {
@@ -1153,8 +1178,8 @@ Then('the visual distinction should be clear', async function (this: FloorplanWo
 });
 
 Given('I have an error in the JSON editor', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
   await jsonTextarea.fill('{ invalid');
   await this.page.waitForTimeout(700);
   const errorOverlay = this.page.getByTestId('json-error').first();
@@ -1167,7 +1192,7 @@ When('I switch to the GUI editor tab', async function (this: FloorplanWorld) {
 });
 
 When('I switch back to the JSON editor tab', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
+  await this.page.getByTestId('tab-dsl').click();
   await this.page.waitForTimeout(200);
 });
 
@@ -1185,8 +1210,8 @@ Then('the error message should be preserved', async function (this: FloorplanWor
 When(
   'I create a door missing the {string} property',
   async function (this: FloorplanWorld, property: string) {
-    await this.page.getByTestId('tab-json').click();
-    const jsonTextarea = this.page.getByTestId('json-textarea');
+    await this.page.getByTestId('tab-dsl').click();
+    const jsonTextarea = this.page.getByTestId('dsl-textarea');
     const door: any = {
       room: 'room1:bottom',
       offset: 1000,
@@ -1207,7 +1232,7 @@ When(
       ],
       doors: [door],
     };
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
+    await fillDSLFromJSON(this, json);
     await this.page.waitForTimeout(600);
   }
 );
@@ -1236,8 +1261,8 @@ Then(
 When(
   'I create a window missing the {string} property',
   async function (this: FloorplanWorld, property: string) {
-    await this.page.getByTestId('tab-json').click();
-    const jsonTextarea = this.page.getByTestId('json-textarea');
+    await this.page.getByTestId('tab-dsl').click();
+    const jsonTextarea = this.page.getByTestId('dsl-textarea');
     const window: any = {
       room: 'room1:top',
       offset: 1000,
@@ -1257,7 +1282,7 @@ When(
       ],
       windows: [window],
     };
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
+    await fillDSLFromJSON(this, json);
   }
 );
 
@@ -1273,8 +1298,8 @@ Then(
 When(
   'I create a door with wall position {string}',
   async function (this: FloorplanWorld, wallPosition: string) {
-    await this.page.getByTestId('tab-json').click();
-    const jsonTextarea = this.page.getByTestId('json-textarea');
+    await this.page.getByTestId('tab-dsl').click();
+    const jsonTextarea = this.page.getByTestId('dsl-textarea');
     const json = {
       grid_step: 1000,
       rooms: [
@@ -1295,7 +1320,7 @@ When(
         },
       ],
     };
-    await jsonTextarea.fill(JSON.stringify(json, null, 2));
+    await fillDSLFromJSON(this, json);
   }
 );
 
@@ -1311,8 +1336,8 @@ Then('valid wall positions should be suggested', async function (this: Floorplan
 });
 
 When('I create a door with invalid swing direction', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-json').click();
-  const jsonTextarea = this.page.getByTestId('json-textarea');
+  await this.page.getByTestId('tab-dsl').click();
+  const jsonTextarea = this.page.getByTestId('dsl-textarea');
   const json = {
     grid_step: 1000,
     rooms: [
@@ -1333,7 +1358,7 @@ When('I create a door with invalid swing direction', async function (this: Floor
       },
     ],
   };
-  await jsonTextarea.fill(JSON.stringify(json, null, 2));
+  await fillDSLFromJSON(this, json);
 });
 
 Then('an error should indicate invalid swing value', async function (this: FloorplanWorld) {

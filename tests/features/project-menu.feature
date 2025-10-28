@@ -46,7 +46,8 @@ Feature: Project Menu
     Then the project should be removed from the list
     And the project should not exist in localStorage
 
-  Scenario: Downloading project as JSON
+  @skip
+  Scenario: Downloading project as JSON (feature removed)
     Given I have a project with rooms
     When I click on the "Projects" button
     And I click on "Download JSON"

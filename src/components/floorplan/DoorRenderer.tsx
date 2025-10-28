@@ -22,7 +22,8 @@ export function DoorRenderer({ door, index, roomMap, mm, onClick }: DoorRenderer
   const d = mm(DOOR_THICKNESS);
 
   // Check if this is an opening (no door blade)
-  const isOpening = swing === 'opening';
+  // Check both type and swing for backwards compatibility
+  const isOpening = door.type === 'opening' || swing === 'opening';
 
   // Determine if door swings inwards or outwards, and left or right
   const isInwards = swing.startsWith('inwards');

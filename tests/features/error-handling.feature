@@ -7,17 +7,17 @@ Feature: Error Handling and Validation
     Given I am on the floorplan designer page
     And localStorage is cleared
 
-  Scenario: JSON syntax error display
-    When I switch to the JSON tab
-    And I enter invalid JSON with a syntax error
+  Scenario: DSL syntax error display
+    When I switch to the DSL tab
+    And I enter invalid DSL with a syntax error
     And I wait for 600ms
-    Then a JSON syntax error should be displayed with ❌ icon
+    Then a DSL syntax error should be displayed with ❌ icon
     And the error message should describe the syntax problem
     And the floorplan should not render until fixed
 
-  Scenario: Clear error messages for JSON errors
-    When I switch to the JSON tab
-    And I enter JSON with a missing comma
+  Scenario: Clear error messages for DSL errors
+    When I switch to the DSL tab
+    And I enter DSL with a missing keyword
     And I wait for 600ms
     Then the error message should be clear and actionable
     And the error should indicate the approximate location

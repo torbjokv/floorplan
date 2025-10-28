@@ -6,8 +6,9 @@ export interface RoomPart {
   width: number;
   depth: number;
   anchor?: Anchor;
-  attachTo?: string;
+  attachTo: string; // Required. Format: "roomId:corner" or "parent:corner"
   offset?: [number, number];
+  objects?: RoomObject[];
 }
 
 export interface RoomObject {
@@ -18,7 +19,8 @@ export interface RoomObject {
   height?: number; // Height for squares (if omitted, uses width for square objects)
   color?: string;
   text?: string; // Optional text in center
-  anchor?: Anchor; // Dual purpose: which room corner to attach to AND which object point to anchor (defaults to top-left)
+  anchor?: Anchor; // Which object point to anchor
+  roomAnchor?: Anchor; // Which room corner to attach to (defaults to top-left)
 }
 
 export interface Room {
@@ -46,6 +48,7 @@ export interface Door {
   offset?: number; // Distance along the wall from the wall's start
   width: number;
   swing?: SwingDirection; // Direction the door swings, or 'opening' for no door blade (defaults to inwards-right)
+  type?: 'normal' | 'opening'; // Type of door
 }
 
 export interface Window {
@@ -60,6 +63,9 @@ export interface FloorplanData {
   doors?: Door[];
   windows?: Window[];
 }
+
+// Alias for FloorplanData to support both naming conventions
+export type FloorplanConfig = FloorplanData;
 
 export interface ResolvedRoom extends Room {
   x: number;
