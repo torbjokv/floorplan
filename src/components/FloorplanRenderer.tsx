@@ -608,7 +608,7 @@ const FloorplanRendererComponent = ({
               ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})`
               : undefined;
           return (
-            <g key={`door-${index}`} transform={transform}>
+            <g key={`door-${index}`} data-testid={`door-${index}`} transform={transform}>
               <DoorRenderer
                 door={door}
                 index={index}
@@ -629,7 +629,7 @@ const FloorplanRendererComponent = ({
               ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})`
               : undefined;
           return (
-            <g key={`window-${index}`} transform={transform}>
+            <g key={`window-${index}`} data-testid={`window-${index}`} transform={transform}>
               <WindowRenderer
                 window={window}
                 index={index}

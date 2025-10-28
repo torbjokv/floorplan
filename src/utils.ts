@@ -114,6 +114,16 @@ export function resolveRoomPositions(rooms: Room[]): PositioningResult {
     });
   }
 
+  // Add resolved parts to the roomMap so doors and windows can reference them
+  Object.values(roomMap).forEach(room => {
+    if (room.parts && room.parts.length > 0) {
+      const resolvedParts = resolveCompositeRoom(room);
+      resolvedParts.forEach(part => {
+        roomMap[part.id] = part as ResolvedRoom;
+      });
+    }
+  });
+
   // Note: No longer require Zero Point connection - first room automatically placed at 0,0
 
   return { roomMap, errors };

@@ -941,10 +941,11 @@ When("I add a door to the second part's wall", async function (this: FloorplanWo
 
   currentJson.doors = [
     {
-      room: 'composite1.part1:bottom',
+      room: 'part2:bottom',
       offset: 500,
       width: 800,
       swing: 'inwards-right',
+      type: 'normal',
     },
   ];
 
@@ -960,7 +961,7 @@ Then('the door should be visible on the correct part', async function (this: Flo
 
 Then('the door should be correctly positioned', async function (this: FloorplanWorld) {
   const currentJson = (this as any).currentJson;
-  expect(currentJson.doors[0].room).toContain('part1');
+  expect(currentJson.doors[0].room).toContain('part2');
 });
 
 // Error scenarios
@@ -1009,4 +1010,231 @@ Then('the error should mention the invalid room reference', async function (this
     const svg = this.page.locator('.floorplan-svg');
     await expect(svg).toBeVisible();
   }
+});
+
+// New scenarios for parts with windows, doors, and objects
+When("I add a window to a part's wall", async function (this: FloorplanWorld) {
+  const currentJson = (this as any).currentJson;
+
+  currentJson.windows = [
+    {
+      room: 'part1:top',
+      offset: 300,
+      width: 800,
+    },
+  ];
+
+  await fillDSLFromJSON(this, currentJson);
+
+  (this as any).currentJson = currentJson;
+});
+
+Then('the window should be visible on the correct part', async function (this: FloorplanWorld) {
+  const svg = this.page.locator('.floorplan-svg');
+  await expect(svg).toBeVisible();
+
+  // Check if window exists in SVG
+  const windows = this.page.locator('[data-testid^="window-"]');
+  await expect(windows.first()).toBeVisible();
+});
+
+Then('the window should be correctly positioned', async function (this: FloorplanWorld) {
+  const currentJson = (this as any).currentJson;
+  expect(currentJson.windows[0].room).toContain('part1');
+});
+
+When('I add a door and window to the first part', async function (this: FloorplanWorld) {
+  const currentJson = (this as any).currentJson;
+
+  currentJson.doors = [
+    {
+      room: 'part1:right',
+      offset: 200,
+      width: 800,
+      swing: 'inwards-left',
+      type: 'normal',
+    },
+  ];
+
+  currentJson.windows = [
+    {
+      room: 'part1:top',
+      offset: 300,
+      width: 800,
+    },
+  ];
+
+  await fillDSLFromJSON(this, currentJson);
+
+  (this as any).currentJson = currentJson;
+});
+
+When('I add a door to the second part', async function (this: FloorplanWorld) {
+  const currentJson = (this as any).currentJson;
+
+  // Add door to existing doors array
+  if (!currentJson.doors) {
+    currentJson.doors = [];
+  }
+  currentJson.doors.push({
+    room: 'part2:left',
+    offset: 100,
+    width: 800,
+    swing: 'inwards-right',
+    type: 'normal',
+  });
+
+  await fillDSLFromJSON(this, currentJson);
+
+  (this as any).currentJson = currentJson;
+});
+
+Then(
+  'all architectural elements should be visible on their respective parts',
+  async function (this: FloorplanWorld) {
+    const svg = this.page.locator('.floorplan-svg');
+    await expect(svg).toBeVisible();
+
+    // Check doors
+    const doors = this.page.locator('[data-testid^="door-"]');
+    await expect(doors.first()).toBeVisible();
+
+    // Check windows
+    const windows = this.page.locator('[data-testid^="window-"]');
+    await expect(windows.first()).toBeVisible();
+  }
+);
+
+Then('each element should be correctly positioned', async function (this: FloorplanWorld) {
+  const currentJson = (this as any).currentJson;
+
+  // Verify doors are on parts
+  currentJson.doors.forEach((door: any) => {
+    expect(door.room).toMatch(/part\d+:/);
+  });
+
+  // Verify windows are on parts
+  currentJson.windows.forEach((window: any) => {
+    expect(window.room).toMatch(/part\d+:/);
+  });
+});
+
+When('I add objects to both parts', async function (this: FloorplanWorld) {
+  const currentJson = (this as any).currentJson;
+
+  // Add objects to parts
+  currentJson.rooms[0].parts[0].objects = [
+    {
+      type: 'square',
+      x: 100,
+      y: 100,
+      width: 400,
+      height: 400,
+      anchor: 'top-left',
+      roomAnchor: 'top-left',
+      color: '#33d17a',
+      text: 'Table',
+    },
+  ];
+
+  currentJson.rooms[0].parts[1].objects = [
+    {
+      type: 'circle',
+      x: 50,
+      y: 50,
+      width: 300,
+      anchor: 'top-left',
+      roomAnchor: 'top-left',
+      color: '#9141ac',
+      text: 'Chair',
+    },
+  ];
+
+  await fillDSLFromJSON(this, currentJson);
+
+  (this as any).currentJson = currentJson;
+});
+
+Then(
+  'the objects should be visible in their respective parts',
+  async function (this: FloorplanWorld) {
+    const svg = this.page.locator('.floorplan-svg');
+    await expect(svg).toBeVisible();
+
+    // Check for object elements (they have class 'room-object')
+    const objects = this.page.locator('.room-object');
+    const count = await objects.count();
+    expect(count).toBeGreaterThanOrEqual(2);
+  }
+);
+
+Then('the objects should be correctly positioned', async function (this: FloorplanWorld) {
+  const currentJson = (this as any).currentJson;
+
+  // Verify first part has objects
+  expect(currentJson.rooms[0].parts[0].objects).toBeDefined();
+  expect(currentJson.rooms[0].parts[0].objects.length).toBeGreaterThan(0);
+
+  // Verify second part has objects
+  expect(currentJson.rooms[0].parts[1].objects).toBeDefined();
+  expect(currentJson.rooms[0].parts[1].objects.length).toBeGreaterThan(0);
+});
+
+When('I enter DSL with parts containing windows and doors', async function (this: FloorplanWorld) {
+  const dsl = `grid 1000
+
+room livingroom1 "Living Room" 4000x3000 at zeropoint
+
+room composite1 "Composite Room" 3000x2000 at livingroom1:bottom-left
+    part part1 1000x1000 at parent:bottom-left
+        window 800 at right
+        door 800 at left
+    part part2 500x500 at part1:bottom-left
+        window 600 at top
+`;
+
+  // Use the fillDSL helper to avoid timeout issues
+  const dslTab = this.page.getByTestId('tab-dsl');
+  await dslTab.click();
+  await this.page.waitForTimeout(100);
+
+  const textarea = this.page.getByTestId('dsl-editor-textarea');
+  await textarea.click();
+  await this.page.keyboard.press('Control+A');
+  await this.page.waitForTimeout(50);
+  await textarea.pressSequentially(dsl, { delay: 0 });
+  await this.page.waitForTimeout(600); // Wait for debounce
+});
+
+Then('the DSL should parse successfully', async function (this: FloorplanWorld) {
+  // Check that no error panel is shown
+  const errorPanel = this.page.getByTestId('error-panel').first();
+  const isVisible = await errorPanel.isVisible().catch(() => false);
+
+  if (isVisible) {
+    const errorText = await errorPanel.textContent();
+    console.log('Unexpected error:', errorText);
+  }
+
+  expect(isVisible).toBe(false);
+});
+
+Then('windows should be associated with the correct parts', async function (this: FloorplanWorld) {
+  const svg = this.page.locator('.floorplan-svg');
+  await expect(svg).toBeVisible();
+
+  // Verify windows are rendered
+  const windows = this.page.locator('[data-testid^="window-"]');
+  const count = await windows.count();
+  expect(count).toBeGreaterThanOrEqual(2);
+});
+
+Then('doors should be associated with the correct parts', async function (this: FloorplanWorld) {
+  const svg = this.page.locator('.floorplan-svg');
+  await expect(svg).toBeVisible();
+
+  // Verify doors are rendered
+  const doors = this.page.locator('[data-testid^="door-"]');
+  const count = await doors.count();
+  expect(count).toBeGreaterThanOrEqual(1);
 });

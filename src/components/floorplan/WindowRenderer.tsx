@@ -16,7 +16,7 @@ export function WindowRenderer({ window, index, roomMap, mm, onClick }: WindowRe
   if (!room) return null;
 
   const wall = wallStr as WallPosition;
-  const offset = window.offset ?? 0;
+  const offset = mm(window.offset ?? 0);
   const w = mm(window.width);
   const d = mm(WINDOW_THICKNESS);
 
@@ -27,32 +27,32 @@ export function WindowRenderer({ window, index, roomMap, mm, onClick }: WindowRe
 
   switch (wall) {
     case 'left':
-      posX = room.x;
-      posY = room.y + offset;
+      posX = mm(room.x);
+      posY = mm(room.y) + offset;
       rotation = 90;
-      rectX = 0; // Window thickness extends into room (rightward)
-      rectY = -d; // Shift up by window thickness (which is rotated)
+      rectX = 0; // Window extends into room (rightward)
+      rectY = -d; // Shift up by thickness
       break;
 
     case 'right':
-      posX = room.x + room.width;
-      posY = room.y + offset;
+      posX = mm(room.x + room.width);
+      posY = mm(room.y) + offset;
       rotation = 90;
-      rectX = -d; // Window extends into room
-      rectY = 0;
+      rectX = 0; // Window extends into room (leftward)
+      rectY = 0; // Shift up by thickness
       break;
 
     case 'top':
-      posX = room.x + offset;
-      posY = room.y;
+      posX = mm(room.x) + offset;
+      posY = mm(room.y);
       rotation = 0;
       rectX = 0;
       rectY = 0; // Window extends into room (downward)
       break;
 
     case 'bottom':
-      posX = room.x + offset;
-      posY = room.y + room.depth;
+      posX = mm(room.x) + offset;
+      posY = mm(room.y + room.depth);
       rotation = 0;
       rectX = 0;
       rectY = -d; // Window extends into room (upward)
@@ -62,8 +62,8 @@ export function WindowRenderer({ window, index, roomMap, mm, onClick }: WindowRe
       return null;
   }
 
-  const x = mm(posX);
-  const y = mm(posY);
+  const x = posX;
+  const y = posY;
 
   return (
     <g

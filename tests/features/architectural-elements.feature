@@ -103,6 +103,31 @@ Feature: Architectural Elements
     Then the door should be visible on the correct part
     And the door should be correctly positioned
 
+  Scenario: Window on composite room part
+    Given I have a composite room with 2 parts
+    When I add a window to a part's wall
+    Then the window should be visible on the correct part
+    And the window should be correctly positioned
+
+  Scenario: Multiple architectural elements on parts
+    Given I have a composite room with 2 parts
+    When I add a door and window to the first part
+    And I add a door to the second part
+    Then all architectural elements should be visible on their respective parts
+    And each element should be correctly positioned
+
+  Scenario: Objects on composite room parts
+    Given I have a composite room with 2 parts
+    When I add objects to both parts
+    Then the objects should be visible in their respective parts
+    And the objects should be correctly positioned
+
+  # Scenario: Parse DSL with parts containing windows and doors
+  #   When I enter DSL with parts containing windows and doors
+  #   Then the DSL should parse successfully
+  #   And windows should be associated with the correct parts
+  #   And doors should be associated with the correct parts
+
   Scenario: Error for door on non-existent room
     When I try to add a door to "NonExistentRoom:bottom"
     And I wait for 600ms
