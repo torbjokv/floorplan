@@ -187,9 +187,9 @@ RoomChildItem
   / DoorDefinition
   / ObjectDefinition
 
-// Part definition
+// Part definition (single indent - room-level child)
 PartDefinition
-  = Indent "part"i _ id:Identifier _ dims:Dimensions _ anchor:Anchor? _ "at"i _ attach:PartAttachTo __ offset:Offset? children:PartChildren? {
+  = SingleIndent "part"i _ id:Identifier _ dims:Dimensions _ anchor:Anchor? _ "at"i _ attach:PartAttachTo __ offset:Offset? children:PartChildren? {
       const partId = id.toLowerCase();
       const target = attach.target === 'room' ? 'parent' : attach.target.toLowerCase();
       const attachInfo = { target, anchor: attach.anchor };
@@ -248,13 +248,13 @@ PartChildren
     }
 
 PartChildItem
-  = WindowDefinition
-  / DoorDefinition
-  / ObjectDefinition
+  = PartWindowDefinition
+  / PartDoorDefinition
+  / PartObjectDefinition
 
-// Window definition
-WindowDefinition
-  = Indent "window"i _ width:Integer _ "at"i _ wall:Wall __ offset:Offset? {
+// Window definition for parts (double indent)
+PartWindowDefinition
+  = DoubleIndent "window"i _ width:Integer _ "at"i _ wall:Wall __ offset:Offset? {
       return {
         type: 'window',
         data: {
@@ -265,9 +265,9 @@ WindowDefinition
       };
     }
 
-// Door definition
-DoorDefinition
-  = Indent "door"i _ width:Integer _ swing:Swing? _ "at"i _ wall:Wall __ offset:Offset? {
+// Door definition for parts (double indent)
+PartDoorDefinition
+  = DoubleIndent "door"i _ width:Integer _ swing:Swing? _ "at"i _ wall:Wall __ offset:Offset? {
       const door = {
         room: `{ROOM_ID}:${wall}`,
         width,
@@ -291,9 +291,89 @@ DoorDefinition
       };
     }
 
-// Object definition
+// Object definition for parts (double indent)
+PartObjectDefinition
+  = DoubleIndent "object"i _ objType:ObjectType _ label:Label? _ dims:ObjectDimensions ___ color:Color? ___ atClause:ObjectAtClause? {
+      const anchor = atClause?.anchor || 'top-left';
+      const offset = atClause?.offset;
+
+      const obj = {
+        type: objType,
+        anchor: anchor,
+        roomAnchor: anchor
+      };
+
+      if (objType === 'square') {
+        obj.width = dims.width;
+        obj.height = dims.height;
+      } else if (objType === 'circle') {
+        obj.width = dims.width;
+      }
+
+      if (label) {
+        obj.text = label;
+      }
+
+      if (color) {
+        obj.color = color;
+      }
+
+      if (offset) {
+        obj.x = offset[0];
+        obj.y = offset[1];
+      } else {
+        obj.x = 0;
+        obj.y = 0;
+      }
+
+      return {
+        type: 'object',
+        data: obj
+      };
+    }
+
+// Window definition (for rooms - single indent)
+WindowDefinition
+  = SingleIndent "window"i _ width:Integer _ "at"i _ wall:Wall __ offset:Offset? {
+      return {
+        type: 'window',
+        data: {
+          room: `{ROOM_ID}:${wall}`,
+          width,
+          offset: offset?.[0] || 0
+        }
+      };
+    }
+
+// Door definition (for rooms - single indent)
+DoorDefinition
+  = SingleIndent "door"i _ width:Integer _ swing:Swing? _ "at"i _ wall:Wall __ offset:Offset? {
+      const door = {
+        room: `{ROOM_ID}:${wall}`,
+        width,
+        swing: swing || 'inwards-left'
+      };
+
+      if (swing === 'opening') {
+        door.type = 'opening';
+        delete door.swing;
+      } else {
+        door.type = 'normal';
+      }
+
+      if (offset) {
+        door.offset = offset[0];
+      }
+
+      return {
+        type: 'door',
+        data: door
+      };
+    }
+
+// Object definition (for rooms - single indent)
 ObjectDefinition
-  = Indent "object"i _ objType:ObjectType _ label:Label? _ dims:ObjectDimensions ___ color:Color? ___ atClause:ObjectAtClause? {
+  = SingleIndent "object"i _ objType:ObjectType _ label:Label? _ dims:ObjectDimensions ___ color:Color? ___ atClause:ObjectAtClause? {
       const anchor = atClause?.anchor || 'top-left';
       const offset = atClause?.offset;
 
@@ -417,6 +497,14 @@ Whitespace
 
 Indent
   = [ \t]+
+
+// Single indent for room-level children (at least 1 space/tab, but not too much)
+SingleIndent
+  = [ \t][ \t]?[ \t]?[ \t]? ![ \t]
+
+// Double indent for part-level children (more indentation than single)
+DoubleIndent
+  = [ \t][ \t][ \t][ \t]+
 
 Comment
   = "#" [^\n\r]*
