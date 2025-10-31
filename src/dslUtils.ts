@@ -137,7 +137,7 @@ function formatRoom(room: Room, doors?: Door[], windows?: Window[]): string {
   }
 
   if (room.offset && (room.offset[0] !== 0 || room.offset[1] !== 0)) {
-    roomLine += ` (${room.offset[0]}, ${room.offset[1]})`;
+    roomLine += ` (${Math.round(room.offset[0])}, ${Math.round(room.offset[1])})`;
   }
 
   lines.push(roomLine);
@@ -188,7 +188,7 @@ function formatPart(part: Room, doors?: Door[], windows?: Window[]): string {
   }
 
   if (part.offset && (part.offset[0] !== 0 || part.offset[1] !== 0)) {
-    partLine += ` (${part.offset[0]}, ${part.offset[1]})`;
+    partLine += ` (${Math.round(part.offset[0])}, ${Math.round(part.offset[1])})`;
   }
 
   lines.push(partLine);
@@ -221,7 +221,7 @@ function formatWindow(window: Window, indent: string): string {
   let line = `${indent}window ${window.width} at ${wall}`;
 
   if (window.offset && window.offset !== 0) {
-    line += ` (${window.offset})`;
+    line += ` (${Math.round(window.offset)})`;
   }
 
   return line;
@@ -245,7 +245,7 @@ function formatDoor(door: Door, indent: string): string {
   line += ` at ${wall}`;
 
   if (door.offset && door.offset !== 0) {
-    line += ` (${door.offset})`;
+    line += ` (${Math.round(door.offset)})`;
   }
 
   return line;
@@ -274,7 +274,7 @@ function formatObject(obj: RoomObject, indent: string): string {
   line += ` at ${obj.roomAnchor || 'top-left'}`;
 
   if (obj.x !== 0 || obj.y !== 0) {
-    line += ` (${obj.x}, ${obj.y})`;
+    line += ` (${Math.round(obj.x)}, ${Math.round(obj.y)})`;
   }
 
   return line;
