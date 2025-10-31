@@ -48,12 +48,14 @@ export interface PositioningResult {
   roomMap: Record<string, ResolvedRoom>;
   errors: string[];
   partIds: Set<string>; // Track which IDs in roomMap are parts, not top-level rooms
+  partToParent: Map<string, string>; // Map part IDs to their parent room IDs
 }
 
 export function resolveRoomPositions(rooms: Room[]): PositioningResult {
   const roomMap: Record<string, ResolvedRoom> = {};
   const errors: string[] = [];
   const partIds = new Set<string>(); // Track part IDs
+  const partToParent = new Map<string, string>(); // Map part IDs to parent room IDs
   const unresolved = [...rooms];
   let safety = 20;
 
@@ -123,13 +125,14 @@ export function resolveRoomPositions(rooms: Room[]): PositioningResult {
       resolvedParts.forEach(part => {
         roomMap[part.id] = part as ResolvedRoom;
         partIds.add(part.id); // Track that this ID is a part
+        partToParent.set(part.id, room.id); // Map part to its parent
       });
     }
   });
 
   // Note: No longer require Zero Point connection - first room automatically placed at 0,0
 
-  return { roomMap, errors, partIds };
+  return { roomMap, errors, partIds, partToParent };
 }
 
 export function resolveCompositeRoom(room: ResolvedRoom): ResolvedPart[] {

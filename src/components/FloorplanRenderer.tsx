@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef, useCallback, memo, startTransition } from 'react';
+import { useEffect, useMemo, useState, useRef, useCallback, memo } from 'react';
 import type { FloorplanData, ResolvedRoom, Anchor } from '../types';
 import { mm, resolveRoomPositions, resolveCompositeRoom, getCorner } from '../utils';
 import { GridRenderer } from './floorplan/GridRenderer';
@@ -82,7 +82,7 @@ const FloorplanRendererComponent = ({
   const dragAnimationFrame = useRef<number | null>(null);
 
   // Memoize room resolution to avoid recalculating on every render
-  const { roomMap, errors, partIds } = useMemo(
+  const { roomMap, errors, partIds, partToParent } = useMemo(
     () => resolveRoomPositions(data.rooms),
     [data.rooms]
   );
@@ -530,15 +530,15 @@ const FloorplanRendererComponent = ({
 
     // Update the room in data
     const updatedRooms = data.rooms.map(r => (r.id === dragState.roomId ? updatedRoom : r));
-    onRoomUpdate({ ...data, rooms: updatedRooms });
 
-    // Use startTransition to mark cleanup as low-priority (non-urgent)
-    startTransition(() => {
-      setDragState(null);
-      setSnapTarget(null);
-      setDragOffset(null);
-      setConnectedRooms(new Set());
-    });
+    // Clear drag state immediately before updating (fixes green highlight persistence)
+    setDragState(null);
+    setSnapTarget(null);
+    setDragOffset(null);
+    setConnectedRooms(new Set());
+
+    // Trigger update after clearing drag state
+    onRoomUpdate({ ...data, rooms: updatedRooms });
   }, [dragState, dragOffset, snapTarget, data, onRoomUpdate, roomMap]);
 
   // Add global mouse up listener
@@ -607,7 +607,9 @@ const FloorplanRendererComponent = ({
         {/* Doors */}
         {data.doors?.map((door, index) => {
           const roomId = door.room.split(':')[0];
-          const isDragging = dragState?.roomId === roomId;
+          // Check if the door's room or its parent (if it's a part) is being dragged
+          const parentRoomId = partToParent.get(roomId);
+          const isDragging = dragState?.roomId === roomId || dragState?.roomId === parentRoomId;
           const transform =
             isDragging && dragOffset
               ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})`
@@ -628,7 +630,9 @@ const FloorplanRendererComponent = ({
         {/* Windows */}
         {data.windows?.map((window, index) => {
           const roomId = window.room.split(':')[0];
-          const isDragging = dragState?.roomId === roomId;
+          // Check if the window's room or its parent (if it's a part) is being dragged
+          const parentRoomId = partToParent.get(roomId);
+          const isDragging = dragState?.roomId === roomId || dragState?.roomId === parentRoomId;
           const transform =
             isDragging && dragOffset
               ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})`
