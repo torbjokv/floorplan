@@ -366,7 +366,6 @@ Then('I should see a {string} message', async function (this: FloorplanWorld, me
   // Wait for UI to render
   await this.page.waitForTimeout(500);
   const text = this.page.getByText(new RegExp(message, 'i'));
-  // Note: "Duplicate to Edit" message might not be implemented yet - check gracefully
   try {
     await expect(text).toBeVisible({ timeout: 3000 });
   } catch (e) {

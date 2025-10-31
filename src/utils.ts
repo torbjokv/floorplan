@@ -47,11 +47,13 @@ interface ResolvedPart extends RoomPart {
 export interface PositioningResult {
   roomMap: Record<string, ResolvedRoom>;
   errors: string[];
+  partIds: Set<string>; // Track which IDs in roomMap are parts, not top-level rooms
 }
 
 export function resolveRoomPositions(rooms: Room[]): PositioningResult {
   const roomMap: Record<string, ResolvedRoom> = {};
   const errors: string[] = [];
+  const partIds = new Set<string>(); // Track part IDs
   const unresolved = [...rooms];
   let safety = 20;
 
@@ -120,13 +122,14 @@ export function resolveRoomPositions(rooms: Room[]): PositioningResult {
       const resolvedParts = resolveCompositeRoom(room);
       resolvedParts.forEach(part => {
         roomMap[part.id] = part as ResolvedRoom;
+        partIds.add(part.id); // Track that this ID is a part
       });
     }
   });
 
   // Note: No longer require Zero Point connection - first room automatically placed at 0,0
 
-  return { roomMap, errors };
+  return { roomMap, errors, partIds };
 }
 
 export function resolveCompositeRoom(room: ResolvedRoom): ResolvedPart[] {

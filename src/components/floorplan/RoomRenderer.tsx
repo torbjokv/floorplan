@@ -245,6 +245,7 @@ export function RoomRenderer({
             y2={mm(edge.y2)}
             stroke="#e0ebe8"
             strokeWidth="3"
+            pointerEvents="none"
           />
         ))}
 

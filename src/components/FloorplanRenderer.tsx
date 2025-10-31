@@ -82,7 +82,10 @@ const FloorplanRendererComponent = ({
   const dragAnimationFrame = useRef<number | null>(null);
 
   // Memoize room resolution to avoid recalculating on every render
-  const { roomMap, errors } = useMemo(() => resolveRoomPositions(data.rooms), [data.rooms]);
+  const { roomMap, errors, partIds } = useMemo(
+    () => resolveRoomPositions(data.rooms),
+    [data.rooms]
+  );
 
   // Notify parent component of positioning errors
   useEffect(() => {
@@ -582,22 +585,24 @@ const FloorplanRendererComponent = ({
         />
 
         {/* Rooms (without objects) */}
-        {Object.values(roomMap).map(room => (
-          <RoomRenderer
-            key={room.id}
-            room={room}
-            dragState={dragState}
-            dragOffset={dragOffset}
-            hoveredCorner={hoveredCorner}
-            isConnected={connectedRooms.has(room.id)}
-            mm={mm}
-            resolveCompositeRoom={resolveCompositeRoom}
-            getCorner={getCorner}
-            onMouseDown={handleMouseDown}
-            onClick={onRoomClick}
-            onNameUpdate={onRoomNameUpdate}
-          />
-        ))}
+        {Object.values(roomMap)
+          .filter(room => !partIds.has(room.id)) // Only render top-level rooms, not parts
+          .map(room => (
+            <RoomRenderer
+              key={room.id}
+              room={room}
+              dragState={dragState}
+              dragOffset={dragOffset}
+              hoveredCorner={hoveredCorner}
+              isConnected={connectedRooms.has(room.id)}
+              mm={mm}
+              resolveCompositeRoom={resolveCompositeRoom}
+              getCorner={getCorner}
+              onMouseDown={handleMouseDown}
+              onClick={onRoomClick}
+              onNameUpdate={onRoomNameUpdate}
+            />
+          ))}
 
         {/* Doors */}
         {data.doors?.map((door, index) => {
