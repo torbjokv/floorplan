@@ -96,12 +96,17 @@ room Bedroom 5000x4000 top-left at zeropoint:top-right
         object square "Shelf" 500x1200 #9141ac at top-left (100, 100)
 ```
 
-**DSL Features:**
+**DSL Editor Features (CodeMirror 6):**
 
-- **Syntax Highlighting** - Keywords, identifiers, numbers, strings, and comments
+- **Professional Code Editor** - Powered by CodeMirror 6 with VSCode Dark theme
+- **Tab Indentation** - Tab/Shift+Tab to indent/unindent single or multiple lines
+- **Syntax Highlighting** - Keywords, identifiers, numbers, dimensions, strings, colors, comments
+- **Search** - Built-in Ctrl+F search functionality
+- **Bracket Matching** - Auto-closing brackets and pair highlighting
+- **Selection Highlighting** - Find matching text in document
 - **Flexible Indentation** - Any amount of whitespace for nested elements
 - **Case-Insensitive Keywords** - `room`, `ROOM`, `Room` all work
-- **Comments** - Lines starting with `#`
+- **Comments** - Lines starting with `#` (but `#` + hex digits = color code)
 - **Error Display** - Line and column information for syntax errors
 - **Auto-Completion** - Works seamlessly with GUI editor
 
@@ -206,13 +211,16 @@ Add decorative elements with dual anchor system:
 
 ```dsl
 object square "Dining Table" 1600x900 #8b5a3c at top-left (1000, 1500)
-object circle "Light" 500 #f5c211 at center (2000, 2000)
+object circle "Lamp" 500 #ffd700 at top-right (500, 500)
 ```
 
-**Dual Anchor System:**
+**Object Features:**
 
-- First `at` position: Where object is positioned
-- Second parameter: Room corner to measure from
+- **Square objects**: Specify `width x height` (e.g., `1600x900`)
+- **Circle objects**: Specify `width` (diameter, not radius) (e.g., `500`)
+- **Dual Anchor System**: Objects positioned relative to room corners
+- **Colors**: Hex color codes (e.g., `#ffd700`)
+- **Labels**: Optional text labels in quotes
 
 ## 🎨 Positioning System
 
@@ -245,24 +253,33 @@ room Bedroom 4000x3500 at LivingRoom:bottom-left (0, 500)
 src/
 ├── components/
 │   ├── FloorplanRenderer.tsx  # Interactive SVG rendering engine
-│   ├── DSLEditor.tsx           # DSL editor with syntax highlighting
+│   ├── DSLEditor.tsx           # CodeMirror 6 DSL editor
+│   ├── dsl-language.ts         # Custom CodeMirror language mode
 │   ├── GUIEditor.tsx           # Visual form-based editor
 │   └── floorplan/              # Rendering components
+├── positioning/                # Positioning system modules
+│   ├── PartRegistry.ts         # Part tracking
+│   ├── PositionCalculator.ts   # Coordinate calculations
+│   └── RoomPositionResolver.ts # Position resolution logic
+├── rendering/                  # Rendering utilities
+│   ├── CoordinateTransform.ts  # Coordinate transformations
+│   ├── DragController.ts       # Drag-and-drop logic
+│   └── BoundsCalculator.ts     # Bounds calculations
 ├── floorplan.peggy             # PEG grammar for DSL parser
 ├── dslUtils.ts                 # DSL parsing and JSON conversion
 ├── types.ts                    # TypeScript type definitions
-├── utils.ts                    # Positioning logic with Zero Point
+├── utils.ts                    # Core utilities
 └── App.tsx                     # Main app with project management
 ```
 
 ### Key Components
 
-- **DSL Editor**: Text editor with syntax highlighting, line numbers, and error display
-- **FloorplanRenderer**: Interactive SVG with click handlers, hover effects, composite highlighting
+- **DSL Editor** (CodeMirror 6): Professional code editor with VSCode Dark theme, tab indentation, search, syntax highlighting
+- **FloorplanRenderer**: Interactive SVG with click handlers, hover effects, composite highlighting, drag-and-drop
 - **GUIEditor**: Visual form editor with dropdowns, anchor selectors, object editor
 - **PEG Parser**: Grammar-based DSL parser (generated from floorplan.peggy)
 - **Positioning System**: Zero Point-based positioning with dependency resolution
-- **Project Management**: localStorage with auto-save, sharing, and URL-based persistence
+- **Project Management**: localStorage with auto-save, sharing, URL-based persistence, `.floorplan` file format
 - **Undo/Redo System**: Full history tracking with keyboard shortcuts
 
 ## 🛠️ Development
@@ -286,6 +303,7 @@ npm run test:headed   # Run tests in headed mode
 - **React 19** - UI library
 - **TypeScript 5.9** - Type safety
 - **Vite 7** - Build tool and dev server
+- **CodeMirror 6** - Professional code editor component
 - **PEG.js** - Parser Expression Grammar for DSL
 - **Playwright** - E2E testing
 - **Cucumber** - BDD test framework

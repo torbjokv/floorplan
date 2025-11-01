@@ -112,18 +112,10 @@ Human-readable test scenarios written in Gherkin syntax.
    - Door configuration
    - Window configuration
    - Room objects
-   - Real-time synchronization with JSON
+   - Real-time synchronization with DSL
    - Click-to-scroll functionality
 
-3. **json-editor.feature**
-   - JSON editor visibility
-   - Line numbers and scrolling
-   - JSON validation
-   - Debounced auto-update (500ms)
-   - Error handling
-   - Large JSON support
-
-4. **room-positioning.feature**
+3. **room-positioning.feature**
    - Zero Point positioning system
    - Relative positioning
    - Anchor points
@@ -132,7 +124,7 @@ Human-readable test scenarios written in Gherkin syntax.
    - Circular dependency detection
    - Missing reference errors
 
-5. **architectural-elements.feature**
+4. **architectural-elements.feature**
    - Adding doors to room walls
    - Door swing directions (inwards/outwards, left/right)
    - Door types (normal with arc, opening without arc)
@@ -140,19 +132,19 @@ Human-readable test scenarios written in Gherkin syntax.
    - Wall positioning (top, bottom, left, right)
    - Multiple elements per room
 
-6. **svg-rendering.feature**
+5. **svg-rendering.feature**
    - Dynamic viewBox calculation
    - Grid overlay rendering
    - Room labels (editable on double-click)
    - Composite room rendering
-   - Room objects (squares, circles)
+   - Room objects (squares, circles with diameter, not radius)
    - Coordinate system (millimeters, 2:1 display scale)
    - Hover effects
    - Click interactions
    - Performance with 50+ rooms
 
-7. **error-handling.feature**
-   - JSON syntax errors
+6. **error-handling.feature**
+   - DSL syntax errors
    - Positioning errors
    - Circular dependencies
    - Missing Zero Point validation

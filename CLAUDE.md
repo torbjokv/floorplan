@@ -48,12 +48,16 @@ This system is implemented in [src/utils.ts](src/utils.ts):
   - Project controls in preview section header
   - Undo/redo functionality with history tracking (Ctrl+Z / Ctrl+Shift+Z)
 
-- **[DSLEditor.tsx](src/components/DSLEditor.tsx)**: Primary text editor for DSL with:
-  - Syntax highlighting for keywords, identifiers, numbers, strings, and comments
-  - Line numbers display
-  - Synchronized scrolling between line numbers, highlighting, and textarea
+- **[DSLEditor.tsx](src/components/DSLEditor.tsx)**: Professional code editor powered by CodeMirror 6 with:
+  - **Tab indentation**: Tab/Shift+Tab to indent/unindent single or multiple lines
+  - **VSCode Dark Theme**: Familiar professional appearance
+  - **Custom syntax highlighting**: Keywords, identifiers, numbers, dimensions, strings, colors, comments
+  - **Line numbers**: With active line highlighting
+  - **Search**: Built-in Ctrl+F search functionality
+  - **Bracket matching**: Auto-closing brackets and matching pairs
+  - **Selection highlighting**: Find matching text in document
   - Real-time parsing and error detection
-  - Always editable (no read-only mode)
+  - Custom language mode: [dsl-language.ts](src/components/dsl-language.ts)
 
 - **[GUIEditor.tsx](src/components/GUIEditor.tsx)**: Visual form-based editor (alternative to DSL) with:
   - Grid settings configuration
@@ -100,10 +104,10 @@ All core types are defined in [src/types.ts](src/types.ts):
 - `RoomPart`: Nested room parts that can attach to parent or other parts. Requires `id` field, `name` is optional. Can contain windows, doors, and objects.
 - `RoomObject`: Decorative objects inside rooms with dual anchor system:
   - `type`: `'square'` or `'circle'`
-  - Position relative to room with `x`, `y` coordinates
+  - Position relative to room with `x`, `y` offsets from anchors
   - `anchor`: Object's anchor point (top-left, top-right, bottom-left, bottom-right)
   - `roomAnchor`: Which room corner to attach to
-  - Dimensions: `width`/`height` for squares, `width` (diameter) for circles
+  - Dimensions: `width` and `height` for squares, `width` (diameter) for circles
   - Optional `color` and `text` properties
 - `Door`: Uses wall-based positioning with room/part ID (`"roomId:wall"`). Doors have a fixed thickness of 100mm.
   - `WallPosition`: `'top'`, `'bottom'`, `'left'`, or `'right'`
@@ -168,14 +172,16 @@ room RoomId [LABEL] WxD [SELF_ANCHOR] at TargetId [TARGET_ANCHOR] [(OFFSET_X, OF
 
 **Notes:**
 
-- Comments start with `#`
+- Comments start with `#` (but `#` followed by hex digits is a color code, e.g., `#f5c211`)
 - Empty lines are ignored
 - Indentation required for nested elements (windows, doors, objects, parts)
 - Indentation amount is flexible (any whitespace)
+- Tab indentation supported: Tab to indent, Shift+Tab to unindent
 - Case-insensitive keywords
 - Both `"` and `'` work for labels
 - Parts can contain windows, doors, and objects
 - Room IDs are converted to lowercase automatically
+- For circles, use `width` for diameter (not radius)
 
 **Example DSL:**
 
@@ -186,6 +192,7 @@ room LivingRoom "Living Room" 5000x4000 at zeropoint
     window 1200 at top (300)
     door 900 inwards-right at right (1000)
     object square "Coffee Table" 800x800 #33d17a at bottom-left (1000, 2000)
+    object circle "Lamp" 500 #ffd700 at top-right (500, 500)
 
 room Kitchen 4000x3000 at LivingRoom:bottom-right (100, 100)
     window 1000 at left (500)
@@ -200,6 +207,8 @@ room Bedroom 5000x4000 top-left at zeropoint:top-right
 ## Internal JSON Format
 
 While users interact with DSL, the application uses JSON internally for data storage and manipulation. The JSON schema matches the type definitions in [src/types.ts](src/types.ts).
+
+**Note**: Users should work with DSL format (`.floorplan` files), not JSON. JSON is only used internally by the application.
 
 **Example JSON structure:**
 
@@ -224,6 +233,16 @@ While users interact with DSL, the application uses JSON internally for data sto
           "roomAnchor": "bottom-left",
           "color": "#33d17a",
           "text": "Coffee Table"
+        },
+        {
+          "type": "circle",
+          "x": 500,
+          "y": 500,
+          "width": 500,
+          "anchor": "top-right",
+          "roomAnchor": "top-right",
+          "color": "#ffd700",
+          "text": "Lamp"
         }
       ]
     }
@@ -310,9 +329,14 @@ The test suite covers:
 - **Warnings Fixed**: All ESLint and Prettier warnings resolved
 - **Test Warnings Suppressed**: Node.js experimental loader warnings hidden with `--no-warnings`
 
-### DSL Features
+### DSL Editor Features (CodeMirror 6)
 
-- **Syntax Highlighting**: Keywords, identifiers, numbers, strings, comments
+- **Professional Code Editor**: Powered by CodeMirror 6 with VSCode Dark theme
+- **Tab Indentation**: Tab/Shift+Tab to indent/unindent single or multiple lines
+- **Syntax Highlighting**: Keywords, identifiers, numbers, dimensions, strings, colors, comments
+- **Search Functionality**: Built-in Ctrl+F search
+- **Bracket Matching**: Auto-closing brackets and pair highlighting
+- **Selection Highlighting**: Find matching text in document
 - **Error Display**: Line and column information for syntax errors
 - **Undo/Redo**: Full history tracking with Ctrl+Z / Ctrl+Shift+Z
 - **Bidirectional Sync**: DSL ↔ GUI editor synchronization
