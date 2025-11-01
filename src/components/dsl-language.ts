@@ -4,12 +4,7 @@ import { tags as t } from '@lezer/highlight';
 // Define DSL language for syntax highlighting
 const dslLanguage = StreamLanguage.define({
   token(stream) {
-    // Handle comments
-    if (stream.match(/#.*/)) {
-      return 'comment';
-    }
-
-    // Handle strings (double or single quoted)
+    // Handle strings first (double or single quoted)
     if (stream.match(/"(?:[^"\\]|\\.)*"/)) {
       return 'string';
     }
@@ -17,9 +12,20 @@ const dslLanguage = StreamLanguage.define({
       return 'string';
     }
 
-    // Handle color codes
-    if (stream.match(/#[0-9a-fA-F]+/)) {
+    // Handle color codes (BEFORE comments to avoid matching # as comment start)
+    if (stream.match(/#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}/)) {
       return 'color';
+    }
+
+    // Handle comments (after color codes)
+    if (stream.match(/#.*/)) {
+      return 'comment';
+    }
+
+    // Handle dimensions (e.g., 4000x3000 or 1000x1000) as a single token
+    // MUST come before number matching to capture the complete dimension
+    if (stream.match(/\d+x\d+/)) {
+      return 'number';
     }
 
     // Handle numbers (including negative)
@@ -75,9 +81,19 @@ const dslLanguage = StreamLanguage.define({
       return 'identifier';
     }
 
-    // Handle punctuation and 'x' in dimensions
-    if (stream.match(/[(),:]|x/)) {
+    // Handle punctuation
+    if (stream.match(/[(),]/)) {
       return 'punctuation';
+    }
+
+    // Handle colon
+    if (stream.match(/:/)) {
+      return 'punctuation';
+    }
+
+    // Handle 'x' as a number (for dimension separator) to make it green
+    if (stream.match(/x/)) {
+      return 'number';
     }
 
     // Skip whitespace
