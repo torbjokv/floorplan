@@ -377,11 +377,14 @@ When('I reload the page', async function () {
 
 Given('I have a shared project URL with DSL content', async function () {
   // This will be implemented when we have actual shared project functionality
-  this.sharedProjectUrl = 'http://localhost:5173/#project=shared-test&name=Test';
+  this.sharedProjectHash = '#project=shared-test&name=Test';
 });
 
 When('I visit the shared project URL', async function () {
-  await this.page.goto(this.sharedProjectUrl);
+  // Get the current page URL and replace just the hash
+  const currentUrl = this.page.url();
+  const baseUrl = currentUrl.split('#')[0];
+  await this.page.goto(baseUrl + this.sharedProjectHash);
   await this.page.waitForLoadState('networkidle');
 });
 
