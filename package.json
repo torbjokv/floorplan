@@ -27,6 +27,11 @@
     "validate": "npm run lint && npm run format:check && npm run test"
   },
   "dependencies": {
+    "@codemirror/language": "^6.11.3",
+    "@codemirror/view": "^6.38.6",
+    "@lezer/highlight": "^1.2.3",
+    "@uiw/codemirror-theme-vscode": "^4.25.2",
+    "@uiw/react-codemirror": "^4.25.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },

@@ -8,6 +8,15 @@
   overflow: hidden;
 }
 
+/* CodeMirror wrapper styling */
+.dsl-codemirror {
+  height: 100%;
+}
+
+.dsl-codemirror .cm-editor {
+  height: 100%;
+}
+
 .dsl-editor-wrapper {
   display: flex;
   height: 100%;

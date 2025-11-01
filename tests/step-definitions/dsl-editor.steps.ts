@@ -1,6 +1,7 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { parseDSL } from '../../src/dslUtils';
+import { fillCodeMirror, getCodeMirrorValue } from '../support/dsl-helper';
 
 // Background steps
 Given('the DSL editor tab is visible', async function () {
@@ -42,18 +43,14 @@ Then('the DSL editor should be editable', async function () {
 
 // Input steps
 When('I enter the following DSL:', async function (dslContent: string) {
-  const textarea = this.page.getByTestId('dsl-textarea');
-  // Select all and replace to avoid creating empty history entry from clear()
-  await textarea.click();
-  await textarea.press('Control+a');
-  await textarea.fill(dslContent);
+  // Use CodeMirror helper to fill content
+  await fillCodeMirror(this.page, dslContent);
 });
 
 // JSON validation steps
 Then('the JSON editor should contain a room with id {string}', async function (roomId: string) {
   await this.page.getByTestId('tab-dsl').click();
-  const jsonTextarea = this.page.getByTestId('dsl-textarea');
-  const content = await jsonTextarea.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
   const room = json?.rooms?.find((r: any) => r.id === roomId);
