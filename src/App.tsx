@@ -423,7 +423,7 @@ function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'floorplan.dsl';
+    a.download = `${projectName}.floorplan`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -469,7 +469,7 @@ function App() {
   const handleUploadJSON = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'application/json,.json,.dsl';
+    input.accept = 'application/json,.json,.dsl,.floorplan';
     input.onchange = e => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
@@ -478,10 +478,10 @@ function App() {
       reader.onload = event => {
         try {
           const text = event.target?.result as string;
-          const filename = file.name.replace(/\.(json|dsl)$/, '');
+          const filename = file.name.replace(/\.(json|dsl|floorplan)$/, '');
 
           let dsl: string;
-          if (file.name.endsWith('.dsl')) {
+          if (file.name.endsWith('.dsl') || file.name.endsWith('.floorplan')) {
             // Already DSL format
             dsl = text;
           } else {
