@@ -107,13 +107,13 @@ Feature: GUI Editor Interface
   Scenario: Deleting a door via GUI
     Given I have a door configured
     When I click delete on the door
-    Then the door should be removed
+    Then the door card should be removed from GUI
     And the preview should update
 
   Scenario: Deleting a window via GUI
     Given I have a window configured
     When I click delete on the window
-    Then the window should be removed
+    Then the window card should be removed from GUI
     And the preview should update
 
   Scenario: Room list with scroll to functionality

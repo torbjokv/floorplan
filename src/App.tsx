@@ -98,6 +98,13 @@ function App() {
   const [showUpdateAnimation, setShowUpdateAnimation] = useState(false);
   const [showCopyNotification, setShowCopyNotification] = useState(false);
 
+  // Selection state for SVG editor (for delete functionality)
+  const [selectedElement, setSelectedElement] = useState<{
+    type: 'room' | 'door' | 'window' | 'object';
+    index?: number;
+    roomId?: string;
+  } | null>(null);
+
   // ============================================================================
   // Floorplan Data State (derived from DSL)
   // ============================================================================
@@ -239,7 +246,12 @@ function App() {
 
   const handleRoomClick = useCallback(
     (roomId: string) => {
-      // Switch to GUI tab if not already there
+      // If DSL tab is active, select the room for potential deletion
+      if (activeTab === 'dsl') {
+        setSelectedElement({ type: 'room', roomId });
+        return;
+      }
+      // Otherwise switch to GUI tab and scroll to room
       if (activeTab !== 'gui') {
         setActiveTab('gui');
       }
@@ -256,7 +268,12 @@ function App() {
 
   const handleDoorClick = useCallback(
     (doorIndex: number) => {
-      // Switch to GUI tab if not already there
+      // If DSL tab is active, select the door for potential deletion
+      if (activeTab === 'dsl') {
+        setSelectedElement({ type: 'door', index: doorIndex });
+        return;
+      }
+      // Otherwise switch to GUI tab and scroll
       if (activeTab !== 'gui') {
         setActiveTab('gui');
       }
@@ -273,7 +290,12 @@ function App() {
 
   const handleWindowClick = useCallback(
     (windowIndex: number) => {
-      // Switch to GUI tab if not already there
+      // If DSL tab is active, select the window for potential deletion
+      if (activeTab === 'dsl') {
+        setSelectedElement({ type: 'window', index: windowIndex });
+        return;
+      }
+      // Otherwise switch to GUI tab and scroll
       if (activeTab !== 'gui') {
         setActiveTab('gui');
       }
@@ -357,6 +379,90 @@ function App() {
     }, 100);
   };
 
+  const handleAddDoor = () => {
+    if (floorplanData.rooms.length === 0) {
+      alert('Please add a room first before adding a door.');
+      return;
+    }
+
+    const firstRoom = floorplanData.rooms[0];
+    const newDoor: Door = {
+      room: `${firstRoom.id}:bottom`,
+      offset: 1000,
+      width: 800,
+      swing: 'inwards-right',
+      type: 'normal',
+    };
+
+    const updatedData = {
+      ...floorplanData,
+      doors: [...(floorplanData.doors || []), newDoor],
+    };
+
+    const dsl = jsonToDSL(updatedData);
+    updateDslText(dsl);
+  };
+
+  const handleAddWindow = () => {
+    if (floorplanData.rooms.length === 0) {
+      alert('Please add a room first before adding a window.');
+      return;
+    }
+
+    const firstRoom = floorplanData.rooms[0];
+    const newWindow: Window = {
+      room: `${firstRoom.id}:top`,
+      offset: 1000,
+      width: 1200,
+    };
+
+    const updatedData = {
+      ...floorplanData,
+      windows: [...(floorplanData.windows || []), newWindow],
+    };
+
+    const dsl = jsonToDSL(updatedData);
+    updateDslText(dsl);
+  };
+
+  const handleAddObject = () => {
+    if (floorplanData.rooms.length === 0) {
+      alert('Please add a room first before adding an object.');
+      return;
+    }
+
+    const firstRoom = floorplanData.rooms[0];
+    const newObject = {
+      type: 'square' as const,
+      x: 1000,
+      y: 1000,
+      width: 800,
+      height: 800,
+      anchor: 'top-left' as const,
+      roomAnchor: 'top-left' as const,
+      color: '#33d17a',
+      text: 'Object',
+    };
+
+    const updatedRooms = floorplanData.rooms.map(room => {
+      if (room.id === firstRoom.id) {
+        return {
+          ...room,
+          objects: [...(room.objects || []), newObject],
+        };
+      }
+      return room;
+    });
+
+    const updatedData = {
+      ...floorplanData,
+      rooms: updatedRooms,
+    };
+
+    const dsl = jsonToDSL(updatedData);
+    updateDslText(dsl);
+  };
+
   const handleGUIChange = (data: FloorplanData) => {
     // Convert FloorplanData to DSL
     const dsl = jsonToDSL(data);
@@ -394,7 +500,12 @@ function App() {
 
   const handleObjectClick = useCallback(
     (roomId: string, objectIndex: number) => {
-      // Switch to GUI tab and scroll to the specific object
+      // If DSL tab is active, select the object for potential deletion
+      if (activeTab === 'dsl') {
+        setSelectedElement({ type: 'object', index: objectIndex, roomId });
+        return;
+      }
+      // Otherwise switch to GUI tab and scroll to the specific object
       if (activeTab !== 'gui') {
         setActiveTab('gui');
       }
@@ -416,6 +527,179 @@ function App() {
     },
     [activeTab]
   );
+
+  // ============================================================================
+  // Drag Handlers for Doors, Windows, and Objects
+  // ============================================================================
+
+  const handleDoorDragUpdate = useCallback(
+    (doorIndex: number, newRoomId: string, newWall: string, newOffset: number) => {
+      const { config } = parseDSL(dslText);
+      if (!config || !config.doors) return;
+
+      const updatedDoors = config.doors.map((door, idx) =>
+        idx === doorIndex
+          ? { ...door, room: `${newRoomId}:${newWall}`, offset: newOffset }
+          : door
+      );
+
+      const updatedData = { ...config, doors: updatedDoors };
+
+      // Immediate optimistic update to avoid jump
+      setFloorplanData(updatedData);
+
+      // Update DSL (will re-parse after debounce)
+      const dsl = jsonToDSL(updatedData);
+      updateDslText(dsl);
+    },
+    [dslText, updateDslText]
+  );
+
+  const handleWindowDragUpdate = useCallback(
+    (windowIndex: number, newRoomId: string, newWall: string, newOffset: number) => {
+      const { config } = parseDSL(dslText);
+      if (!config || !config.windows) return;
+
+      const updatedWindows = config.windows.map((window, idx) =>
+        idx === windowIndex
+          ? { ...window, room: `${newRoomId}:${newWall}`, offset: newOffset }
+          : window
+      );
+
+      const updatedData = { ...config, windows: updatedWindows };
+
+      // Immediate optimistic update to avoid jump
+      setFloorplanData(updatedData);
+
+      // Update DSL (will re-parse after debounce)
+      const dsl = jsonToDSL(updatedData);
+      updateDslText(dsl);
+    },
+    [dslText, updateDslText]
+  );
+
+  const handleObjectDragUpdate = useCallback(
+    (sourceRoomId: string, objectIndex: number, targetRoomId: string, newX: number, newY: number) => {
+      const { config } = parseDSL(dslText);
+      if (!config) return;
+
+      let movedObject: any = null;
+
+      // Remove object from source room
+      const updatedRooms = config.rooms.map(room => {
+        if (room.id === sourceRoomId && room.objects) {
+          movedObject = { ...room.objects[objectIndex], x: newX, y: newY };
+
+          // If moving within same room, just update position
+          if (sourceRoomId === targetRoomId) {
+            const updatedObjects = room.objects.map((obj, idx) =>
+              idx === objectIndex ? movedObject : obj
+            );
+            return { ...room, objects: updatedObjects };
+          }
+
+          // If moving to different room, remove from this room
+          const updatedObjects = room.objects.filter((_, idx) => idx !== objectIndex);
+          return { ...room, objects: updatedObjects };
+        }
+        return room;
+      });
+
+      // If moved to different room, add to target room with top-left anchor
+      if (sourceRoomId !== targetRoomId && movedObject) {
+        const finalRooms = updatedRooms.map(room => {
+          if (room.id === targetRoomId) {
+            // Reset anchors to top-left for cross-room move
+            const adjustedObject = {
+              ...movedObject,
+              anchor: 'top-left',
+              roomAnchor: 'top-left',
+            };
+            return {
+              ...room,
+              objects: [...(room.objects || []), adjustedObject],
+            };
+          }
+          return room;
+        });
+
+        const updatedData = { ...config, rooms: finalRooms };
+
+        // Immediate optimistic update to avoid jump
+        setFloorplanData(updatedData);
+
+        // Update DSL (will re-parse after debounce)
+        const dsl = jsonToDSL(updatedData);
+        updateDslText(dsl);
+      } else {
+        const updatedData = { ...config, rooms: updatedRooms };
+
+        // Immediate optimistic update to avoid jump
+        setFloorplanData(updatedData);
+
+        // Update DSL (will re-parse after debounce)
+        const dsl = jsonToDSL(updatedData);
+        updateDslText(dsl);
+      }
+    },
+    [dslText, updateDslText]
+  );
+
+  // Delete key handler for selected elements
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Delete' && selectedElement) {
+        event.preventDefault();
+
+        const { config } = parseDSL(dslText);
+        if (!config) return;
+
+        let updatedData = { ...config };
+
+        switch (selectedElement.type) {
+          case 'door':
+            if (selectedElement.index !== undefined) {
+              updatedData.doors = config.doors?.filter((_, i) => i !== selectedElement.index) || [];
+            }
+            break;
+
+          case 'window':
+            if (selectedElement.index !== undefined) {
+              updatedData.windows =
+                config.windows?.filter((_, i) => i !== selectedElement.index) || [];
+            }
+            break;
+
+          case 'object':
+            if (selectedElement.roomId && selectedElement.index !== undefined) {
+              updatedData.rooms = config.rooms.map(room => {
+                if (room.id === selectedElement.roomId) {
+                  return {
+                    ...room,
+                    objects: room.objects?.filter((_, i) => i !== selectedElement.index),
+                  };
+                }
+                return room;
+              });
+            }
+            break;
+
+          case 'room':
+            if (selectedElement.roomId) {
+              updatedData.rooms = config.rooms.filter(r => r.id !== selectedElement.roomId);
+            }
+            break;
+        }
+
+        const dsl = jsonToDSL(updatedData);
+        updateDslText(dsl);
+        setSelectedElement(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedElement, dslText, updateDslText]);
 
   const handleDownloadDSL = () => {
     // Download the DSL source
@@ -704,6 +988,9 @@ function App() {
           onRoomUpdate={handleRoomUpdate}
           onRoomNameUpdate={handleRoomNameUpdate}
           onObjectClick={handleObjectClick}
+          onDoorDragUpdate={handleDoorDragUpdate}
+          onWindowDragUpdate={handleWindowDragUpdate}
+          onObjectDragUpdate={handleObjectDragUpdate}
         />
         <button
           className="download-svg-button"
@@ -712,9 +999,36 @@ function App() {
         >
           📥 Download SVG
         </button>
-        <button className="add-room-button" onClick={handleAddRoom} data-testid="add-room-btn">
-          + Add Room
-        </button>
+        <div className="svg-control-buttons">
+          <button
+            className="add-room-button"
+            onClick={handleAddRoom}
+            data-testid="svg-add-room-btn"
+          >
+            + Room
+          </button>
+          <button
+            className="add-door-button"
+            onClick={handleAddDoor}
+            data-testid="svg-add-door-btn"
+          >
+            + Door
+          </button>
+          <button
+            className="add-window-button"
+            onClick={handleAddWindow}
+            data-testid="svg-add-window-btn"
+          >
+            + Window
+          </button>
+          <button
+            className="add-object-button"
+            onClick={handleAddObject}
+            data-testid="svg-add-object-btn"
+          >
+            + Object
+          </button>
+        </div>
         <ErrorPanel
           jsonError={jsonError}
           positioningErrors={positioningErrors}

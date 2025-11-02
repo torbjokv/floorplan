@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useRef, useCallback, memo } from 'react';
-import type { FloorplanData, ResolvedRoom, Anchor } from '../types';
+import type { FloorplanData, ResolvedRoom, Anchor, WallPosition } from '../types';
 import { mm, resolveRoomPositions, resolveCompositeRoom, getCorner } from '../utils';
 import { GridRenderer } from './floorplan/GridRenderer';
 import { RoomRenderer } from './floorplan/RoomRenderer';
@@ -23,6 +23,10 @@ interface FloorplanRendererProps {
   onRoomUpdate?: (updatedData: FloorplanData) => void;
   onRoomNameUpdate?: (roomId: string, newName: string) => void;
   onObjectClick?: (roomId: string, objectIndex: number) => void;
+  onDoorDragUpdate?: (doorIndex: number, newRoomId: string, newWall: WallPosition, newOffset: number) => void;
+  onWindowDragUpdate?: (windowIndex: number, newRoomId: string, newWall: WallPosition, newOffset: number) => void;
+  onObjectDragUpdate?: (sourceRoomId: string, objectIndex: number, targetRoomId: string, newX: number, newY: number) => void;
+  onRoomResize?: (roomId: string, newWidth: number, newDepth: number) => void;
 }
 
 interface DragState {
@@ -67,6 +71,10 @@ const FloorplanRendererComponent = ({
   onRoomUpdate,
   onRoomNameUpdate,
   onObjectClick,
+  onDoorDragUpdate,
+  onWindowDragUpdate,
+  onObjectDragUpdate,
+  onRoomResize,
 }: FloorplanRendererProps) => {
   const gridStep = data.grid_step || 1000;
   const svgRef = useRef<SVGSVGElement>(null);
@@ -77,6 +85,16 @@ const FloorplanRendererComponent = ({
   const [snapTarget, setSnapTarget] = useState<CornerHighlight | null>(null);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number } | null>(null);
   const [connectedRooms, setConnectedRooms] = useState<Set<string>>(new Set());
+
+  // Resize state
+  const [resizeState, setResizeState] = useState<{
+    roomId: string;
+    edge: 'width' | 'depth';
+    startMouseX: number;
+    startMouseY: number;
+    startWidth: number;
+    startDepth: number;
+  } | null>(null);
 
   // Use ref to track animation frame for drag updates
   const dragAnimationFrame = useRef<number | null>(null);
@@ -622,6 +640,7 @@ const FloorplanRendererComponent = ({
                 roomMap={roomMap}
                 mm={mm}
                 onClick={onDoorClick}
+                onDragUpdate={onDoorDragUpdate}
               />
             </g>
           );
@@ -645,6 +664,7 @@ const FloorplanRendererComponent = ({
                 roomMap={roomMap}
                 mm={mm}
                 onClick={onWindowClick}
+                onDragUpdate={onWindowDragUpdate}
               />
             </g>
           );
@@ -657,6 +677,7 @@ const FloorplanRendererComponent = ({
           dragOffset={dragOffset}
           mm={mm}
           onObjectClick={onObjectClick}
+          onObjectDragUpdate={onObjectDragUpdate}
         />
 
         {/* Corner highlights - rendered on top */}

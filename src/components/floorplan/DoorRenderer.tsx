@@ -1,4 +1,5 @@
 import type { Door, WallPosition, ResolvedRoom } from '../../types';
+import { useState, useCallback, useEffect } from 'react';
 
 const DOOR_THICKNESS = 100; // mm
 
@@ -8,15 +9,153 @@ interface DoorRendererProps {
   roomMap: Record<string, ResolvedRoom>;
   mm: (val: number) => number;
   onClick?: (doorIndex: number) => void;
+  onDragUpdate?: (doorIndex: number, newRoomId: string, newWall: WallPosition, newOffset: number) => void;
 }
 
-export function DoorRenderer({ door, index, roomMap, mm, onClick }: DoorRendererProps) {
+export function DoorRenderer({
+  door,
+  index,
+  roomMap,
+  mm,
+  onClick,
+  onDragUpdate,
+}: DoorRendererProps) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartX, setDragStartX] = useState(0);
+  const [dragStartY, setDragStartY] = useState(0);
+  const [dragStartOffset, setDragStartOffset] = useState(0);
+  const [currentOffset, setCurrentOffset] = useState(door.offset ?? 0);
+  const [currentRoomId, setCurrentRoomId] = useState('');
+  const [currentWall, setCurrentWall] = useState<WallPosition>('left');
+
   const [roomId, wallStr = 'left'] = door.room.split(':') as [string, WallPosition];
   const room = roomMap[roomId];
   if (!room) return null;
 
   const wall = wallStr as WallPosition;
-  const offset = mm(door.offset ?? 0);
+
+  // Use current values during drag, otherwise use door values
+  const activeRoomId = isDragging && currentRoomId ? currentRoomId : roomId;
+  const activeWall = isDragging && currentRoomId ? currentWall : wall;
+  const activeRoom = roomMap[activeRoomId];
+  if (!activeRoom) return null;
+
+  // Convert SVG screen coordinates to mm
+  const screenToMM = useCallback((e: React.MouseEvent): { x: number; y: number } => {
+    const svg = (e.target as SVGElement).ownerSVGElement;
+    if (!svg) return { x: 0, y: 0 };
+
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const svgPt = pt.matrixTransform(svg.getScreenCTM()?.inverse());
+
+    // Convert from screen units back to mm
+    return {
+      x: svgPt.x * 10,
+      y: svgPt.y * 10,
+    };
+  }, []);
+
+  // Handle mouse down - start dragging
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (!onDragUpdate) return;
+      e.stopPropagation();
+      const { x, y } = screenToMM(e);
+      setIsDragging(true);
+      setDragStartX(x);
+      setDragStartY(y);
+      setDragStartOffset(door.offset ?? 0);
+      setCurrentOffset(door.offset ?? 0);
+    },
+    [onDragUpdate, screenToMM, door.offset]
+  );
+
+  // Helper to find closest wall to a point
+  const findClosestWall = useCallback((room: ResolvedRoom, x: number, y: number): { wall: WallPosition; offset: number } => {
+    const distances = [
+      { wall: 'top' as WallPosition, dist: Math.abs(y - room.y), offset: x - room.x },
+      { wall: 'bottom' as WallPosition, dist: Math.abs(y - (room.y + room.depth)), offset: x - room.x },
+      { wall: 'left' as WallPosition, dist: Math.abs(x - room.x), offset: y - room.y },
+      { wall: 'right' as WallPosition, dist: Math.abs(x - (room.x + room.width)), offset: y - room.y },
+    ];
+
+    const closest = distances.reduce((min, curr) => curr.dist < min.dist ? curr : min);
+
+    // Clamp offset to wall bounds
+    let clampedOffset = closest.offset;
+    if (closest.wall === 'top' || closest.wall === 'bottom') {
+      clampedOffset = Math.max(0, Math.min(clampedOffset, room.width - door.width));
+    } else {
+      clampedOffset = Math.max(0, Math.min(clampedOffset, room.depth - door.width));
+    }
+
+    return { wall: closest.wall, offset: clampedOffset };
+  }, [door.width]);
+
+  // Helper to find which room the mouse is over
+  const findRoomAtPoint = useCallback((x: number, y: number): ResolvedRoom | null => {
+    for (const room of Object.values(roomMap)) {
+      if (x >= room.x && x <= room.x + room.width &&
+          y >= room.y && y <= room.y + room.depth) {
+        return room;
+      }
+    }
+    return null;
+  }, [roomMap]);
+
+  // Add global mouse move and mouse up listeners when dragging
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+
+      // Get SVG element
+      const svgElement = document.querySelector('.floorplan-svg') as SVGSVGElement;
+      if (!svgElement) return;
+
+      // Convert screen coordinates to SVG coordinates
+      const pt = svgElement.createSVGPoint();
+      pt.x = e.clientX;
+      pt.y = e.clientY;
+      const svgPt = pt.matrixTransform(svgElement.getScreenCTM()?.inverse());
+      const x = svgPt.x * 10;
+      const y = svgPt.y * 10;
+
+      // Find which room the mouse is over
+      const targetRoom = findRoomAtPoint(x, y);
+      if (targetRoom) {
+        // Find closest wall of that room
+        const { wall: newWall, offset: newOffset } = findClosestWall(targetRoom, x, y);
+
+        setCurrentRoomId(targetRoom.id);
+        setCurrentWall(newWall);
+        setCurrentOffset(newOffset);
+      }
+    };
+
+    const handleGlobalMouseUp = () => {
+      if (!isDragging || !onDragUpdate) return;
+      setIsDragging(false);
+      const finalRoomId = currentRoomId || roomId;
+      const finalWall = currentRoomId ? currentWall : wall;
+      onDragUpdate(index, finalRoomId, finalWall, currentOffset);
+    };
+
+    window.addEventListener('mousemove', handleGlobalMouseMove);
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [isDragging, findClosestWall, findRoomAtPoint, onDragUpdate, index, currentOffset, currentRoomId, currentWall, roomId, wall]);
+
+  // Use currentOffset when dragging, otherwise use door.offset
+  const activeOffset = isDragging ? currentOffset : (door.offset ?? 0);
+  const offset = mm(activeOffset);
   const swing = door.swing || 'inwards-right';
   const w = mm(door.width);
   const d = mm(DOOR_THICKNESS);
@@ -34,11 +173,11 @@ export function DoorRenderer({ door, index, roomMap, mm, onClick }: DoorRenderer
   let doorRect: { x: number; y: number; width: number; height: number };
   let arcPath: string;
 
-  switch (wall) {
+  switch (activeWall) {
     case 'bottom':
       // Bottom wall - door opens into room (upward)
-      x = mm(room.x) + offset;
-      y = mm(room.y + room.depth);
+      x = mm(activeRoom.x) + offset;
+      y = mm(activeRoom.y + activeRoom.depth);
 
       if (isInwards) {
         // Door swings into room (upward)
@@ -65,8 +204,8 @@ export function DoorRenderer({ door, index, roomMap, mm, onClick }: DoorRenderer
 
     case 'top':
       // Top wall - door opens into room (downward)
-      x = mm(room.x) + offset;
-      y = mm(room.y);
+      x = mm(activeRoom.x) + offset;
+      y = mm(activeRoom.y);
 
       if (isInwards) {
         // Door swings into room (downward)
@@ -93,8 +232,8 @@ export function DoorRenderer({ door, index, roomMap, mm, onClick }: DoorRenderer
 
     case 'left':
       // Left wall - door opens into room (rightward)
-      x = mm(room.x);
-      y = mm(room.y) + offset;
+      x = mm(activeRoom.x);
+      y = mm(activeRoom.y) + offset;
 
       if (isInwards) {
         // Door swings into room (rightward)
@@ -121,8 +260,8 @@ export function DoorRenderer({ door, index, roomMap, mm, onClick }: DoorRenderer
 
     case 'right':
       // Right wall - door opens into room (leftward)
-      x = mm(room.x + room.width);
-      y = mm(room.y) + offset;
+      x = mm(activeRoom.x + activeRoom.width);
+      y = mm(activeRoom.y) + offset;
 
       if (isInwards) {
         // Door swings into room (leftward)
@@ -155,8 +294,10 @@ export function DoorRenderer({ door, index, roomMap, mm, onClick }: DoorRenderer
     <g
       key={`door-${index}`}
       className="door-group"
-      onClick={() => onClick?.(index)}
-      style={{ cursor: 'pointer' }}
+      data-door-index={index}
+      onClick={() => !isDragging && onClick?.(index)}
+      onMouseDown={handleMouseDown}
+      style={{ cursor: isDragging ? 'grabbing' : onDragUpdate ? 'grab' : 'pointer' }}
     >
       {/* Door rectangle (always shown) */}
       <rect

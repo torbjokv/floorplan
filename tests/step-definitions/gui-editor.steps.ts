@@ -620,7 +620,7 @@ When('I click delete on the door', async function (this: FloorplanWorld) {
   await deleteButton.click();
 });
 
-Then('the door should be removed', async function (this: FloorplanWorld) {
+Then('the door card should be removed from GUI', async function (this: FloorplanWorld) {
   await this.page.waitForTimeout(700); // Wait for auto-save debounce + UI update
   const doorCards = this.page.locator('[data-testid^="door-card-"]');
   const finalCount = await doorCards.count();
@@ -660,7 +660,7 @@ When('I click delete on the window', async function (this: FloorplanWorld) {
   await deleteButton.click();
 });
 
-Then('the window should be removed', async function (this: FloorplanWorld) {
+Then('the window card should be removed from GUI', async function (this: FloorplanWorld) {
   await this.page.waitForTimeout(700); // Wait for auto-save debounce + UI update
   const windowCards = this.page.locator('[data-testid^="window-card-"]');
   const finalCount = await windowCards.count();
