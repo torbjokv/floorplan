@@ -29,13 +29,6 @@ export function WindowRenderer({
   const [currentWall, setCurrentWall] = useState<WallPosition | null>(null);
   const [snappedWall, setSnappedWall] = useState<{ roomId: string; wall: WallPosition; offset: number } | null>(null);
 
-  // Only render wall-attached windows in this component
-  // Freestanding windows are handled by FreestandingWindowsRenderer
-  if (!window.room) return null;
-
-  const [roomId, wallStr = 'left'] = window.room.split(':') as [string, WallPosition];
-  const wall = wallStr as WallPosition;
-
   // Convert SVG screen coordinates to mm
   const screenToMM = useCallback((e: React.MouseEvent): { x: number; y: number } => {
     const svg = (e.target as SVGElement).ownerSVGElement;
@@ -159,6 +152,13 @@ export function WindowRenderer({
       globalThis.window.removeEventListener('mouseup', handleGlobalMouseUp);
     };
   }, [isDragging, findClosestWallToSnap, onDragUpdate, index, currentX, currentY, snappedWall]);
+
+  // Only render wall-attached windows in this component
+  // Freestanding windows are handled by FreestandingWindowsRenderer
+  if (!window.room) return null;
+
+  const [roomId, wallStr = 'left'] = window.room.split(':') as [string, WallPosition];
+  const wall = wallStr as WallPosition;
 
   // Use current values during drag, otherwise use window values
   const activeRoomId = isDragging && currentRoomId ? currentRoomId : roomId;

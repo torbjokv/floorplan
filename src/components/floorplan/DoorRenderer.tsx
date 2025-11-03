@@ -29,16 +29,6 @@ export function DoorRenderer({
   const [currentWall, setCurrentWall] = useState<WallPosition | null>(null);
   const [snappedWall, setSnappedWall] = useState<{ roomId: string; wall: WallPosition; offset: number } | null>(null);
 
-  // Only render wall-attached doors in this component
-  // Freestanding doors are handled by FreestandingDoorsRenderer
-  if (!door.room) return null;
-
-  const [roomId, wallStr = 'left'] = door.room.split(':') as [string, WallPosition];
-  const room = roomMap[roomId];
-  if (!room) return null;
-
-  const wall = wallStr as WallPosition;
-
   // Convert SVG screen coordinates to mm
   const screenToMM = useCallback((e: React.MouseEvent): { x: number; y: number } => {
     const svg = (e.target as SVGElement).ownerSVGElement;
@@ -63,9 +53,8 @@ export function DoorRenderer({
       e.stopPropagation();
       const { x, y } = screenToMM(e);
       setIsDragging(true);
-      setDragStartX(x);
-      setDragStartY(y);
-      setDragStartOffset(door.offset ?? 0);
+      setCurrentX(x);
+      setCurrentY(y);
       setCurrentOffset(door.offset ?? 0);
     },
     [onDragUpdate, screenToMM, door.offset]
@@ -164,6 +153,16 @@ export function DoorRenderer({
       window.removeEventListener('mouseup', handleGlobalMouseUp);
     };
   }, [isDragging, findClosestWallToSnap, onDragUpdate, index, currentX, currentY, snappedWall]);
+
+  // Only render wall-attached doors in this component
+  // Freestanding doors are handled by FreestandingDoorsRenderer
+  if (!door.room) return null;
+
+  const [roomId, wallStr = 'left'] = door.room.split(':') as [string, WallPosition];
+  const room = roomMap[roomId];
+  if (!room) return null;
+
+  const wall = wallStr as WallPosition;
 
   // Use current values when dragging, otherwise use door values
   const activeRoomId = isDragging && currentRoomId ? currentRoomId : roomId;
