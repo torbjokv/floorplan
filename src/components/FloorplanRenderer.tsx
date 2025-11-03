@@ -644,6 +644,9 @@ const FloorplanRendererComponent = ({
 
         {/* Doors */}
         {data.doors?.map((door, index) => {
+          // Skip freestanding doors (they're rendered separately)
+          if (!door.room) return null;
+
           const roomId = door.room.split(':')[0];
           // Check if the door's room or its parent (if it's a part) is being dragged
           const parentRoomId = partToParent.get(roomId);
@@ -668,6 +671,9 @@ const FloorplanRendererComponent = ({
 
         {/* Windows */}
         {data.windows?.map((window, index) => {
+          // Skip freestanding windows (they're rendered separately)
+          if (!window.room) return null;
+
           const roomId = window.room.split(':')[0];
           // Check if the window's room or its parent (if it's a part) is being dragged
           const parentRoomId = partToParent.get(roomId);
