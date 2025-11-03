@@ -180,41 +180,51 @@ export function WindowRenderer({
   let rectX = 0,
     rectY = 0;
 
-  switch (activeWall) {
-    case 'left':
-      posX = mm(activeRoom.x);
-      posY = mm(activeRoom.y) + offset;
-      rotation = 90;
-      rectX = 0; // Window extends into room (rightward)
-      rectY = -d; // Shift up by thickness
-      break;
+  // If dragging with no snap, show at cursor position (freestanding preview)
+  if (isDragging && !snappedWall) {
+    posX = mm(currentX);
+    posY = mm(currentY);
+    rotation = 0;
+    rectX = 0;
+    rectY = -d / 2; // Center vertically
+  } else {
+    // Wall-attached positioning
+    switch (activeWall) {
+      case 'left':
+        posX = mm(activeRoom.x);
+        posY = mm(activeRoom.y) + offset;
+        rotation = 90;
+        rectX = 0; // Window extends into room (rightward)
+        rectY = -d; // Shift up by thickness
+        break;
 
-    case 'right':
-      posX = mm(activeRoom.x + activeRoom.width);
-      posY = mm(activeRoom.y) + offset;
-      rotation = 90;
-      rectX = 0; // Window extends into room (leftward)
-      rectY = 0; // Shift up by thickness
-      break;
+      case 'right':
+        posX = mm(activeRoom.x + activeRoom.width);
+        posY = mm(activeRoom.y) + offset;
+        rotation = 90;
+        rectX = 0; // Window extends into room (leftward)
+        rectY = 0; // Shift up by thickness
+        break;
 
-    case 'top':
-      posX = mm(activeRoom.x) + offset;
-      posY = mm(activeRoom.y);
-      rotation = 0;
-      rectX = 0;
-      rectY = 0; // Window extends into room (downward)
-      break;
+      case 'top':
+        posX = mm(activeRoom.x) + offset;
+        posY = mm(activeRoom.y);
+        rotation = 0;
+        rectX = 0;
+        rectY = 0; // Window extends into room (downward)
+        break;
 
-    case 'bottom':
-      posX = mm(activeRoom.x) + offset;
-      posY = mm(activeRoom.y + activeRoom.depth);
-      rotation = 0;
-      rectX = 0;
-      rectY = -d; // Window extends into room (upward)
-      break;
+      case 'bottom':
+        posX = mm(activeRoom.x) + offset;
+        posY = mm(activeRoom.y + activeRoom.depth);
+        rotation = 0;
+        rectX = 0;
+        rectY = -d; // Window extends into room (upward)
+        break;
 
-    default:
-      return null;
+      default:
+        return null;
+    }
   }
 
   const x = posX;

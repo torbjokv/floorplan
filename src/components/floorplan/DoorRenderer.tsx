@@ -191,7 +191,15 @@ export function DoorRenderer({
   let doorRect: { x: number; y: number; width: number; height: number };
   let arcPath: string;
 
-  switch (activeWall) {
+  // If dragging with no snap, show at cursor position (freestanding preview)
+  if (isDragging && !snappedWall) {
+    x = mm(currentX);
+    y = mm(currentY);
+    doorRect = { x: 0, y: -d / 2, width: w, height: d };
+    arcPath = ''; // No arc for freestanding preview
+  } else {
+    // Wall-attached positioning
+    switch (activeWall) {
     case 'bottom':
       // Bottom wall - door opens into room (upward)
       x = mm(activeRoom.x) + offset;
@@ -306,6 +314,7 @@ export function DoorRenderer({
 
     default:
       return null;
+    }
   }
 
   return (
