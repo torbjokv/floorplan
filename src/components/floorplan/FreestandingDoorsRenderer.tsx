@@ -183,23 +183,11 @@ function FreestandingDoor({
         y={-doorThickness / 2}
         width={doorWidth}
         height={doorThickness}
-        fill="#8b4513"
-        stroke={snappedWall ? '#00ff00' : '#654321'}
+        fill="saddlebrown"
+        stroke={snappedWall ? '#00ff00' : '#333'}
         strokeWidth={snappedWall ? '3' : '2'}
         className="freestanding-door"
       />
-
-      {/* Door swing arc (if not an opening type) */}
-      {door.type !== 'opening' && (
-        <path
-          d={`M 0 0 Q ${doorWidth / 2} ${-doorWidth / 2} ${doorWidth} 0`}
-          fill="none"
-          stroke="#654321"
-          strokeWidth="1"
-          strokeDasharray="4,4"
-          style={{ pointerEvents: 'none' }}
-        />
-      )}
 
       {/* Snap indicator */}
       {snappedWall && (
