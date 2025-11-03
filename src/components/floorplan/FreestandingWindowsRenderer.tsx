@@ -53,15 +53,10 @@ function FreestandingWindow({
   onWindowClick,
   onWindowDragUpdate,
 }: FreestandingWindowProps) {
-  // Only render if this is a freestanding window (has x,y coordinates)
-  if (window.x === undefined || window.y === undefined) return null;
-
   const [isDragging, setIsDragging] = useState(false);
-  const [currentX, setCurrentX] = useState(window.x);
-  const [currentY, setCurrentY] = useState(window.y);
+  const [currentX, setCurrentX] = useState(window.x ?? 0);
+  const [currentY, setCurrentY] = useState(window.y ?? 0);
   const [snappedWall, setSnappedWall] = useState<{ roomId: string; wall: WallPosition; offset: number } | null>(null);
-
-  const rotation = window.rotation || 0;
 
   // Convert SVG screen coordinates to mm
   const screenToMM = useCallback((e: MouseEvent): { x: number; y: number } => {
@@ -156,10 +151,15 @@ function FreestandingWindow({
     };
   }, [isDragging, currentX, currentY, snappedWall, screenToMM, findClosestWall, onWindowDragUpdate, index]);
 
+  // Only render if this is a freestanding window (has x,y coordinates)
+  if (window.x === undefined || window.y === undefined) return null;
+
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onWindowClick?.(index);
   };
+
+  const rotation = window.rotation || 0;
 
   // Display position
   const displayX = isDragging ? currentX : window.x;
