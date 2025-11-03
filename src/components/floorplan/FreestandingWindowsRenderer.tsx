@@ -147,12 +147,12 @@ function FreestandingWindow({
       setSnappedWall(null);
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    globalThis.window.addEventListener('mousemove', handleMouseMove);
+    globalThis.window.addEventListener('mouseup', handleMouseUp);
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      globalThis.window.removeEventListener('mousemove', handleMouseMove);
+      globalThis.window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isDragging, currentX, currentY, snappedWall, screenToMM, findClosestWall, onWindowDragUpdate, index]);
 
@@ -183,21 +183,10 @@ function FreestandingWindow({
         y={-windowThickness / 2}
         width={windowWidth}
         height={windowThickness}
-        fill="#87ceeb"
-        stroke={snappedWall ? '#00ff00' : '#4682b4'}
+        fill="lightblue"
+        stroke={snappedWall ? '#00ff00' : '#444'}
         strokeWidth={snappedWall ? '3' : '2'}
         className="freestanding-window"
-      />
-
-      {/* Window panes (dividers) */}
-      <line
-        x1={windowWidth / 2}
-        y1={-windowThickness / 2}
-        x2={windowWidth / 2}
-        y2={windowThickness / 2}
-        stroke="#4682b4"
-        strokeWidth="1"
-        style={{ pointerEvents: 'none' }}
       />
 
       {/* Snap indicator */}

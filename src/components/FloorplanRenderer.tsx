@@ -26,8 +26,8 @@ interface FloorplanRendererProps {
   onRoomUpdate?: (updatedData: FloorplanData) => void;
   onRoomNameUpdate?: (roomId: string, newName: string) => void;
   onObjectClick?: (roomId: string, objectIndex: number) => void;
-  onDoorDragUpdate?: (doorIndex: number, newRoomId: string, newWall: WallPosition, newOffset: number) => void;
-  onWindowDragUpdate?: (windowIndex: number, newRoomId: string, newWall: WallPosition, newOffset: number) => void;
+  onDoorDragUpdate?: (doorIndex: number, roomId: string | null, wall: WallPosition | null, offset: number, x: number, y: number) => void;
+  onWindowDragUpdate?: (windowIndex: number, roomId: string | null, wall: WallPosition | null, offset: number, x: number, y: number) => void;
   onObjectDragUpdate?: (sourceRoomId: string, objectIndex: number, targetRoomId: string, newX: number, newY: number) => void;
   onFreestandingObjectDragUpdate?: (objectIndex: number, targetRoomId: string, newX: number, newY: number) => void;
   onFreestandingDoorDragUpdate?: (doorIndex: number, roomId: string | null, wall: WallPosition | null, offset: number, x: number, y: number) => void;
