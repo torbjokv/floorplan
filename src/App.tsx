@@ -610,6 +610,88 @@ function App() {
     [dslText, updateDslText]
   );
 
+  const handleFreestandingDoorDragUpdate = useCallback(
+    (doorIndex: number, roomId: string | null, wall: string | null, offset: number, x: number, y: number) => {
+      const { config } = parseDSL(dslText);
+      if (!config || !config.doors) return;
+
+      // Find the freestanding door (has x,y coordinates)
+      const freestandingDoors = config.doors.filter(d => d.x !== undefined);
+      if (doorIndex >= freestandingDoors.length) return;
+
+      const targetDoor = freestandingDoors[doorIndex];
+      const actualIndex = config.doors.indexOf(targetDoor);
+
+      const updatedDoors = config.doors.map((door, idx) => {
+        if (idx !== actualIndex) return door;
+
+        if (roomId && wall) {
+          // Snap to wall - remove x,y,rotation and add room/offset
+          const { x: _, y: __, rotation: ___, ...doorWithoutCoords } = door;
+          return {
+            ...doorWithoutCoords,
+            room: `${roomId}:${wall}`,
+            offset,
+          };
+        } else {
+          // Stay freestanding - update x,y
+          return { ...door, x, y };
+        }
+      });
+
+      const updatedData = { ...config, doors: updatedDoors };
+
+      // Immediate optimistic update to avoid jump
+      setFloorplanData(updatedData);
+
+      // Update DSL (will re-parse after debounce)
+      const dsl = jsonToDSL(updatedData);
+      updateDslText(dsl);
+    },
+    [dslText, updateDslText]
+  );
+
+  const handleFreestandingWindowDragUpdate = useCallback(
+    (windowIndex: number, roomId: string | null, wall: string | null, offset: number, x: number, y: number) => {
+      const { config } = parseDSL(dslText);
+      if (!config || !config.windows) return;
+
+      // Find the freestanding window (has x,y coordinates)
+      const freestandingWindows = config.windows.filter(w => w.x !== undefined);
+      if (windowIndex >= freestandingWindows.length) return;
+
+      const targetWindow = freestandingWindows[windowIndex];
+      const actualIndex = config.windows.indexOf(targetWindow);
+
+      const updatedWindows = config.windows.map((window, idx) => {
+        if (idx !== actualIndex) return window;
+
+        if (roomId && wall) {
+          // Snap to wall - remove x,y,rotation and add room/offset
+          const { x: _, y: __, rotation: ___, ...windowWithoutCoords } = window;
+          return {
+            ...windowWithoutCoords,
+            room: `${roomId}:${wall}`,
+            offset,
+          };
+        } else {
+          // Stay freestanding - update x,y
+          return { ...window, x, y };
+        }
+      });
+
+      const updatedData = { ...config, windows: updatedWindows };
+
+      // Immediate optimistic update to avoid jump
+      setFloorplanData(updatedData);
+
+      // Update DSL (will re-parse after debounce)
+      const dsl = jsonToDSL(updatedData);
+      updateDslText(dsl);
+    },
+    [dslText, updateDslText]
+  );
+
   const handleObjectDragUpdate = useCallback(
     (sourceRoomId: string, objectIndex: number, targetRoomId: string, newX: number, newY: number) => {
       const { config } = parseDSL(dslText);
@@ -1099,6 +1181,8 @@ function App() {
           onWindowDragUpdate={handleWindowDragUpdate}
           onObjectDragUpdate={handleObjectDragUpdate}
           onFreestandingObjectDragUpdate={handleFreestandingObjectDragUpdate}
+          onFreestandingDoorDragUpdate={handleFreestandingDoorDragUpdate}
+          onFreestandingWindowDragUpdate={handleFreestandingWindowDragUpdate}
         />
         <button
           className="download-svg-button"

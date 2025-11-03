@@ -30,6 +30,8 @@ interface FloorplanRendererProps {
   onWindowDragUpdate?: (windowIndex: number, newRoomId: string, newWall: WallPosition, newOffset: number) => void;
   onObjectDragUpdate?: (sourceRoomId: string, objectIndex: number, targetRoomId: string, newX: number, newY: number) => void;
   onFreestandingObjectDragUpdate?: (objectIndex: number, targetRoomId: string, newX: number, newY: number) => void;
+  onFreestandingDoorDragUpdate?: (doorIndex: number, roomId: string | null, wall: WallPosition | null, offset: number, x: number, y: number) => void;
+  onFreestandingWindowDragUpdate?: (windowIndex: number, roomId: string | null, wall: WallPosition | null, offset: number, x: number, y: number) => void;
   onRoomResize?: (roomId: string, newWidth: number, newDepth: number) => void;
 }
 
@@ -79,6 +81,8 @@ const FloorplanRendererComponent = ({
   onWindowDragUpdate,
   onObjectDragUpdate,
   onFreestandingObjectDragUpdate,
+  onFreestandingDoorDragUpdate,
+  onFreestandingWindowDragUpdate,
   onRoomResize,
 }: FloorplanRendererProps) => {
   const gridStep = data.grid_step || 1000;
@@ -703,6 +707,7 @@ const FloorplanRendererComponent = ({
             roomMap={roomMap}
             mm={mm}
             onDoorClick={onDoorClick}
+            onDoorDragUpdate={onFreestandingDoorDragUpdate}
           />
         )}
 
@@ -713,6 +718,7 @@ const FloorplanRendererComponent = ({
             roomMap={roomMap}
             mm={mm}
             onWindowClick={onWindowClick}
+            onWindowDragUpdate={onFreestandingWindowDragUpdate}
           />
         )}
 
