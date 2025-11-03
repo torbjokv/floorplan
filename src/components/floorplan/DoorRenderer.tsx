@@ -336,8 +336,8 @@ export function DoorRenderer({
         stroke={snappedWall ? '#00ff00' : '#333'}
         strokeWidth={snappedWall ? '3' : '1'}
       />
-      {/* Door swing arc (not shown for openings) */}
-      {!isOpening && (
+      {/* Door swing arc (not shown for openings or freestanding preview) */}
+      {!isOpening && arcPath && (
         <path
           d={arcPath}
           transform={`translate(${x},${y})`}
