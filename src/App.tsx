@@ -565,15 +565,32 @@ function App() {
   // ============================================================================
 
   const handleDoorDragUpdate = useCallback(
-    (doorIndex: number, newRoomId: string, newWall: string, newOffset: number) => {
+    (doorIndex: number, roomId: string | null, wall: string | null, offset: number, x: number, y: number) => {
       const { config } = parseDSL(dslText);
       if (!config || !config.doors) return;
 
-      const updatedDoors = config.doors.map((door, idx) =>
-        idx === doorIndex
-          ? { ...door, room: `${newRoomId}:${newWall}`, offset: newOffset }
-          : door
-      );
+      const updatedDoors = config.doors.map((door, idx) => {
+        if (idx !== doorIndex) return door;
+
+        if (roomId && wall) {
+          // Snap to wall - remove x,y,rotation and add room/offset
+          const { x: _, y: __, rotation: ___, ...doorWithoutCoords } = door;
+          return {
+            ...doorWithoutCoords,
+            room: `${roomId}:${wall}`,
+            offset,
+          };
+        } else {
+          // Go freestanding - remove room/offset and add x,y
+          const { room: _, offset: __, ...doorWithoutRoom } = door;
+          return {
+            ...doorWithoutRoom,
+            x,
+            y,
+            rotation: 0,
+          };
+        }
+      });
 
       const updatedData = { ...config, doors: updatedDoors };
 
@@ -588,15 +605,32 @@ function App() {
   );
 
   const handleWindowDragUpdate = useCallback(
-    (windowIndex: number, newRoomId: string, newWall: string, newOffset: number) => {
+    (windowIndex: number, roomId: string | null, wall: string | null, offset: number, x: number, y: number) => {
       const { config } = parseDSL(dslText);
       if (!config || !config.windows) return;
 
-      const updatedWindows = config.windows.map((window, idx) =>
-        idx === windowIndex
-          ? { ...window, room: `${newRoomId}:${newWall}`, offset: newOffset }
-          : window
-      );
+      const updatedWindows = config.windows.map((window, idx) => {
+        if (idx !== windowIndex) return window;
+
+        if (roomId && wall) {
+          // Snap to wall - remove x,y,rotation and add room/offset
+          const { x: _, y: __, rotation: ___, ...windowWithoutCoords } = window;
+          return {
+            ...windowWithoutCoords,
+            room: `${roomId}:${wall}`,
+            offset,
+          };
+        } else {
+          // Go freestanding - remove room/offset and add x,y
+          const { room: _, offset: __, ...windowWithoutRoom } = window;
+          return {
+            ...windowWithoutRoom,
+            x,
+            y,
+            rotation: 0,
+          };
+        }
+      });
 
       const updatedData = { ...config, windows: updatedWindows };
 

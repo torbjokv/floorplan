@@ -2,6 +2,7 @@ import type { Window, WallPosition, ResolvedRoom } from '../../types';
 import { useState, useCallback, useEffect } from 'react';
 
 const WINDOW_THICKNESS = 100; // mm
+const SNAP_DISTANCE = 300; // mm - distance to snap to walls
 
 interface WindowRendererProps {
   window: Window;
@@ -9,7 +10,7 @@ interface WindowRendererProps {
   roomMap: Record<string, ResolvedRoom>;
   mm: (val: number) => number;
   onClick?: (windowIndex: number) => void;
-  onDragUpdate?: (windowIndex: number, newRoomId: string, newWall: WallPosition, newOffset: number) => void;
+  onDragUpdate?: (windowIndex: number, roomId: string | null, wall: WallPosition | null, offset: number, x: number, y: number) => void;
 }
 
 export function WindowRenderer({
@@ -21,24 +22,15 @@ export function WindowRenderer({
   onDragUpdate,
 }: WindowRendererProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStartX, setDragStartX] = useState(0);
-  const [dragStartY, setDragStartY] = useState(0);
-  const [dragStartOffset, setDragStartOffset] = useState(0);
+  const [currentX, setCurrentX] = useState(0);
+  const [currentY, setCurrentY] = useState(0);
   const [currentOffset, setCurrentOffset] = useState(window.offset ?? 0);
-  const [currentRoomId, setCurrentRoomId] = useState('');
-  const [currentWall, setCurrentWall] = useState<WallPosition>('top');
+  const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
+  const [currentWall, setCurrentWall] = useState<WallPosition | null>(null);
+  const [snappedWall, setSnappedWall] = useState<{ roomId: string; wall: WallPosition; offset: number } | null>(null);
 
-  const [roomId, wallStr = 'top'] = window.room.split(':') as [string, WallPosition];
-  const room = roomMap[roomId];
-  if (!room) return null;
-
+  const [roomId, wallStr = 'left'] = window.room!.split(':') as [string, WallPosition];
   const wall = wallStr as WallPosition;
-
-  // Use current values during drag, otherwise use window values
-  const activeRoomId = isDragging && currentRoomId ? currentRoomId : roomId;
-  const activeWall = isDragging && currentRoomId ? currentWall : wall;
-  const activeRoom = roomMap[activeRoomId];
-  if (!activeRoom) return null;
 
   // Convert SVG screen coordinates to mm
   const screenToMM = useCallback((e: React.MouseEvent): { x: number; y: number } => {
@@ -63,46 +55,44 @@ export function WindowRenderer({
       e.stopPropagation();
       const { x, y } = screenToMM(e);
       setIsDragging(true);
-      setDragStartX(x);
-      setDragStartY(y);
-      setDragStartOffset(window.offset ?? 0);
+      setCurrentX(x);
+      setCurrentY(y);
       setCurrentOffset(window.offset ?? 0);
     },
     [onDragUpdate, screenToMM, window.offset]
   );
 
-  // Helper to find closest wall to a point
-  const findClosestWall = useCallback((room: ResolvedRoom, x: number, y: number): { wall: WallPosition; offset: number } => {
-    const distances = [
-      { wall: 'top' as WallPosition, dist: Math.abs(y - room.y), offset: x - room.x },
-      { wall: 'bottom' as WallPosition, dist: Math.abs(y - (room.y + room.depth)), offset: x - room.x },
-      { wall: 'left' as WallPosition, dist: Math.abs(x - room.x), offset: y - room.y },
-      { wall: 'right' as WallPosition, dist: Math.abs(x - (room.x + room.width)), offset: y - room.y },
-    ];
+  // Helper to find closest wall across all rooms (for snapping)
+  const findClosestWallToSnap = useCallback((x: number, y: number): { roomId: string; wall: WallPosition; offset: number } | null => {
+    let closest: { roomId: string; wall: WallPosition; offset: number; distance: number } | null = null;
 
-    const closest = distances.reduce((min, curr) => curr.dist < min.dist ? curr : min);
-
-    // Clamp offset to wall bounds
-    let clampedOffset = closest.offset;
-    if (closest.wall === 'top' || closest.wall === 'bottom') {
-      clampedOffset = Math.max(0, Math.min(clampedOffset, room.width - window.width));
-    } else {
-      clampedOffset = Math.max(0, Math.min(clampedOffset, room.depth - window.width));
-    }
-
-    return { wall: closest.wall, offset: clampedOffset };
-  }, [window.width]);
-
-  // Helper to find which room the mouse is over
-  const findRoomAtPoint = useCallback((x: number, y: number): ResolvedRoom | null => {
     for (const room of Object.values(roomMap)) {
-      if (x >= room.x && x <= room.x + room.width &&
-          y >= room.y && y <= room.y + room.depth) {
-        return room;
+      if (room.id === 'zeropoint') continue;
+
+      // Check all four walls
+      const walls = [
+        { wall: 'top' as WallPosition, dist: Math.abs(y - room.y), offset: x - room.x, maxOffset: room.width },
+        { wall: 'bottom' as WallPosition, dist: Math.abs(y - (room.y + room.depth)), offset: x - room.x, maxOffset: room.width },
+        { wall: 'left' as WallPosition, dist: Math.abs(x - room.x), offset: y - room.y, maxOffset: room.depth },
+        { wall: 'right' as WallPosition, dist: Math.abs(x - (room.x + room.width)), offset: y - room.y, maxOffset: room.depth },
+      ];
+
+      for (const w of walls) {
+        if (w.dist < SNAP_DISTANCE && w.offset >= 0 && w.offset <= w.maxOffset - window.width) {
+          if (!closest || w.dist < closest.distance) {
+            closest = {
+              roomId: room.id,
+              wall: w.wall,
+              offset: Math.max(0, Math.min(w.offset, w.maxOffset - window.width)),
+              distance: w.dist,
+            };
+          }
+        }
       }
     }
-    return null;
-  }, [roomMap]);
+
+    return closest;
+  }, [roomMap, window.width]);
 
   // Add global mouse move and mouse up listeners when dragging
   useEffect(() => {
@@ -123,24 +113,38 @@ export function WindowRenderer({
       const x = svgPt.x * 10;
       const y = svgPt.y * 10;
 
-      // Find which room the mouse is over
-      const targetRoom = findRoomAtPoint(x, y);
-      if (targetRoom) {
-        // Find closest wall of that room
-        const { wall: newWall, offset: newOffset } = findClosestWall(targetRoom, x, y);
+      setCurrentX(x);
+      setCurrentY(y);
 
-        setCurrentRoomId(targetRoom.id);
-        setCurrentWall(newWall);
-        setCurrentOffset(newOffset);
+      // Check for wall snap
+      const snap = findClosestWallToSnap(x, y);
+      setSnappedWall(snap);
+
+      if (snap) {
+        setCurrentRoomId(snap.roomId);
+        setCurrentWall(snap.wall);
+        setCurrentOffset(snap.offset);
+      } else {
+        setCurrentRoomId(null);
+        setCurrentWall(null);
       }
     };
 
     const handleGlobalMouseUp = () => {
       if (!isDragging || !onDragUpdate) return;
       setIsDragging(false);
-      const finalRoomId = currentRoomId || roomId;
-      const finalWall = currentRoomId ? currentWall : wall;
-      onDragUpdate(index, finalRoomId, finalWall, currentOffset);
+
+      if (snappedWall) {
+        // Snap to wall
+        onDragUpdate(index, snappedWall.roomId, snappedWall.wall, snappedWall.offset, currentX, currentY);
+      } else {
+        // Go freestanding
+        onDragUpdate(index, null, null, 0, currentX, currentY);
+      }
+
+      setSnappedWall(null);
+      setCurrentRoomId(null);
+      setCurrentWall(null);
     };
 
     globalThis.window.addEventListener('mousemove', handleGlobalMouseMove);
@@ -150,7 +154,16 @@ export function WindowRenderer({
       globalThis.window.removeEventListener('mousemove', handleGlobalMouseMove);
       globalThis.window.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [isDragging, findClosestWall, findRoomAtPoint, onDragUpdate, index, currentOffset, currentRoomId, currentWall, roomId, wall]);
+  }, [isDragging, findClosestWallToSnap, onDragUpdate, index, currentX, currentY, snappedWall]);
+
+  // Use current values during drag, otherwise use window values
+  const activeRoomId = isDragging && currentRoomId ? currentRoomId : roomId;
+  const activeWall = isDragging && currentWall ? currentWall : wall;
+  const activeRoom = roomMap[activeRoomId];
+
+  // Early return after all hooks
+  const room = roomMap[roomId];
+  if (!room || !activeRoom) return null;
 
   // Use currentOffset when dragging, otherwise use window.offset
   const activeOffset = isDragging ? currentOffset : (window.offset ?? 0);
@@ -219,8 +232,8 @@ export function WindowRenderer({
         width={w}
         height={d}
         fill="lightblue"
-        stroke="#444"
-        strokeWidth="2"
+        stroke={snappedWall ? '#00ff00' : '#444'}
+        strokeWidth={snappedWall ? '3' : '2'}
       />
     </g>
   );
