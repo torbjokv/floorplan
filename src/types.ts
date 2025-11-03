@@ -44,17 +44,23 @@ export type SwingDirection =
   | 'opening'; // No door blade, just the opening
 
 export interface Door {
-  room: string; // Format: "RoomName:wall" e.g., "Living Room:left"
-  offset?: number; // Distance along the wall from the wall's start
+  room?: string; // Format: "RoomName:wall" e.g., "Living Room:left". Undefined if freestanding.
+  offset?: number; // Distance along the wall from the wall's start (for wall-attached)
   width: number;
   swing?: SwingDirection; // Direction the door swings, or 'opening' for no door blade (defaults to inwards-right)
   type?: 'normal' | 'opening'; // Type of door
+  x?: number; // Absolute x coordinate (for freestanding doors)
+  y?: number; // Absolute y coordinate (for freestanding doors)
+  rotation?: number; // Rotation in degrees (for freestanding doors)
 }
 
 export interface Window {
-  room: string; // Format: "RoomName:wall" e.g., "Living Room:top"
-  offset?: number; // Distance along the wall from the wall's start
+  room?: string; // Format: "RoomName:wall" e.g., "Living Room:top". Undefined if freestanding.
+  offset?: number; // Distance along the wall from the wall's start (for wall-attached)
   width: number;
+  x?: number; // Absolute x coordinate (for freestanding windows)
+  y?: number; // Absolute y coordinate (for freestanding windows)
+  rotation?: number; // Rotation in degrees (for freestanding windows)
 }
 
 export interface FloorplanData {
@@ -62,6 +68,7 @@ export interface FloorplanData {
   rooms: Room[];
   doors?: Door[];
   windows?: Window[];
+  objects?: RoomObject[]; // Freestanding objects at absolute coordinates
 }
 
 // Alias for FloorplanData to support both naming conventions

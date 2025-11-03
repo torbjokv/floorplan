@@ -6,6 +6,9 @@ import { RoomRenderer } from './floorplan/RoomRenderer';
 import { DoorRenderer } from './floorplan/DoorRenderer';
 import { WindowRenderer } from './floorplan/WindowRenderer';
 import { RoomObjectsRenderer } from './floorplan/RoomObjectsRenderer';
+import { FreestandingObjectsRenderer } from './floorplan/FreestandingObjectsRenderer';
+import { FreestandingDoorsRenderer } from './floorplan/FreestandingDoorsRenderer';
+import { FreestandingWindowsRenderer } from './floorplan/FreestandingWindowsRenderer';
 import { CornerHighlights } from './floorplan/CornerHighlights';
 
 // Constants
@@ -26,6 +29,7 @@ interface FloorplanRendererProps {
   onDoorDragUpdate?: (doorIndex: number, newRoomId: string, newWall: WallPosition, newOffset: number) => void;
   onWindowDragUpdate?: (windowIndex: number, newRoomId: string, newWall: WallPosition, newOffset: number) => void;
   onObjectDragUpdate?: (sourceRoomId: string, objectIndex: number, targetRoomId: string, newX: number, newY: number) => void;
+  onFreestandingObjectDragUpdate?: (objectIndex: number, targetRoomId: string, newX: number, newY: number) => void;
   onRoomResize?: (roomId: string, newWidth: number, newDepth: number) => void;
 }
 
@@ -74,6 +78,7 @@ const FloorplanRendererComponent = ({
   onDoorDragUpdate,
   onWindowDragUpdate,
   onObjectDragUpdate,
+  onFreestandingObjectDragUpdate,
   onRoomResize,
 }: FloorplanRendererProps) => {
   const gridStep = data.grid_step || 1000;
@@ -100,10 +105,21 @@ const FloorplanRendererComponent = ({
   const dragAnimationFrame = useRef<number | null>(null);
 
   // Memoize room resolution to avoid recalculating on every render
-  const { roomMap, errors, partIds, partToParent } = useMemo(
-    () => resolveRoomPositions(data.rooms),
-    [data.rooms]
-  );
+  const { roomMap, errors, partIds, partToParent } = useMemo(() => {
+    const result = resolveRoomPositions(data.rooms);
+
+    // Add virtual zeropoint "room" for freestanding elements
+    result.roomMap['zeropoint'] = {
+      id: 'zeropoint',
+      x: 0,
+      y: 0,
+      width: 0,
+      depth: 0,
+      attachTo: 'zeropoint:top-left',
+    };
+
+    return result;
+  }, [data.rooms]);
 
   // Notify parent component of positioning errors
   useEffect(() => {
@@ -679,6 +695,37 @@ const FloorplanRendererComponent = ({
           onObjectClick={onObjectClick}
           onObjectDragUpdate={onObjectDragUpdate}
         />
+
+        {/* Freestanding doors (at absolute coordinates) */}
+        {data.doors && data.doors.filter(d => d.x !== undefined).length > 0 && (
+          <FreestandingDoorsRenderer
+            doors={data.doors.filter(d => d.x !== undefined)}
+            roomMap={roomMap}
+            mm={mm}
+            onDoorClick={onDoorClick}
+          />
+        )}
+
+        {/* Freestanding windows (at absolute coordinates) */}
+        {data.windows && data.windows.filter(w => w.x !== undefined).length > 0 && (
+          <FreestandingWindowsRenderer
+            windows={data.windows.filter(w => w.x !== undefined)}
+            roomMap={roomMap}
+            mm={mm}
+            onWindowClick={onWindowClick}
+          />
+        )}
+
+        {/* Freestanding objects (at absolute coordinates) */}
+        {data.objects && data.objects.length > 0 && (
+          <FreestandingObjectsRenderer
+            objects={data.objects}
+            roomMap={roomMap}
+            mm={mm}
+            onObjectClick={(objectIndex) => onObjectClick?.('freestanding', objectIndex)}
+            onObjectDragUpdate={onFreestandingObjectDragUpdate}
+          />
+        )}
 
         {/* Corner highlights - rendered on top */}
         <CornerHighlights

@@ -79,23 +79,30 @@
 
 // Main entry point
 FloorPlan
-  = _ grid:GridSetting? _ rooms:RoomList? _ {
+  = _ grid:GridSetting? _ items:ItemList? _ {
       const result = { rooms: [] };
 
       if (grid) {
         result.grid_step = grid;
       }
 
-      // Separate rooms, doors, and windows
+      // Separate rooms, doors, windows, and objects
       const doors = [];
       const windows = [];
+      const objects = [];
 
-      if (rooms) {
-        rooms.forEach(room => {
-          if (room && room.room) {
-            result.rooms.push(room.room);
-            if (room.doors) doors.push(...room.doors);
-            if (room.windows) windows.push(...room.windows);
+      if (items) {
+        items.forEach(item => {
+          if (item.type === 'room') {
+            result.rooms.push(item.room);
+            if (item.doors) doors.push(...item.doors);
+            if (item.windows) windows.push(...item.windows);
+          } else if (item.type === 'door') {
+            doors.push(item.data);
+          } else if (item.type === 'window') {
+            windows.push(item.data);
+          } else if (item.type === 'object') {
+            objects.push(item.data);
           }
         });
       }
@@ -108,6 +115,10 @@ FloorPlan
         result.windows = windows;
       }
 
+      if (objects.length > 0) {
+        result.objects = objects;
+      }
+
       return result;
     }
 
@@ -117,7 +128,128 @@ GridSetting
       return step;
     }
 
-// Room list
+// Item list (rooms, doors, windows at top level)
+ItemList
+  = head:Item tail:(_ Item)* {
+      return extractList(head, tail);
+    }
+
+// Item can be a room, freestanding door, window, or object
+Item
+  = RoomDefinition
+  / FreestandingDoor
+  / FreestandingWindow
+  / FreestandingObject
+
+// Freestanding door (no indent, positioned relative to zeropoint/room or absolutely)
+FreestandingDoor
+  = "door"i _ width:Integer _ swing:Swing? _ "at"i _ coords:Offset {
+      // Absolute positioning with (x, y)
+      const door = {
+        width,
+        swing: swing || 'inwards-left',
+        x: coords[0],
+        y: coords[1],
+        rotation: 0
+      };
+
+      if (swing === 'opening') {
+        door.type = 'opening';
+        delete door.swing;
+      } else {
+        door.type = 'normal';
+      }
+
+      return {
+        type: 'door',
+        data: door
+      };
+    }
+  / "door"i _ width:Integer _ swing:Swing? _ "at"i _ target:FreestandingTarget ___ offset:Offset? {
+      // Wall-attached positioning
+      const door = {
+        room: target,
+        width,
+        swing: swing || 'inwards-left'
+      };
+
+      if (swing === 'opening') {
+        door.type = 'opening';
+        delete door.swing;
+      } else {
+        door.type = 'normal';
+      }
+
+      if (offset) {
+        door.offset = offset[0];
+      }
+
+      return {
+        type: 'door',
+        data: door
+      };
+    }
+
+// Freestanding window (no indent, positioned relative to zeropoint/room or absolutely)
+FreestandingWindow
+  = "window"i _ width:Integer _ "at"i _ coords:Offset {
+      // Absolute positioning with (x, y)
+      return {
+        type: 'window',
+        data: {
+          width,
+          x: coords[0],
+          y: coords[1],
+          rotation: 0
+        }
+      };
+    }
+  / "window"i _ width:Integer _ "at"i _ target:FreestandingTarget ___ offset:Offset? {
+      // Wall-attached positioning
+      return {
+        type: 'window',
+        data: {
+          room: target,
+          width,
+          offset: offset?.[0] || 0
+        }
+      };
+    }
+
+// Freestanding object (no indent, positioned at absolute coordinates)
+FreestandingObject
+  = "object"i _ objType:ObjectType _ label:Label? _ dims:ObjectDimensions ___ color:Color? ___ "at"i _ offset:Offset {
+      const obj = {
+        type: objType,
+        x: offset[0],
+        y: offset[1],
+        width: dims.width,
+        height: objType === 'square' ? dims.height : undefined,
+        anchor: 'top-left',
+        roomAnchor: 'top-left',
+        color: color || '#33d17a'
+      };
+
+      if (label) {
+        obj.text = label;
+      }
+
+      return {
+        type: 'object',
+        data: obj
+      };
+    }
+
+// Target for freestanding elements (roomId:wall or zeropoint:wall)
+FreestandingTarget
+  = target:Identifier ":" wall:Wall {
+      return `${target.toLowerCase()}:${wall}`;
+    }
+  / "zeropoint"i ":" wall:Wall {
+      return `zeropoint:${wall}`;
+    }
+
+// Room list (deprecated, kept for backwards compatibility)
 RoomList
   = head:RoomDefinition tail:(_ RoomDefinition)* {
       return extractList(head, tail);
@@ -125,8 +257,17 @@ RoomList
 
 // Room definition
 RoomDefinition
-  = "room"i _ id:Identifier _ label:Label? _ dims:Dimensions _ anchor:Anchor? _ "at"i _ attach:AttachTo __ offset:Offset? children:RoomChildren? {
+  = "room"i _ id:Identifier _ label:Label? _ dims:Dimensions positioning:(__ anchor:Anchor? __ atClause:("at"i _ attach:AttachTo)? __ offset:Offset? { return { anchor, atClause, offset }; })? children:RoomChildren? {
       const roomId = id.toLowerCase();
+
+      // Extract positioning info or use defaults
+      const anchor = positioning?.anchor || null;
+      const atClause = positioning?.atClause || null;
+      const offset = positioning?.offset || null;
+
+      // Default to zeropoint if no at clause provided
+      const attach = atClause ? atClause[2] : { target: 'zeropoint', anchor: 'top-left' };
+
       const room = buildRoom(id, label, dims, anchor, attach, offset, children?.children || []);
 
       // Replace room ID placeholders in doors and windows
@@ -151,6 +292,7 @@ RoomDefinition
       }).filter(w => w);
 
       return {
+        type: 'room',
         room,
         doors,
         windows

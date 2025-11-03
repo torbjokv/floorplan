@@ -96,6 +96,38 @@ export function jsonToDSL(config: FloorplanConfig): string {
     lines.push('');
   }
 
+  // Collect freestanding elements (zeropoint-attached or absolute-positioned)
+  const freestandingDoors = config.doors?.filter(d =>
+    d.room?.startsWith('zeropoint:') || (d.x !== undefined && d.y !== undefined)
+  ) || [];
+  const freestandingWindows = config.windows?.filter(w =>
+    w.room?.startsWith('zeropoint:') || (w.x !== undefined && w.y !== undefined)
+  ) || [];
+  const freestandingObjects = config.objects || [];
+
+  // Add freestanding windows
+  freestandingWindows.forEach(window => {
+    const formatted = formatFreestandingWindow(window);
+    if (formatted) lines.push(formatted);
+  });
+
+  // Add freestanding doors
+  freestandingDoors.forEach(door => {
+    const formatted = formatFreestandingDoor(door);
+    if (formatted) lines.push(formatted);
+  });
+
+  // Add freestanding objects
+  freestandingObjects.forEach(obj => {
+    const formatted = formatFreestandingObject(obj);
+    if (formatted) lines.push(formatted);
+  });
+
+  // Add blank line after freestanding elements if any exist
+  if (freestandingDoors.length > 0 || freestandingWindows.length > 0 || freestandingObjects.length > 0) {
+    lines.push('');
+  }
+
   // Process each room
   config.rooms?.forEach((room: Room, index: number) => {
     lines.push(formatRoom(room, config.doors, config.windows));
@@ -247,6 +279,85 @@ function formatDoor(door: Door, indent: string): string {
   if (door.offset && door.offset !== 0) {
     line += ` (${Math.round(door.offset)})`;
   }
+
+  return line;
+}
+
+/**
+ * Format a freestanding door as DSL text (no indent)
+ */
+function formatFreestandingDoor(door: Door): string {
+  let line = `door ${door.width}`;
+
+  // Add swing direction if not default
+  if (door.type === 'opening') {
+    line += ' opening';
+  } else if (door.swing && door.swing !== 'inwards-left') {
+    line += ` ${door.swing}`;
+  }
+
+  // Check if this is an absolute-positioned door or wall-attached
+  if (door.x !== undefined && door.y !== undefined) {
+    // Absolute positioning
+    line += ` at (${Math.round(door.x)}, ${Math.round(door.y)})`;
+  } else if (door.room) {
+    // Wall-attached
+    line += ` at ${door.room}`;
+    if (door.offset && door.offset !== 0) {
+      line += ` (${Math.round(door.offset)})`;
+    }
+  } else {
+    return ''; // Invalid door - neither absolute nor wall-attached
+  }
+
+  return line;
+}
+
+/**
+ * Format a freestanding window as DSL text (no indent)
+ */
+function formatFreestandingWindow(window: Window): string {
+  let line = `window ${window.width}`;
+
+  // Check if this is an absolute-positioned window or wall-attached
+  if (window.x !== undefined && window.y !== undefined) {
+    // Absolute positioning
+    line += ` at (${Math.round(window.x)}, ${Math.round(window.y)})`;
+  } else if (window.room) {
+    // Wall-attached
+    line += ` at ${window.room}`;
+    if (window.offset && window.offset !== 0) {
+      line += ` (${Math.round(window.offset)})`;
+    }
+  } else {
+    return ''; // Invalid window - neither absolute nor wall-attached
+  }
+
+  return line;
+}
+
+/**
+ * Format a freestanding object as DSL text (no indent, absolute position)
+ */
+function formatFreestandingObject(obj: RoomObject): string {
+  let line = `object ${obj.type}`;
+
+  if (obj.text) {
+    line += ` "${obj.text}"`;
+  }
+
+  if (obj.type === 'square' && obj.height) {
+    line += ` ${obj.width}x${obj.height}`;
+  } else {
+    line += ` ${obj.width}`; // For circles, width is the diameter
+  }
+
+  if (obj.color) {
+    line += ` ${obj.color}`;
+  }
+
+  // Freestanding objects use absolute coordinates
+  line += ` at (${Math.round(obj.x)}, ${Math.round(obj.y)})`;
 
   return line;
 }

@@ -133,6 +133,7 @@ function RoomObject({
   // Helper to find which room contains a point
   const findRoomAtPoint = useCallback((x: number, y: number): ResolvedRoom | null => {
     for (const r of Object.values(roomMap)) {
+      if (r.id === 'zeropoint') continue; // Skip virtual zeropoint
       if (x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.depth) {
         return r;
       }
@@ -161,13 +162,7 @@ function RoomObject({
 
       // Find which room the mouse is over
       const mouseRoom = findRoomAtPoint(x, y);
-      const activeRoom = mouseRoom || room;
-      setTargetRoomId(activeRoom.id);
-
-      // Calculate position relative to the target room
-      // For cross-room dragging, we need to use top-left anchor relative to the new room
-      const anchor = obj.anchor || 'top-left';
-      const roomAnchor = mouseRoom ? 'top-left' : (obj.roomAnchor || obj.anchor || 'top-left');
+      setTargetRoomId(mouseRoom?.id || 'freestanding');
 
       let width, height;
       if (obj.type === 'circle') {
@@ -179,36 +174,17 @@ function RoomObject({
         height = obj.height || width;
       }
 
-      // Calculate object bounds
-      const objOffset = getObjectAnchorOffset(anchor, width, height);
-      const roomCorner = getRoomCorner(activeRoom, roomAnchor);
+      let newX, newY;
 
-      // Position object so its center follows the mouse
-      let newX = x - roomCorner.x - objOffset.x - width / 2;
-      let newY = y - roomCorner.y - objOffset.y - height / 2;
-
-      // Clamp to room bounds
-      const objLeft = newX + objOffset.x;
-      const objTop = newY + objOffset.y;
-      const objRight = objLeft + width;
-      const objBottom = objTop + height;
-
-      const absObjLeft = roomCorner.x + objLeft;
-      const absObjTop = roomCorner.y + objTop;
-      const absObjRight = roomCorner.x + objRight;
-      const absObjBottom = roomCorner.y + objBottom;
-
-      if (absObjLeft < activeRoom.x) {
-        newX = activeRoom.x - roomCorner.x - objOffset.x;
-      }
-      if (absObjTop < activeRoom.y) {
-        newY = activeRoom.y - roomCorner.y - objOffset.y;
-      }
-      if (absObjRight > activeRoom.x + activeRoom.width) {
-        newX = (activeRoom.x + activeRoom.width) - roomCorner.x - objOffset.x - width;
-      }
-      if (absObjBottom > activeRoom.y + activeRoom.depth) {
-        newY = (activeRoom.y + activeRoom.depth) - roomCorner.y - objOffset.y - height;
+      if (mouseRoom) {
+        // Inside a room - calculate position relative to room top-left
+        // Position so the object center follows the mouse
+        newX = x - mouseRoom.x - width / 2;
+        newY = y - mouseRoom.y - height / 2;
+      } else {
+        // Freestanding - use absolute coordinates with object center at mouse
+        newX = x - width / 2;
+        newY = y - height / 2;
       }
 
       setCurrentObjX(newX);
@@ -234,19 +210,26 @@ function RoomObject({
   const activeX = isObjectDragging ? currentObjX : obj.x;
   const activeY = isObjectDragging ? currentObjY : obj.y;
 
-  // When dragging to a different room, use the target room for rendering
-  const renderRoom = isObjectDragging && targetRoomId !== room.id ? roomMap[targetRoomId] : room;
-  if (!renderRoom) return null;
-
-  // Anchor determines both which room corner AND which object point
+  // Determine absolute position based on drag state
+  let absX, absY;
   const anchor = obj.anchor || 'top-left';
-  // Use top-left anchor when dragging to a different room
-  const roomAnchor = isObjectDragging && targetRoomId !== room.id ? 'top-left' : (obj.roomAnchor || anchor);
-  const roomCorner = getRoomCorner(renderRoom, roomAnchor);
 
-  // Object position is: room corner + x,y offset
-  const absX = roomCorner.x + activeX;
-  const absY = roomCorner.y + activeY;
+  if (isObjectDragging && targetRoomId === 'freestanding') {
+    // Dragging outside any room - use absolute coordinates
+    absX = activeX;
+    absY = activeY;
+  } else {
+    // Inside a room (current or target)
+    const renderRoom = isObjectDragging && targetRoomId !== room.id ? roomMap[targetRoomId] : room;
+    if (!renderRoom) return null;
+
+    const roomAnchor = isObjectDragging && targetRoomId !== room.id ? 'top-left' : (obj.roomAnchor || anchor);
+    const roomCorner = getRoomCorner(renderRoom, roomAnchor);
+
+    // Object position is: room corner + x,y offset
+    absX = roomCorner.x + activeX;
+    absY = roomCorner.y + activeY;
+  }
   const color = obj.color || '#888';
 
   if (obj.type === 'circle') {

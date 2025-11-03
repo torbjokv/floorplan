@@ -28,7 +28,10 @@ import { parseDSL, jsonToDSL, type DSLError } from './dslUtils';
 
 const defaultDSL = `grid 1000
 
-room Livingroom1 "Living Room" 4000x3000 at zeropoint:top-left
+window 1200 at zeropoint:top (0)
+door 800 at zeropoint:bottom (1000)
+
+room Livingroom1 "Living Room" 4000x3000 (0, 2000)
     window 1200 at top (1000)
     door 800 inwards-right at bottom (1000)
 
@@ -37,7 +40,7 @@ room Kitchen1 "Kitchen" 4000x3000 at Livingroom1:top-right
     door 800 inwards-left at left (1000)
 
 room Composite1 "Composite Room" 3000x2000 at Livingroom1:bottom-left
-    part Part1 1000x1000 at room:bottom-left
+    part Part1 1000x1000 at parent:bottom-left
     part Part2 500x500 at Part1:bottom-left`;
 
 // ============================================================================
@@ -104,6 +107,24 @@ function App() {
     index?: number;
     roomId?: string;
   } | null>(null);
+
+  // Object type menu state
+  const [showObjectMenu, setShowObjectMenu] = useState(false);
+
+  // Close object menu when clicking outside
+  useEffect(() => {
+    if (!showObjectMenu) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.add-object-container')) {
+        setShowObjectMenu(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showObjectMenu]);
 
   // ============================================================================
   // Floorplan Data State (derived from DSL)
@@ -380,15 +401,14 @@ function App() {
   };
 
   const handleAddDoor = () => {
-    if (floorplanData.rooms.length === 0) {
-      alert('Please add a room first before adding a door.');
-      return;
-    }
+    // Count existing freestanding doors at zeropoint to space them apart
+    const existingDoors = floorplanData.doors || [];
+    const freestandingDoors = existingDoors.filter(d => d.room.startsWith('zeropoint:'));
+    const offset = freestandingDoors.length * 1000; // Space doors 1000mm apart
 
-    const firstRoom = floorplanData.rooms[0];
     const newDoor: Door = {
-      room: `${firstRoom.id}:bottom`,
-      offset: 1000,
+      room: 'zeropoint:bottom',
+      offset: offset,
       width: 800,
       swing: 'inwards-right',
       type: 'normal',
@@ -404,15 +424,14 @@ function App() {
   };
 
   const handleAddWindow = () => {
-    if (floorplanData.rooms.length === 0) {
-      alert('Please add a room first before adding a window.');
-      return;
-    }
+    // Count existing freestanding windows at zeropoint to space them apart
+    const existingWindows = floorplanData.windows || [];
+    const freestandingWindows = existingWindows.filter(w => w.room.startsWith('zeropoint:'));
+    const offset = freestandingWindows.length * 1500; // Space windows 1500mm apart
 
-    const firstRoom = floorplanData.rooms[0];
     const newWindow: Window = {
-      room: `${firstRoom.id}:top`,
-      offset: 1000,
+      room: 'zeropoint:top',
+      offset: offset,
       width: 1200,
     };
 
@@ -425,27 +444,40 @@ function App() {
     updateDslText(dsl);
   };
 
-  const handleAddObject = () => {
+  const handleAddObject = (objectType: 'square' | 'circle' = 'square') => {
+    // Create a staging room if no rooms exist
+    let updatedRooms = [...floorplanData.rooms];
+    let targetRoomId = 'staging';
+
     if (floorplanData.rooms.length === 0) {
-      alert('Please add a room first before adding an object.');
-      return;
+      const stagingRoom: Room = {
+        id: targetRoomId,
+        name: 'Staging',
+        width: 3000,
+        depth: 3000,
+        attachTo: 'zeropoint:top-left',
+        offset: [0, 0],
+        objects: [],
+      };
+      updatedRooms.push(stagingRoom);
+    } else {
+      targetRoomId = floorplanData.rooms[0].id;
     }
 
-    const firstRoom = floorplanData.rooms[0];
     const newObject = {
-      type: 'square' as const,
-      x: 1000,
-      y: 1000,
+      type: objectType,
+      x: 500,
+      y: 500,
       width: 800,
-      height: 800,
+      height: objectType === 'square' ? 800 : undefined,
       anchor: 'top-left' as const,
       roomAnchor: 'top-left' as const,
       color: '#33d17a',
-      text: 'Object',
+      text: objectType === 'square' ? 'Square' : 'Circle',
     };
 
-    const updatedRooms = floorplanData.rooms.map(room => {
-      if (room.id === firstRoom.id) {
+    updatedRooms = updatedRooms.map(room => {
+      if (room.id === targetRoomId) {
         return {
           ...room,
           objects: [...(room.objects || []), newObject],
@@ -605,8 +637,23 @@ function App() {
         return room;
       });
 
+      // If moved to freestanding (outside any room), add to top-level objects
+      if (targetRoomId === 'freestanding' && movedObject) {
+        const updatedData = {
+          ...config,
+          rooms: updatedRooms,
+          objects: [...(config.objects || []), movedObject],
+        };
+
+        // Immediate optimistic update to avoid jump
+        setFloorplanData(updatedData);
+
+        // Update DSL (will re-parse after debounce)
+        const dsl = jsonToDSL(updatedData);
+        updateDslText(dsl);
+      }
       // If moved to different room, add to target room with top-left anchor
-      if (sourceRoomId !== targetRoomId && movedObject) {
+      else if (sourceRoomId !== targetRoomId && movedObject) {
         const finalRooms = updatedRooms.map(room => {
           if (room.id === targetRoomId) {
             // Reset anchors to top-left for cross-room move
@@ -638,6 +685,66 @@ function App() {
         setFloorplanData(updatedData);
 
         // Update DSL (will re-parse after debounce)
+        const dsl = jsonToDSL(updatedData);
+        updateDslText(dsl);
+      }
+    },
+    [dslText, updateDslText]
+  );
+
+  const handleFreestandingObjectDragUpdate = useCallback(
+    (objectIndex: number, targetRoomId: string, newX: number, newY: number) => {
+      const { config } = parseDSL(dslText);
+      if (!config || !config.objects) return;
+
+      const movedObject = { ...config.objects[objectIndex], x: newX, y: newY };
+
+      // If moving to a room, remove from freestanding and add to room
+      if (targetRoomId !== 'freestanding') {
+        const updatedObjects = config.objects.filter((_, idx) => idx !== objectIndex);
+        const updatedRooms = config.rooms.map(room => {
+          if (room.id === targetRoomId) {
+            // Add to target room with top-left anchor
+            const roomObject = {
+              ...movedObject,
+              anchor: 'top-left',
+              roomAnchor: 'top-left',
+            };
+            return {
+              ...room,
+              objects: [...(room.objects || []), roomObject],
+            };
+          }
+          return room;
+        });
+
+        const updatedData = {
+          ...config,
+          objects: updatedObjects.length > 0 ? updatedObjects : undefined,
+          rooms: updatedRooms,
+        };
+
+        // Immediate optimistic update
+        setFloorplanData(updatedData);
+
+        // Update DSL
+        const dsl = jsonToDSL(updatedData);
+        updateDslText(dsl);
+      } else {
+        // Still freestanding, just update position
+        const updatedObjects = config.objects.map((obj, idx) =>
+          idx === objectIndex ? movedObject : obj
+        );
+
+        const updatedData = {
+          ...config,
+          objects: updatedObjects,
+        };
+
+        // Immediate optimistic update
+        setFloorplanData(updatedData);
+
+        // Update DSL
         const dsl = jsonToDSL(updatedData);
         updateDslText(dsl);
       }
@@ -991,6 +1098,7 @@ function App() {
           onDoorDragUpdate={handleDoorDragUpdate}
           onWindowDragUpdate={handleWindowDragUpdate}
           onObjectDragUpdate={handleObjectDragUpdate}
+          onFreestandingObjectDragUpdate={handleFreestandingObjectDragUpdate}
         />
         <button
           className="download-svg-button"
@@ -1021,13 +1129,39 @@ function App() {
           >
             + Window
           </button>
-          <button
-            className="add-object-button"
-            onClick={handleAddObject}
-            data-testid="svg-add-object-btn"
-          >
-            + Object
-          </button>
+          <div className="add-object-container">
+            <button
+              className="add-object-button"
+              onClick={() => setShowObjectMenu(!showObjectMenu)}
+              data-testid="svg-add-object-btn"
+            >
+              + Object
+            </button>
+            {showObjectMenu && (
+              <div className="object-type-menu" data-testid="object-type-menu">
+                <button
+                  className="object-type-option"
+                  onClick={() => {
+                    handleAddObject('square');
+                    setShowObjectMenu(false);
+                  }}
+                  data-testid="add-square-option"
+                >
+                  Square
+                </button>
+                <button
+                  className="object-type-option"
+                  onClick={() => {
+                    handleAddObject('circle');
+                    setShowObjectMenu(false);
+                  }}
+                  data-testid="add-circle-option"
+                >
+                  Circle
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         <ErrorPanel
           jsonError={jsonError}
