@@ -29,7 +29,11 @@ export function WindowRenderer({
   const [currentWall, setCurrentWall] = useState<WallPosition | null>(null);
   const [snappedWall, setSnappedWall] = useState<{ roomId: string; wall: WallPosition; offset: number } | null>(null);
 
-  const [roomId, wallStr = 'left'] = window.room!.split(':') as [string, WallPosition];
+  // Only render wall-attached windows in this component
+  // Freestanding windows are handled by FreestandingWindowsRenderer
+  if (!window.room) return null;
+
+  const [roomId, wallStr = 'left'] = window.room.split(':') as [string, WallPosition];
   const wall = wallStr as WallPosition;
 
   // Convert SVG screen coordinates to mm

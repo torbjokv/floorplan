@@ -29,7 +29,11 @@ export function DoorRenderer({
   const [currentWall, setCurrentWall] = useState<WallPosition | null>(null);
   const [snappedWall, setSnappedWall] = useState<{ roomId: string; wall: WallPosition; offset: number } | null>(null);
 
-  const [roomId, wallStr = 'left'] = door.room!.split(':') as [string, WallPosition];
+  // Only render wall-attached doors in this component
+  // Freestanding doors are handled by FreestandingDoorsRenderer
+  if (!door.room) return null;
+
+  const [roomId, wallStr = 'left'] = door.room.split(':') as [string, WallPosition];
   const room = roomMap[roomId];
   if (!room) return null;
 
