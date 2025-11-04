@@ -300,6 +300,9 @@ function EditableObjectDimensions({
     }
   }
 
+  // Safety check: don't render if object doesn't have valid dimensions
+  if (!object || !object.width || object.width <= 0) return null;
+
   const dimensionText =
     object.type === 'circle'
       ? `⌀${object.width}`
