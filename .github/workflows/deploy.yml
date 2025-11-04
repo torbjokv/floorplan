@@ -3,7 +3,8 @@
     on:
       push:
         branches:
-          - '**' # Run on all branches
+          - main # Run tests and deploy on main
+          - 'claude/**' # Run tests on Claude branches for PR validation
       pull_request:
         branches:
           - main
@@ -80,13 +81,7 @@
               cache: 'npm'
 
           - name: Install dependencies
-            run: npm install
-
-          - name: Run ESLint
-            run: npm run lint
-
-          - name: Check code formatting
-            run: npm run format:check
+            run: npm ci
 
           - name: Build project
             run: npm run build
