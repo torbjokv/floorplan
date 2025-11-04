@@ -728,6 +728,17 @@ const FloorplanRendererComponent = ({
         const corner = currentObjectResizeState.corner;
         const anchor = obj.anchor || 'top-left';
 
+        // Helper to check if corner affects anchor's edges
+        const affectsLeftEdge = (c: Anchor) => c === 'top-left' || c === 'bottom-left';
+        const affectsRightEdge = (c: Anchor) => c === 'top-right' || c === 'bottom-right';
+        const affectsTopEdge = (c: Anchor) => c === 'top-left' || c === 'top-right';
+        const affectsBottomEdge = (c: Anchor) => c === 'bottom-left' || c === 'bottom-right';
+
+        const anchorOnLeft = affectsLeftEdge(anchor);
+        const anchorOnRight = affectsRightEdge(anchor);
+        const anchorOnTop = affectsTopEdge(anchor);
+        const anchorOnBottom = affectsBottomEdge(anchor);
+
         switch (corner) {
           case 'bottom-right':
             newWidth = Math.max(MIN_SIZE, Math.round(currentObjectResizeState.startWidth + deltaX));
@@ -735,10 +746,13 @@ const FloorplanRendererComponent = ({
               MIN_SIZE,
               Math.round(currentObjectResizeState.startHeight + deltaY)
             );
-            // Adjust position if this corner is the anchor
-            if (anchor === 'bottom-right') {
+            // Adjust X if anchor is on the right edge
+            if (anchorOnRight) {
               newX =
                 currentObjectResizeState.startX + (newWidth - currentObjectResizeState.startWidth);
+            }
+            // Adjust Y if anchor is on the bottom edge
+            if (anchorOnBottom) {
               newY =
                 currentObjectResizeState.startY +
                 (newHeight - currentObjectResizeState.startHeight);
@@ -750,10 +764,13 @@ const FloorplanRendererComponent = ({
               MIN_SIZE,
               Math.round(currentObjectResizeState.startHeight + deltaY)
             );
-            // Adjust position if this corner is the anchor
-            if (anchor === 'bottom-left') {
+            // Adjust X if anchor is on the left edge
+            if (anchorOnLeft) {
               newX =
                 currentObjectResizeState.startX - (newWidth - currentObjectResizeState.startWidth);
+            }
+            // Adjust Y if anchor is on the bottom edge
+            if (anchorOnBottom) {
               newY =
                 currentObjectResizeState.startY +
                 (newHeight - currentObjectResizeState.startHeight);
@@ -765,10 +782,13 @@ const FloorplanRendererComponent = ({
               MIN_SIZE,
               Math.round(currentObjectResizeState.startHeight - deltaY)
             );
-            // Adjust position if this corner is the anchor
-            if (anchor === 'top-right') {
+            // Adjust X if anchor is on the right edge
+            if (anchorOnRight) {
               newX =
                 currentObjectResizeState.startX + (newWidth - currentObjectResizeState.startWidth);
+            }
+            // Adjust Y if anchor is on the top edge
+            if (anchorOnTop) {
               newY =
                 currentObjectResizeState.startY -
                 (newHeight - currentObjectResizeState.startHeight);
@@ -780,10 +800,13 @@ const FloorplanRendererComponent = ({
               MIN_SIZE,
               Math.round(currentObjectResizeState.startHeight - deltaY)
             );
-            // Adjust position if this corner is the anchor
-            if (anchor === 'top-left') {
+            // Adjust X if anchor is on the left edge
+            if (anchorOnLeft) {
               newX =
                 currentObjectResizeState.startX - (newWidth - currentObjectResizeState.startWidth);
+            }
+            // Adjust Y if anchor is on the top edge
+            if (anchorOnTop) {
               newY =
                 currentObjectResizeState.startY -
                 (newHeight - currentObjectResizeState.startHeight);
