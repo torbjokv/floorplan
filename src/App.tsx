@@ -733,12 +733,13 @@ function App() {
 
       let movedObject: RoomObject | null = null;
 
-      // Remove object from source room
-      const updatedRooms = config.rooms.map(room => {
+      // Helper to remove object from source (room or part)
+      const removeObjectFrom = (room: Room): Room => {
+        // Check if object is in this room
         if (room.id === sourceRoomId && room.objects) {
           movedObject = { ...room.objects[objectIndex], x: newX, y: newY };
 
-          // If moving within same room, just update position
+          // If moving within same location, just update position
           if (sourceRoomId === targetRoomId) {
             const updatedObjects = room.objects.map((obj, idx) =>
               idx === objectIndex ? movedObject : obj
@@ -746,12 +747,42 @@ function App() {
             return { ...room, objects: updatedObjects };
           }
 
-          // If moving to different room, remove from this room
+          // Remove from this room
           const updatedObjects = room.objects.filter((_, idx) => idx !== objectIndex);
           return { ...room, objects: updatedObjects };
         }
+
+        // Check parts
+        if (room.parts) {
+          const updatedParts = room.parts.map(part => {
+            if (part.id === sourceRoomId && part.objects) {
+              movedObject = { ...part.objects[objectIndex], x: newX, y: newY };
+
+              // If moving within same part, just update position
+              if (sourceRoomId === targetRoomId) {
+                const updatedObjects = part.objects.map((obj, idx) =>
+                  idx === objectIndex ? movedObject : obj
+                );
+                return { ...part, objects: updatedObjects };
+              }
+
+              // Remove from this part
+              const updatedObjects = part.objects.filter((_, idx) => idx !== objectIndex);
+              return { ...part, objects: updatedObjects };
+            }
+            return part;
+          });
+
+          if (updatedParts !== room.parts) {
+            return { ...room, parts: updatedParts };
+          }
+        }
+
         return room;
-      });
+      };
+
+      // Remove object from source
+      const updatedRooms = config.rooms.map(removeObjectFrom);
 
       // If moved to freestanding (outside any room), add to top-level objects
       if (targetRoomId === 'freestanding' && movedObject) {
@@ -768,11 +799,12 @@ function App() {
         const dsl = jsonToDSL(updatedData);
         updateDslText(dsl);
       }
-      // If moved to different room, add to target room with top-left anchor
+      // If moved to different room/part, add to target with top-left anchor
       else if (sourceRoomId !== targetRoomId && movedObject) {
-        const finalRooms = updatedRooms.map(room => {
+        const addObjectTo = (room: Room): Room => {
+          // Check if adding to this room
           if (room.id === targetRoomId) {
-            // Reset anchors to top-left for cross-room move
+            // Reset anchors to top-left for cross-location move
             const adjustedObject = {
               ...movedObject,
               anchor: 'top-left',
@@ -783,8 +815,34 @@ function App() {
               objects: [...(room.objects || []), adjustedObject],
             };
           }
+
+          // Check if adding to a part of this room
+          if (room.parts) {
+            const updatedParts = room.parts.map(part => {
+              if (part.id === targetRoomId) {
+                // Reset anchors to top-left for cross-location move
+                const adjustedObject = {
+                  ...movedObject,
+                  anchor: 'top-left',
+                  roomAnchor: 'top-left',
+                };
+                return {
+                  ...part,
+                  objects: [...(part.objects || []), adjustedObject],
+                };
+              }
+              return part;
+            });
+
+            if (updatedParts !== room.parts) {
+              return { ...room, parts: updatedParts };
+            }
+          }
+
           return room;
-        });
+        };
+
+        const finalRooms = updatedRooms.map(addObjectTo);
 
         const updatedData = { ...config, rooms: finalRooms };
 
