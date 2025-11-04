@@ -731,7 +731,7 @@ function App() {
       const { config } = parseDSL(dslText);
       if (!config) return;
 
-      let movedObject: any = null;
+      let movedObject: RoomObject | null = null;
 
       // Remove object from source room
       const updatedRooms = config.rooms.map(room => {
@@ -877,7 +877,7 @@ function App() {
         const { config } = parseDSL(dslText);
         if (!config) return;
 
-        let updatedData = { ...config };
+        const updatedData = { ...config };
 
         switch (selectedElement.type) {
           case 'door':

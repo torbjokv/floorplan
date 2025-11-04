@@ -1,6 +1,6 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { getCodeMirrorValue, fillCodeMirror } from '../support/dsl-helper';
+import { fillCodeMirror } from '../support/dsl-helper';
 
 // Setup steps for Given conditions
 Given('I have a room in the floorplan', async function () {

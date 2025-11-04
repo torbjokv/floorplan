@@ -73,7 +73,7 @@ function RoomObject({
   roomMap,
 }: {
   room: ResolvedRoom;
-  obj: any;
+  obj: RoomObject;
   idx: number;
   mm: (val: number) => number;
   onObjectClick?: (roomId: string, objectIndex: number) => void;
