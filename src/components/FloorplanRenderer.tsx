@@ -147,6 +147,26 @@ const FloorplanRendererComponent = ({
   const resizeStateRef = useRef(resizeState);
   const [hoveredRoomId, setHoveredRoomId] = useState<string | null>(null);
 
+  // Object resize state
+  const [objectResizeState, setObjectResizeState] = useState<{
+    roomId: string;
+    objectIndex: number;
+    partId?: string;
+    corner: Anchor;
+    startMouseX: number;
+    startMouseY: number;
+    startWidth: number;
+    startHeight: number;
+    startX: number;
+    startY: number;
+  } | null>(null);
+  const objectResizeStateRef = useRef(objectResizeState);
+  const [hoveredObject, setHoveredObject] = useState<{
+    roomId: string;
+    objectIndex: number;
+    partId?: string;
+  } | null>(null);
+
   // Use ref to track animation frame for drag updates
   const dragAnimationFrame = useRef<number | null>(null);
 
@@ -154,6 +174,10 @@ const FloorplanRendererComponent = ({
   useEffect(() => {
     resizeStateRef.current = resizeState;
   }, [resizeState]);
+
+  useEffect(() => {
+    objectResizeStateRef.current = objectResizeState;
+  }, [objectResizeState]);
 
   // Memoize room resolution to avoid recalculating on every render
   const { roomMap, errors, partIds, partToParent } = useMemo(() => {
@@ -640,6 +664,323 @@ const FloorplanRendererComponent = ({
     [data, onRoomUpdate]
   );
 
+  // Object resize handlers
+  const handleObjectResizeEnd = useCallback(() => {
+    setObjectResizeState(null);
+  }, []);
+
+  const handleObjectResizeMove = useCallback(
+    (x: number, y: number) => {
+      const currentObjectResizeState = objectResizeStateRef.current;
+      if (!currentObjectResizeState) return;
+
+      const room = roomMap[currentObjectResizeState.roomId];
+      if (!room) return;
+
+      // Initialize start position on first move
+      if (
+        currentObjectResizeState.startMouseX === 0 &&
+        currentObjectResizeState.startMouseY === 0
+      ) {
+        setObjectResizeState({
+          ...currentObjectResizeState,
+          startMouseX: x,
+          startMouseY: y,
+        });
+        return;
+      }
+
+      // Calculate delta from start position
+      const deltaX = x - currentObjectResizeState.startMouseX;
+      const deltaY = y - currentObjectResizeState.startMouseY;
+
+      // Minimum object size
+      const MIN_SIZE = 100; // mm
+
+      // Find the object (either in room or in part)
+      let objects = room.objects;
+
+      if (currentObjectResizeState.partId && room.parts) {
+        const partIndex = room.parts.findIndex(p => p.id === currentObjectResizeState.partId);
+        if (partIndex >= 0 && room.parts[partIndex].objects) {
+          objects = room.parts[partIndex].objects;
+        }
+      }
+
+      if (!objects || !objects[currentObjectResizeState.objectIndex]) return;
+
+      const obj = objects[currentObjectResizeState.objectIndex];
+      const isCircle = obj.type === 'circle';
+
+      let newWidth = currentObjectResizeState.startWidth;
+      let newHeight = currentObjectResizeState.startHeight;
+
+      if (isCircle) {
+        // For circles, resize proportionally based on diagonal distance
+        const diagonal = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        const deltaSize = Math.round(diagonal * Math.sign(deltaX + deltaY));
+        newWidth = Math.max(MIN_SIZE, currentObjectResizeState.startWidth + deltaSize);
+        newHeight = newWidth; // Keep it circular
+      } else {
+        // For squares, resize based on corner
+        const corner = currentObjectResizeState.corner;
+
+        switch (corner) {
+          case 'bottom-right':
+            newWidth = Math.max(MIN_SIZE, Math.round(currentObjectResizeState.startWidth + deltaX));
+            newHeight = Math.max(
+              MIN_SIZE,
+              Math.round(currentObjectResizeState.startHeight + deltaY)
+            );
+            break;
+          case 'bottom-left':
+            newWidth = Math.max(MIN_SIZE, Math.round(currentObjectResizeState.startWidth - deltaX));
+            newHeight = Math.max(
+              MIN_SIZE,
+              Math.round(currentObjectResizeState.startHeight + deltaY)
+            );
+            break;
+          case 'top-right':
+            newWidth = Math.max(MIN_SIZE, Math.round(currentObjectResizeState.startWidth + deltaX));
+            newHeight = Math.max(
+              MIN_SIZE,
+              Math.round(currentObjectResizeState.startHeight - deltaY)
+            );
+            break;
+          case 'top-left':
+            newWidth = Math.max(MIN_SIZE, Math.round(currentObjectResizeState.startWidth - deltaX));
+            newHeight = Math.max(
+              MIN_SIZE,
+              Math.round(currentObjectResizeState.startHeight - deltaY)
+            );
+            break;
+        }
+      }
+
+      // Update the object
+      if (onRoomUpdate) {
+        const roomData = data.rooms.find(r => r.id === currentObjectResizeState.roomId);
+        if (roomData) {
+          const updatedRoom = { ...roomData };
+
+          if (currentObjectResizeState.partId && updatedRoom.parts) {
+            const partIdx = updatedRoom.parts.findIndex(
+              p => p.id === currentObjectResizeState.partId
+            );
+            if (partIdx >= 0 && updatedRoom.parts[partIdx].objects) {
+              const updatedParts = [...updatedRoom.parts];
+              const updatedPart = { ...updatedParts[partIdx] };
+              const updatedObjects = [...(updatedPart.objects || [])];
+              updatedObjects[currentObjectResizeState.objectIndex] = {
+                ...updatedObjects[currentObjectResizeState.objectIndex],
+                width: newWidth,
+                height: isCircle ? undefined : newHeight,
+              };
+              updatedPart.objects = updatedObjects;
+              updatedParts[partIdx] = updatedPart;
+              updatedRoom.parts = updatedParts;
+            }
+          } else if (updatedRoom.objects) {
+            const updatedObjects = [...updatedRoom.objects];
+            updatedObjects[currentObjectResizeState.objectIndex] = {
+              ...updatedObjects[currentObjectResizeState.objectIndex],
+              width: newWidth,
+              height: isCircle ? undefined : newHeight,
+            };
+            updatedRoom.objects = updatedObjects;
+          }
+
+          const updatedRooms = data.rooms.map(r =>
+            r.id === currentObjectResizeState.roomId ? updatedRoom : r
+          );
+          onRoomUpdate({ ...data, rooms: updatedRooms });
+        }
+      }
+    },
+    [roomMap, data, onRoomUpdate]
+  );
+
+  const handleObjectResizeStart = useCallback(
+    (roomId: string, objectIndex: number, corner: Anchor, partId?: string) => {
+      const room = roomMap[roomId];
+      if (!room) return;
+
+      // Find the object
+      let objects = room.objects;
+      if (partId && room.parts) {
+        const part = room.parts.find(p => p.id === partId);
+        if (part && part.objects) {
+          objects = part.objects;
+        }
+      }
+
+      if (!objects || !objects[objectIndex]) return;
+
+      const obj = objects[objectIndex];
+      const objWidth = obj.width || DEFAULT_OBJECT_SIZE;
+      const objHeight = obj.type === 'circle' ? objWidth : obj.height || objWidth;
+
+      const handleMouseMove = (e: MouseEvent) => {
+        const { x, y } = screenToMM(e.clientX, e.clientY);
+        handleObjectResizeMove(x, y);
+      };
+
+      const handleMouseUp = () => {
+        handleObjectResizeEnd();
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+
+      setObjectResizeState({
+        roomId,
+        objectIndex,
+        partId,
+        corner,
+        startMouseX: 0,
+        startMouseY: 0,
+        startWidth: objWidth,
+        startHeight: objHeight,
+        startX: obj.x,
+        startY: obj.y,
+      });
+    },
+    [roomMap, handleObjectResizeMove, handleObjectResizeEnd, screenToMM]
+  );
+
+  const handleObjectResizeNumeric = useCallback(
+    (
+      roomId: string,
+      objectIndex: number,
+      corner: Anchor,
+      currentWidth: number,
+      currentHeight?: number,
+      partId?: string
+    ) => {
+      if (!onRoomUpdate) return;
+
+      const room = roomMap[roomId];
+      if (!room) return;
+
+      // Find the object
+      let objects = room.objects;
+      if (partId && room.parts) {
+        const part = room.parts.find(p => p.id === partId);
+        if (part && part.objects) {
+          objects = part.objects;
+        }
+      }
+
+      if (!objects || !objects[objectIndex]) return;
+
+      const obj = objects[objectIndex];
+      const isCircle = obj.type === 'circle';
+
+      let input: string | null;
+      if (isCircle) {
+        const promptMessage = `Enter new diameter in mm (current: ${currentWidth}mm):`;
+        input = window.prompt(promptMessage, currentWidth.toString());
+
+        if (input === null) return; // User cancelled
+
+        const newDiameter = parseInt(input, 10);
+        if (isNaN(newDiameter) || newDiameter < 100) {
+          alert('Please enter a valid number (minimum 100mm)');
+          return;
+        }
+
+        // Update the circle
+        const roomData = data.rooms.find(r => r.id === roomId);
+        if (roomData) {
+          const updatedRoom = { ...roomData };
+
+          if (partId && updatedRoom.parts) {
+            const partIdx = updatedRoom.parts.findIndex(p => p.id === partId);
+            if (partIdx >= 0 && updatedRoom.parts[partIdx].objects) {
+              const updatedParts = [...updatedRoom.parts];
+              const updatedPart = { ...updatedParts[partIdx] };
+              const updatedObjects = [...(updatedPart.objects || [])];
+              updatedObjects[objectIndex] = {
+                ...updatedObjects[objectIndex],
+                width: newDiameter,
+              };
+              updatedPart.objects = updatedObjects;
+              updatedParts[partIdx] = updatedPart;
+              updatedRoom.parts = updatedParts;
+            }
+          } else if (updatedRoom.objects) {
+            const updatedObjects = [...updatedRoom.objects];
+            updatedObjects[objectIndex] = {
+              ...updatedObjects[objectIndex],
+              width: newDiameter,
+            };
+            updatedRoom.objects = updatedObjects;
+          }
+
+          const updatedRooms = data.rooms.map(r => (r.id === roomId ? updatedRoom : r));
+          onRoomUpdate({ ...data, rooms: updatedRooms });
+        }
+      } else {
+        // Square - prompt for width x height
+        const promptMessage = `Enter new dimensions in mm (format: WxH, current: ${currentWidth}x${currentHeight}):`;
+        input = window.prompt(promptMessage, `${currentWidth}x${currentHeight}`);
+
+        if (input === null) return; // User cancelled
+
+        const match = input.match(/^(\d+)\s*[x×]\s*(\d+)$/i);
+        if (!match) {
+          alert('Please enter dimensions in format: WxH (e.g., 1000x800)');
+          return;
+        }
+
+        const newWidth = parseInt(match[1], 10);
+        const newHeight = parseInt(match[2], 10);
+
+        if (isNaN(newWidth) || isNaN(newHeight) || newWidth < 100 || newHeight < 100) {
+          alert('Please enter valid numbers (minimum 100mm each)');
+          return;
+        }
+
+        // Update the square
+        const roomData = data.rooms.find(r => r.id === roomId);
+        if (roomData) {
+          const updatedRoom = { ...roomData };
+
+          if (partId && updatedRoom.parts) {
+            const partIdx = updatedRoom.parts.findIndex(p => p.id === partId);
+            if (partIdx >= 0 && updatedRoom.parts[partIdx].objects) {
+              const updatedParts = [...updatedRoom.parts];
+              const updatedPart = { ...updatedParts[partIdx] };
+              const updatedObjects = [...(updatedPart.objects || [])];
+              updatedObjects[objectIndex] = {
+                ...updatedObjects[objectIndex],
+                width: newWidth,
+                height: newHeight,
+              };
+              updatedPart.objects = updatedObjects;
+              updatedParts[partIdx] = updatedPart;
+              updatedRoom.parts = updatedParts;
+            }
+          } else if (updatedRoom.objects) {
+            const updatedObjects = [...updatedRoom.objects];
+            updatedObjects[objectIndex] = {
+              ...updatedObjects[objectIndex],
+              width: newWidth,
+              height: newHeight,
+            };
+            updatedRoom.objects = updatedObjects;
+          }
+
+          const updatedRooms = data.rooms.map(r => (r.id === roomId ? updatedRoom : r));
+          onRoomUpdate({ ...data, rooms: updatedRooms });
+        }
+      }
+    },
+    [data, roomMap, onRoomUpdate]
+  );
+
   // Handle drag movement with requestAnimationFrame for smooth performance
   const handleDragMove = useCallback(
     (x: number, y: number) => {
@@ -947,6 +1288,13 @@ const FloorplanRendererComponent = ({
           mm={mm}
           onObjectClick={onObjectClick}
           onObjectDragUpdate={onObjectDragUpdate}
+          hoveredObject={hoveredObject}
+          onObjectMouseEnter={(roomId, objectIndex, partId) =>
+            setHoveredObject({ roomId, objectIndex, partId })
+          }
+          onObjectMouseLeave={() => setHoveredObject(null)}
+          onObjectResizeStart={handleObjectResizeStart}
+          onObjectResizeNumeric={handleObjectResizeNumeric}
         />
 
         {/* Freestanding doors (at absolute coordinates) */}

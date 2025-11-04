@@ -1,7 +1,9 @@
-import type { ResolvedRoom, Anchor } from '../../types';
+import type { ResolvedRoom, Anchor, RoomObject as RoomObjectType } from '../../types';
 import { useState, useCallback, useEffect } from 'react';
+import { ObjectResizeHandles } from './ObjectResizeHandles';
 
 const DEFAULT_OBJECT_SIZE = 1000; // mm
+const HANDLE_HITBOX_SIZE_PX = 50; // pixels - must match ObjectResizeHandles
 
 interface DragState {
   roomId: string;
@@ -25,6 +27,23 @@ interface RoomObjectsRendererProps {
     targetRoomId: string,
     newX: number,
     newY: number
+  ) => void;
+  hoveredObject?: { roomId: string; objectIndex: number; partId?: string } | null;
+  onObjectMouseEnter?: (roomId: string, objectIndex: number, partId?: string) => void;
+  onObjectMouseLeave?: () => void;
+  onObjectResizeStart?: (
+    roomId: string,
+    objectIndex: number,
+    corner: Anchor,
+    partId?: string
+  ) => void;
+  onObjectResizeNumeric?: (
+    roomId: string,
+    objectIndex: number,
+    corner: Anchor,
+    currentWidth: number,
+    currentHeight?: number,
+    partId?: string
   ) => void;
 }
 
@@ -68,12 +87,18 @@ function RoomObject({
   mm,
   onObjectClick,
   onObjectDragUpdate,
-  isDragging: isRoomDragging,
-  dragOffset: roomDragOffset,
+  isDragging: _isRoomDragging,
+  dragOffset: _roomDragOffset,
   roomMap,
+  isHovered,
+  onObjectMouseEnter,
+  onObjectMouseLeave,
+  onObjectResizeStart,
+  onObjectResizeNumeric,
+  partId,
 }: {
   room: ResolvedRoom;
-  obj: RoomObject;
+  obj: RoomObjectType;
   idx: number;
   mm: (val: number) => number;
   onObjectClick?: (roomId: string, objectIndex: number) => void;
@@ -87,6 +112,24 @@ function RoomObject({
   isDragging: boolean;
   dragOffset: { x: number; y: number } | null;
   roomMap: Record<string, ResolvedRoom>;
+  isHovered: boolean;
+  onObjectMouseEnter?: (roomId: string, objectIndex: number, partId?: string) => void;
+  onObjectMouseLeave?: () => void;
+  onObjectResizeStart?: (
+    roomId: string,
+    objectIndex: number,
+    corner: Anchor,
+    partId?: string
+  ) => void;
+  onObjectResizeNumeric?: (
+    roomId: string,
+    objectIndex: number,
+    corner: Anchor,
+    currentWidth: number,
+    currentHeight?: number,
+    partId?: string
+  ) => void;
+  partId?: string;
 }) {
   const [isObjectDragging, setIsObjectDragging] = useState(false);
   const [dragStartX, setDragStartX] = useState(0);
@@ -250,6 +293,9 @@ function RoomObject({
     absY = roomCorner.y + activeY;
   }
   const color = obj.color || '#888';
+  const testIdBase = partId
+    ? `object-${room.id}-part-${partId}-${idx}`
+    : `object-${room.id}-${idx}`;
 
   if (obj.type === 'circle') {
     // For circles, width represents the diameter
@@ -258,46 +304,112 @@ function RoomObject({
 
     // Apply object anchor offset to position the circle
     const objOffset = getObjectAnchorOffset(anchor, diameter, diameter);
-    const centerX = mm(absX + objOffset.x + radius);
-    const centerY = mm(absY + objOffset.y + radius);
+    const circleCenterMmX = absX + objOffset.x + radius;
+    const circleCenterMmY = absY + objOffset.y + radius;
+    const centerX = mm(circleCenterMmX);
+    const centerY = mm(circleCenterMmY);
+
+    // Calculate absolute position for resize handles (top-left corner of VISUAL bounding box)
+    // The visual bounding box is centered on the circle, so top-left is at center - radius
+    const absolutePosition = {
+      x: circleCenterMmX - radius,
+      y: circleCenterMmY - radius,
+    };
+
+    // Calculate expanded bounding box for hover area (includes handle hitboxes)
+    const hoverPadding = HANDLE_HITBOX_SIZE_PX / 2;
+    const boundingBoxX = mm(absolutePosition.x) - hoverPadding;
+    const boundingBoxY = mm(absolutePosition.y) - hoverPadding;
+    const boundingBoxWidth = mm(diameter) + HANDLE_HITBOX_SIZE_PX;
+    const boundingBoxHeight = mm(diameter) + HANDLE_HITBOX_SIZE_PX;
 
     return (
-      <g
-        key={`${room.id}-obj-${idx}`}
-        data-object-index={idx}
-        data-room-id={room.id}
-        onClick={e => {
-          e.stopPropagation();
-          if (!isObjectDragging) {
-            onObjectClick?.(room.id, idx);
-          }
-        }}
-        onMouseDown={handleMouseDown}
-        style={{ cursor: isObjectDragging ? 'grabbing' : onObjectDragUpdate ? 'grab' : 'pointer' }}
-      >
-        <circle
-          className="room-object"
-          cx={centerX}
-          cy={centerY}
-          r={mm(radius)}
-          fill={color}
-          stroke="#333"
-          strokeWidth="1"
-        />
-        {obj.text && (
-          <text
-            x={centerX}
-            y={centerY}
-            fontSize="12"
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fill="#000"
-            style={{ pointerEvents: 'none' }}
-          >
-            {obj.text}
-          </text>
+      <>
+        <g
+          key={`${room.id}-obj-${idx}`}
+          onMouseEnter={() => onObjectMouseEnter?.(room.id, idx, partId)}
+          onMouseLeave={onObjectMouseLeave}
+        >
+          {/* Invisible expanded hover area - includes handle space */}
+          <rect
+            x={boundingBoxX}
+            y={boundingBoxY}
+            width={boundingBoxWidth}
+            height={boundingBoxHeight}
+            fill="transparent"
+            pointerEvents="visiblePainted"
+          />
+          {/* Visible circle */}
+          <circle
+            data-testid={testIdBase}
+            data-object-index={idx}
+            data-room-id={room.id}
+            className="room-object"
+            cx={centerX}
+            cy={centerY}
+            r={mm(radius)}
+            fill={color}
+            stroke="#333"
+            strokeWidth="1"
+            pointerEvents="visiblePainted"
+            onClick={e => {
+              e.stopPropagation();
+              if (!isObjectDragging) {
+                onObjectClick?.(room.id, idx);
+              }
+            }}
+            onMouseDown={handleMouseDown}
+            style={{
+              cursor: isObjectDragging ? 'grabbing' : onObjectDragUpdate ? 'grab' : 'pointer',
+            }}
+          />
+          {obj.text && (
+            <text
+              x={centerX}
+              y={centerY}
+              fontSize="12"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="#000"
+              style={{ pointerEvents: 'none' }}
+            >
+              {obj.text}
+            </text>
+          )}
+          {isHovered && (
+            <text
+              data-testid={`${testIdBase}-dimensions`}
+              x={centerX}
+              y={mm(absY + objOffset.y - 15)}
+              fontSize="11"
+              fontWeight="bold"
+              textAnchor="middle"
+              fill="#4a90e2"
+              style={{ pointerEvents: 'none' }}
+            >
+              ⌀{diameter}
+            </text>
+          )}
+        </g>
+        {isHovered && onObjectResizeStart && (
+          <ObjectResizeHandles
+            room={room}
+            objectIndex={idx}
+            object={obj}
+            absolutePosition={absolutePosition}
+            mm={mm}
+            onResizeStart={(roomId, objIdx, corner) =>
+              onObjectResizeStart(roomId, objIdx, corner, partId)
+            }
+            onResizeNumeric={(roomId, objIdx, corner, width, height) =>
+              onObjectResizeNumeric?.(roomId, objIdx, corner, width, height, partId)
+            }
+            onMouseEnter={() => onObjectMouseEnter?.(room.id, idx, partId)}
+            visible={isHovered}
+            partId={partId}
+          />
         )}
-      </g>
+      </>
     );
   } else {
     // Square
@@ -312,44 +424,89 @@ function RoomObject({
     const centerX = rectX + w / 2;
     const centerY = rectY + h / 2;
 
+    // Calculate absolute position for resize handles (top-left corner)
+    const absolutePosition = {
+      x: absX + objOffset.x,
+      y: absY + objOffset.y,
+    };
+
     return (
-      <g
-        key={`${room.id}-obj-${idx}`}
-        data-object-index={idx}
-        data-room-id={room.id}
-        onClick={e => {
-          e.stopPropagation();
-          if (!isObjectDragging) {
-            onObjectClick?.(room.id, idx);
-          }
-        }}
-        onMouseDown={handleMouseDown}
-        style={{ cursor: isObjectDragging ? 'grabbing' : onObjectDragUpdate ? 'grab' : 'pointer' }}
-      >
-        <rect
-          className="room-object"
-          x={rectX}
-          y={rectY}
-          width={w}
-          height={h}
-          fill={color}
-          stroke="#333"
-          strokeWidth="1"
-        />
-        {obj.text && (
-          <text
-            x={centerX}
-            y={centerY}
-            fontSize="12"
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fill="#000"
-            style={{ pointerEvents: 'none' }}
-          >
-            {obj.text}
-          </text>
+      <>
+        <g key={`${room.id}-obj-${idx}`}>
+          {/* Visible rect with hover detection */}
+          <rect
+            data-testid={testIdBase}
+            data-object-index={idx}
+            data-room-id={room.id}
+            className="room-object"
+            x={rectX}
+            y={rectY}
+            width={w}
+            height={h}
+            fill={color}
+            stroke="#333"
+            strokeWidth="1"
+            pointerEvents="visiblePainted"
+            onClick={e => {
+              e.stopPropagation();
+              if (!isObjectDragging) {
+                onObjectClick?.(room.id, idx);
+              }
+            }}
+            onMouseDown={handleMouseDown}
+            onMouseEnter={() => onObjectMouseEnter?.(room.id, idx, partId)}
+            onMouseLeave={onObjectMouseLeave}
+            style={{
+              cursor: isObjectDragging ? 'grabbing' : onObjectDragUpdate ? 'grab' : 'pointer',
+            }}
+          />
+          {obj.text && (
+            <text
+              x={centerX}
+              y={centerY}
+              fontSize="12"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="#000"
+              style={{ pointerEvents: 'none' }}
+            >
+              {obj.text}
+            </text>
+          )}
+          {isHovered && (
+            <text
+              data-testid={`${testIdBase}-dimensions`}
+              x={centerX}
+              y={rectY - 5}
+              fontSize="11"
+              fontWeight="bold"
+              textAnchor="middle"
+              fill="#4a90e2"
+              style={{ pointerEvents: 'none' }}
+            >
+              {width}×{height}
+            </text>
+          )}
+        </g>
+        {isHovered && onObjectResizeStart && (
+          <ObjectResizeHandles
+            room={room}
+            objectIndex={idx}
+            object={obj}
+            absolutePosition={absolutePosition}
+            mm={mm}
+            onResizeStart={(roomId, objIdx, corner) =>
+              onObjectResizeStart(roomId, objIdx, corner, partId)
+            }
+            onResizeNumeric={(roomId, objIdx, corner, width, height) =>
+              onObjectResizeNumeric?.(roomId, objIdx, corner, width, height, partId)
+            }
+            onMouseEnter={() => onObjectMouseEnter?.(room.id, idx, partId)}
+            visible={isHovered}
+            partId={partId}
+          />
         )}
-      </g>
+      </>
     );
   }
 }
@@ -361,6 +518,11 @@ export function RoomObjectsRenderer({
   mm,
   onObjectClick,
   onObjectDragUpdate,
+  hoveredObject,
+  onObjectMouseEnter,
+  onObjectMouseLeave,
+  onObjectResizeStart,
+  onObjectResizeNumeric,
 }: RoomObjectsRendererProps) {
   return (
     <>
@@ -374,6 +536,7 @@ export function RoomObjectsRenderer({
 
         return (
           <g key={`${room.id}-objects`} transform={transform}>
+            {/* Render room-level objects */}
             {room.objects?.map((obj, idx) => (
               <RoomObject
                 key={`${room.id}-obj-${idx}`}
@@ -386,8 +549,44 @@ export function RoomObjectsRenderer({
                 isDragging={isDragging}
                 dragOffset={dragOffset}
                 roomMap={roomMap}
+                isHovered={
+                  hoveredObject?.roomId === room.id &&
+                  hoveredObject?.objectIndex === idx &&
+                  !hoveredObject?.partId
+                }
+                onObjectMouseEnter={onObjectMouseEnter}
+                onObjectMouseLeave={onObjectMouseLeave}
+                onObjectResizeStart={onObjectResizeStart}
+                onObjectResizeNumeric={onObjectResizeNumeric}
               />
             ))}
+            {/* Render part-level objects */}
+            {room.parts?.map(part =>
+              part.objects?.map((obj, idx) => (
+                <RoomObject
+                  key={`${room.id}-part-${part.id}-obj-${idx}`}
+                  room={room}
+                  obj={obj}
+                  idx={idx}
+                  mm={mm}
+                  onObjectClick={onObjectClick}
+                  onObjectDragUpdate={onObjectDragUpdate}
+                  isDragging={isDragging}
+                  dragOffset={dragOffset}
+                  roomMap={roomMap}
+                  isHovered={
+                    hoveredObject?.roomId === room.id &&
+                    hoveredObject?.objectIndex === idx &&
+                    hoveredObject?.partId === part.id
+                  }
+                  onObjectMouseEnter={onObjectMouseEnter}
+                  onObjectMouseLeave={onObjectMouseLeave}
+                  onObjectResizeStart={onObjectResizeStart}
+                  onObjectResizeNumeric={onObjectResizeNumeric}
+                  partId={part.id}
+                />
+              ))
+            )}
           </g>
         );
       })}

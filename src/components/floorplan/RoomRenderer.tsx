@@ -166,7 +166,15 @@ function EditableRoomDimensions({ room, x, y, onDimensionsUpdate }: EditableRoom
   if (isEditing) {
     return (
       <foreignObject x={x - 150} y={y - 20} width={300} height={40}>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '8px',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+          }}
+        >
           <input
             ref={widthInputRef}
             type="number"
