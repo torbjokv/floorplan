@@ -164,7 +164,8 @@ function formatRoom(room: Room, doors?: Door[], windows?: Window[]): string {
   const attachInfo = parseAttachTo(room.attachTo);
   roomLine += ` at ${attachInfo.target}`;
 
-  if (attachInfo.anchor && attachInfo.anchor !== 'bottom-right') {
+  // Only add anchor for non-zeropoint targets (zeropoint is a point, not a room with corners)
+  if (attachInfo.target !== 'zeropoint' && attachInfo.anchor && attachInfo.anchor !== 'bottom-right') {
     roomLine += `:${attachInfo.anchor}`;
   }
 
