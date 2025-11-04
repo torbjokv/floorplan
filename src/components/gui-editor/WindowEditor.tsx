@@ -32,8 +32,8 @@ export function WindowEditor({
         </button>
       </div>
       {windows.map((window, index) => {
-        const roomName =
-          rooms.find(r => r.id === window.room.split(':')[0])?.name || window.room.split(':')[0];
+        const roomId = window.room?.split(':')[0] || '';
+        const roomName = rooms.find(r => r.id === roomId)?.name || roomId;
         return (
           <div
             key={index}
@@ -57,9 +57,9 @@ export function WindowEditor({
               <label>
                 Room:
                 <select
-                  value={window.room.split(':')[0]}
+                  value={window.room?.split(':')[0] || ''}
                   onChange={e => {
-                    const wall = window.room.split(':')[1] || 'top';
+                    const wall = window.room?.split(':')[1] || 'top';
                     onUpdateWindow(index, { ...window, room: `${e.target.value}:${wall}` });
                   }}
                 >
@@ -73,9 +73,9 @@ export function WindowEditor({
               <label>
                 Wall:
                 <select
-                  value={window.room.split(':')[1] || 'top'}
+                  value={window.room?.split(':')[1] || 'top'}
                   onChange={e => {
-                    const roomName = window.room.split(':')[0];
+                    const roomName = window.room?.split(':')[0] || '';
                     onUpdateWindow(index, { ...window, room: `${roomName}:${e.target.value}` });
                   }}
                 >
