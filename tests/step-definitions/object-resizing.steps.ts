@@ -172,6 +172,73 @@ Then('the resize handles should have the correct cursor styles', async function 
   await expect(blHandle).toHaveCSS('cursor', 'nesw-resize');
 });
 
+// Helper to get opposite corner
+function getOppositeCorner(anchor: string): string {
+  const oppositeMap: Record<string, string> = {
+    'top-left': 'bottom-right',
+    'top-right': 'bottom-left',
+    'bottom-left': 'top-right',
+    'bottom-right': 'top-left',
+  };
+  return oppositeMap[anchor] || 'bottom-right';
+}
+
+Then(
+  'I should see {int} resize handle at the corner opposite to the anchor',
+  async function (this: World, count: number) {
+    expect(this.currentObject).toBeDefined();
+    expect(count).toBe(1);
+
+    // Get the object to find its anchor
+    const result = findObject(this, this.currentObject!.name);
+    expect(result).not.toBeNull();
+
+    const anchor = result!.object.anchor || 'top-left';
+    const oppositeCorner = getOppositeCorner(anchor);
+
+    const baseTestId = this.currentObject!.testId.replace('object-', '');
+    const handleTestId = `object-resize-handle-${baseTestId}-${oppositeCorner}`;
+    const handle = this.page.locator(`[data-testid="${handleTestId}"]`);
+    await expect(handle).toBeVisible();
+
+    // Verify other handles are NOT visible
+    const allCorners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+    for (const corner of allCorners) {
+      if (corner !== oppositeCorner) {
+        const otherHandleTestId = `object-resize-handle-${baseTestId}-${corner}`;
+        const otherHandle = this.page.locator(`[data-testid="${otherHandleTestId}"]`);
+        await expect(otherHandle).not.toBeVisible();
+      }
+    }
+  }
+);
+
+Then('the resize handle should have the correct cursor style', async function (this: World) {
+  expect(this.currentObject).toBeDefined();
+
+  // Get the object to find its anchor
+  const result = findObject(this, this.currentObject!.name);
+  expect(result).not.toBeNull();
+
+  const anchor = result!.object.anchor || 'top-left';
+  const oppositeCorner = getOppositeCorner(anchor);
+
+  const baseTestId = this.currentObject!.testId.replace('object-', '');
+  const handleTestId = `object-resize-handle-${baseTestId}-${oppositeCorner}`;
+  const handle = this.page.locator(`[data-testid="${handleTestId}"]`);
+
+  // Expected cursor based on corner
+  const cursorMap: Record<string, string> = {
+    'top-left': 'nwse-resize',
+    'top-right': 'nesw-resize',
+    'bottom-left': 'nesw-resize',
+    'bottom-right': 'nwse-resize',
+  };
+
+  const expectedCursor = cursorMap[oppositeCorner];
+  await expect(handle).toHaveCSS('cursor', expectedCursor);
+});
+
 Then('I should not see any resize handles for the object', async function (this: World) {
   expect(this.currentObject).toBeDefined();
 
@@ -243,8 +310,17 @@ When(
 );
 
 When('I drag any corner resize handle to change the size', async function (this: World) {
-  // Use bottom-right corner for simplicity
-  await this.step('I drag the bottom-right resize handle by (200, 200) mm');
+  // For circles, use the opposite corner from the anchor; for squares, use bottom-right
+  const result = findObject(this, this.currentObject!.name);
+  expect(result).not.toBeNull();
+
+  if (result!.object.type === 'circle') {
+    const anchor = result!.object.anchor || 'top-left';
+    const oppositeCorner = getOppositeCorner(anchor);
+    await this.step(`I drag the ${oppositeCorner} resize handle by (200, 200) mm`);
+  } else {
+    await this.step('I drag the bottom-right resize handle by (200, 200) mm');
+  }
 });
 
 When(
@@ -256,8 +332,12 @@ When(
     const currentDiameter = result!.object.width;
     const deltaSize = targetDiameter - currentDiameter;
 
-    // Drag bottom-right corner to increase diameter
-    await this.step(`I drag the bottom-right resize handle by (${deltaSize}, ${deltaSize}) mm`);
+    // For circles, use the opposite corner from the anchor
+    const anchor = result!.object.anchor || 'top-left';
+    const oppositeCorner = getOppositeCorner(anchor);
+    await this.step(
+      `I drag the ${oppositeCorner} resize handle by (${deltaSize}, ${deltaSize}) mm`
+    );
   }
 );
 
