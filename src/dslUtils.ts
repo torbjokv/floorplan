@@ -97,12 +97,14 @@ export function jsonToDSL(config: FloorplanConfig): string {
   }
 
   // Collect freestanding elements (zeropoint-attached or absolute-positioned)
-  const freestandingDoors = config.doors?.filter(d =>
-    d.room?.startsWith('zeropoint:') || (d.x !== undefined && d.y !== undefined)
-  ) || [];
-  const freestandingWindows = config.windows?.filter(w =>
-    w.room?.startsWith('zeropoint:') || (w.x !== undefined && w.y !== undefined)
-  ) || [];
+  const freestandingDoors =
+    config.doors?.filter(
+      d => d.room?.startsWith('zeropoint:') || (d.x !== undefined && d.y !== undefined)
+    ) || [];
+  const freestandingWindows =
+    config.windows?.filter(
+      w => w.room?.startsWith('zeropoint:') || (w.x !== undefined && w.y !== undefined)
+    ) || [];
   const freestandingObjects = config.objects || [];
 
   // Add freestanding windows
@@ -124,7 +126,11 @@ export function jsonToDSL(config: FloorplanConfig): string {
   });
 
   // Add blank line after freestanding elements if any exist
-  if (freestandingDoors.length > 0 || freestandingWindows.length > 0 || freestandingObjects.length > 0) {
+  if (
+    freestandingDoors.length > 0 ||
+    freestandingWindows.length > 0 ||
+    freestandingObjects.length > 0
+  ) {
     lines.push('');
   }
 
@@ -165,7 +171,11 @@ function formatRoom(room: Room, doors?: Door[], windows?: Window[]): string {
   roomLine += ` at ${attachInfo.target}`;
 
   // Only add anchor for non-zeropoint targets (zeropoint is a point, not a room with corners)
-  if (attachInfo.target !== 'zeropoint' && attachInfo.anchor && attachInfo.anchor !== 'bottom-right') {
+  if (
+    attachInfo.target !== 'zeropoint' &&
+    attachInfo.anchor &&
+    attachInfo.anchor !== 'bottom-right'
+  ) {
     roomLine += `:${attachInfo.anchor}`;
   }
 

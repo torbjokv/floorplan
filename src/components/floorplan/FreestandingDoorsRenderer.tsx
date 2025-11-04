@@ -9,7 +9,14 @@ interface FreestandingDoorsRendererProps {
   roomMap: Record<string, ResolvedRoom>;
   mm: (val: number) => number;
   onDoorClick?: (doorIndex: number) => void;
-  onDoorDragUpdate?: (doorIndex: number, roomId: string | null, wall: WallPosition | null, offset: number, x: number, y: number) => void;
+  onDoorDragUpdate?: (
+    doorIndex: number,
+    roomId: string | null,
+    wall: WallPosition | null,
+    offset: number,
+    x: number,
+    y: number
+  ) => void;
 }
 
 export function FreestandingDoorsRenderer({
@@ -42,7 +49,14 @@ interface FreestandingDoorProps {
   roomMap: Record<string, ResolvedRoom>;
   mm: (val: number) => number;
   onDoorClick?: (doorIndex: number) => void;
-  onDoorDragUpdate?: (doorIndex: number, roomId: string | null, wall: WallPosition | null, offset: number, x: number, y: number) => void;
+  onDoorDragUpdate?: (
+    doorIndex: number,
+    roomId: string | null,
+    wall: WallPosition | null,
+    offset: number,
+    x: number,
+    y: number
+  ) => void;
 }
 
 function FreestandingDoor({
@@ -56,7 +70,11 @@ function FreestandingDoor({
   const [isDragging, setIsDragging] = useState(false);
   const [currentX, setCurrentX] = useState(door.x ?? 0);
   const [currentY, setCurrentY] = useState(door.y ?? 0);
-  const [snappedWall, setSnappedWall] = useState<{ roomId: string; wall: WallPosition; offset: number } | null>(null);
+  const [snappedWall, setSnappedWall] = useState<{
+    roomId: string;
+    wall: WallPosition;
+    offset: number;
+  } | null>(null);
 
   // Convert SVG screen coordinates to mm
   const screenToMM = useCallback((e: MouseEvent): { x: number; y: number } => {
@@ -75,36 +93,60 @@ function FreestandingDoor({
   }, []);
 
   // Find closest wall to snap to
-  const findClosestWall = useCallback((x: number, y: number): { roomId: string; wall: WallPosition; offset: number } | null => {
-    let closest: { roomId: string; wall: WallPosition; offset: number; distance: number } | null = null;
+  const findClosestWall = useCallback(
+    (x: number, y: number): { roomId: string; wall: WallPosition; offset: number } | null => {
+      let closest: { roomId: string; wall: WallPosition; offset: number; distance: number } | null =
+        null;
 
-    for (const room of Object.values(roomMap)) {
-      if (room.id === 'zeropoint') continue;
+      for (const room of Object.values(roomMap)) {
+        if (room.id === 'zeropoint') continue;
 
-      // Check all four walls
-      const walls = [
-        { wall: 'top' as WallPosition, dist: Math.abs(y - room.y), offset: x - room.x, maxOffset: room.width },
-        { wall: 'bottom' as WallPosition, dist: Math.abs(y - (room.y + room.depth)), offset: x - room.x, maxOffset: room.width },
-        { wall: 'left' as WallPosition, dist: Math.abs(x - room.x), offset: y - room.y, maxOffset: room.depth },
-        { wall: 'right' as WallPosition, dist: Math.abs(x - (room.x + room.width)), offset: y - room.y, maxOffset: room.depth },
-      ];
+        // Check all four walls
+        const walls = [
+          {
+            wall: 'top' as WallPosition,
+            dist: Math.abs(y - room.y),
+            offset: x - room.x,
+            maxOffset: room.width,
+          },
+          {
+            wall: 'bottom' as WallPosition,
+            dist: Math.abs(y - (room.y + room.depth)),
+            offset: x - room.x,
+            maxOffset: room.width,
+          },
+          {
+            wall: 'left' as WallPosition,
+            dist: Math.abs(x - room.x),
+            offset: y - room.y,
+            maxOffset: room.depth,
+          },
+          {
+            wall: 'right' as WallPosition,
+            dist: Math.abs(x - (room.x + room.width)),
+            offset: y - room.y,
+            maxOffset: room.depth,
+          },
+        ];
 
-      for (const w of walls) {
-        if (w.dist < SNAP_DISTANCE && w.offset >= 0 && w.offset <= w.maxOffset - door.width) {
-          if (!closest || w.dist < closest.distance) {
-            closest = {
-              roomId: room.id,
-              wall: w.wall,
-              offset: Math.max(0, Math.min(w.offset, w.maxOffset - door.width)),
-              distance: w.dist,
-            };
+        for (const w of walls) {
+          if (w.dist < SNAP_DISTANCE && w.offset >= 0 && w.offset <= w.maxOffset - door.width) {
+            if (!closest || w.dist < closest.distance) {
+              closest = {
+                roomId: room.id,
+                wall: w.wall,
+                offset: Math.max(0, Math.min(w.offset, w.maxOffset - door.width)),
+                distance: w.dist,
+              };
+            }
           }
         }
       }
-    }
 
-    return closest;
-  }, [roomMap, door.width]);
+      return closest;
+    },
+    [roomMap, door.width]
+  );
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -134,7 +176,14 @@ function FreestandingDoor({
 
       if (snappedWall) {
         // Snap to wall
-        onDoorDragUpdate(index, snappedWall.roomId, snappedWall.wall, snappedWall.offset, currentX, currentY);
+        onDoorDragUpdate(
+          index,
+          snappedWall.roomId,
+          snappedWall.wall,
+          snappedWall.offset,
+          currentX,
+          currentY
+        );
       } else {
         // Stay freestanding
         onDoorDragUpdate(index, null, null, 0, currentX, currentY);
@@ -149,7 +198,16 @@ function FreestandingDoor({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, currentX, currentY, snappedWall, screenToMM, findClosestWall, onDoorDragUpdate, index]);
+  }, [
+    isDragging,
+    currentX,
+    currentY,
+    snappedWall,
+    screenToMM,
+    findClosestWall,
+    onDoorDragUpdate,
+    index,
+  ]);
 
   // Only render if this is a freestanding door (has x,y coordinates)
   if (door.x === undefined || door.y === undefined) return null;

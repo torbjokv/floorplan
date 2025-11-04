@@ -18,6 +18,13 @@ interface EditableRoomLabelProps {
   onNameUpdate?: (roomId: string, newName: string) => void;
 }
 
+interface EditableRoomDimensionsProps {
+  room: ResolvedRoom;
+  x: number;
+  y: number;
+  onDimensionsUpdate?: (roomId: string, width: number, depth: number) => void;
+}
+
 function EditableRoomLabel({ room, x, y, onNameUpdate }: EditableRoomLabelProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(room.name || room.id);
@@ -95,6 +102,136 @@ function EditableRoomLabel({ room, x, y, onNameUpdate }: EditableRoomLabelProps)
   );
 }
 
+function EditableRoomDimensions({ room, x, y, onDimensionsUpdate }: EditableRoomDimensionsProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [widthValue, setWidthValue] = useState(room.width.toString());
+  const [depthValue, setDepthValue] = useState(room.depth.toString());
+  const widthInputRef = useRef<HTMLInputElement>(null);
+  const depthInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing && widthInputRef.current) {
+      widthInputRef.current.focus();
+      widthInputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditing(true);
+    setWidthValue(room.width.toString());
+    setDepthValue(room.depth.toString());
+  };
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    const newWidth = parseInt(widthValue, 10);
+    const newDepth = parseInt(depthValue, 10);
+
+    if (!isNaN(newWidth) && !isNaN(newDepth) && newWidth >= 500 && newDepth >= 500) {
+      if (newWidth !== room.width || newDepth !== room.depth) {
+        onDimensionsUpdate?.(room.id, newWidth, newDepth);
+      }
+    }
+  };
+
+  const handleWidthKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleBlur();
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+      setWidthValue(room.width.toString());
+      setDepthValue(room.depth.toString());
+    } else if (e.key === 'Tab' && !e.shiftKey) {
+      e.preventDefault();
+      depthInputRef.current?.focus();
+      depthInputRef.current?.select();
+    }
+  };
+
+  const handleDepthKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleBlur();
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+      setWidthValue(room.width.toString());
+      setDepthValue(room.depth.toString());
+    } else if (e.key === 'Tab' && e.shiftKey) {
+      e.preventDefault();
+      widthInputRef.current?.focus();
+      widthInputRef.current?.select();
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <foreignObject x={x - 150} y={y - 20} width={300} height={40}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+          <input
+            ref={widthInputRef}
+            type="number"
+            value={widthValue}
+            onChange={e => setWidthValue(e.target.value)}
+            onKeyDown={handleWidthKeyDown}
+            placeholder="Width"
+            style={{
+              width: '80px',
+              height: '100%',
+              textAlign: 'center',
+              fontSize: '14px',
+              border: '2px solid #646cff',
+              borderRadius: '4px',
+              padding: '4px',
+              background: 'white',
+              color: 'black',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+          <span style={{ color: 'black', fontSize: '16px', fontWeight: 'bold' }}>×</span>
+          <input
+            ref={depthInputRef}
+            type="number"
+            value={depthValue}
+            onChange={e => setDepthValue(e.target.value)}
+            onBlur={handleBlur}
+            onKeyDown={handleDepthKeyDown}
+            placeholder="Depth"
+            style={{
+              width: '80px',
+              height: '100%',
+              textAlign: 'center',
+              fontSize: '14px',
+              border: '2px solid #646cff',
+              borderRadius: '4px',
+              padding: '4px',
+              background: 'white',
+              color: 'black',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+        </div>
+      </foreignObject>
+    );
+  }
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fontSize="12"
+      textAnchor="middle"
+      dominantBaseline="middle"
+      onDoubleClick={handleDoubleClick}
+      style={{ cursor: 'text', userSelect: 'none', fill: '#888' }}
+      data-testid={`room-dimensions-${room.id}`}
+    >
+      {room.width}×{room.depth}mm
+    </text>
+  );
+}
+
 interface RoomRendererProps {
   room: ResolvedRoom;
   dragState: DragState | null;
@@ -109,6 +246,9 @@ interface RoomRendererProps {
   onMouseDown: (e: React.MouseEvent<SVGElement>, roomId: string) => void;
   onClick?: (roomId: string) => void;
   onNameUpdate?: (roomId: string, newName: string) => void;
+  onDimensionsUpdate?: (roomId: string, width: number, depth: number) => void;
+  onMouseEnter?: (roomId: string) => void;
+  onMouseLeave?: () => void;
 }
 
 export function RoomRenderer({
@@ -121,6 +261,9 @@ export function RoomRenderer({
   onMouseDown,
   onClick,
   onNameUpdate,
+  onDimensionsUpdate,
+  onMouseEnter,
+  onMouseLeave,
 }: RoomRendererProps) {
   const parts = resolveCompositeRoom(room);
 
@@ -203,7 +346,14 @@ export function RoomRenderer({
       isDragging && dragOffset ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})` : undefined;
 
     return (
-      <g key={room.id} className="composite-room" data-room-id={room.id} transform={transform}>
+      <g
+        key={room.id}
+        className="composite-room"
+        data-room-id={room.id}
+        transform={transform}
+        onMouseEnter={() => onMouseEnter?.(room.id)}
+        onMouseLeave={() => onMouseLeave?.()}
+      >
         {/* Layer 1: All rectangles WITH borders */}
         <rect
           className="room-rect composite-part"
@@ -253,8 +403,16 @@ export function RoomRenderer({
         <EditableRoomLabel
           room={room}
           x={mm(room.x + room.width / 2)}
-          y={mm(room.y + room.depth / 2)}
+          y={mm(room.y + room.depth / 2) - 10}
           onNameUpdate={onNameUpdate}
+        />
+
+        {/* Room dimensions */}
+        <EditableRoomDimensions
+          room={room}
+          x={mm(room.x + room.width / 2)}
+          y={mm(room.y + room.depth / 2) + 20}
+          onDimensionsUpdate={onDimensionsUpdate}
         />
       </g>
     );
@@ -267,7 +425,12 @@ export function RoomRenderer({
     isDragging && dragOffset ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})` : undefined;
 
   return (
-    <g key={room.id} transform={transform}>
+    <g
+      key={room.id}
+      transform={transform}
+      onMouseEnter={() => onMouseEnter?.(room.id)}
+      onMouseLeave={() => onMouseLeave?.()}
+    >
       <rect
         className="room-rect"
         x={mm(room.x)}
@@ -287,8 +450,16 @@ export function RoomRenderer({
       <EditableRoomLabel
         room={room}
         x={mm(room.x + room.width / 2)}
-        y={mm(room.y + room.depth / 2)}
+        y={mm(room.y + room.depth / 2) - 10}
         onNameUpdate={onNameUpdate}
+      />
+
+      {/* Room dimensions */}
+      <EditableRoomDimensions
+        room={room}
+        x={mm(room.x + room.width / 2)}
+        y={mm(room.y + room.depth / 2) + 20}
+        onDimensionsUpdate={onDimensionsUpdate}
       />
     </g>
   );

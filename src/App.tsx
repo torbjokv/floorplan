@@ -565,7 +565,14 @@ function App() {
   // ============================================================================
 
   const handleDoorDragUpdate = useCallback(
-    (doorIndex: number, roomId: string | null, wall: string | null, offset: number, x: number, y: number) => {
+    (
+      doorIndex: number,
+      roomId: string | null,
+      wall: string | null,
+      offset: number,
+      x: number,
+      y: number
+    ) => {
       const { config } = parseDSL(dslText);
       if (!config || !config.doors) return;
 
@@ -605,7 +612,14 @@ function App() {
   );
 
   const handleWindowDragUpdate = useCallback(
-    (windowIndex: number, roomId: string | null, wall: string | null, offset: number, x: number, y: number) => {
+    (
+      windowIndex: number,
+      roomId: string | null,
+      wall: string | null,
+      offset: number,
+      x: number,
+      y: number
+    ) => {
       const { config } = parseDSL(dslText);
       if (!config || !config.windows) return;
 
@@ -645,7 +659,14 @@ function App() {
   );
 
   const handleFreestandingDoorDragUpdate = useCallback(
-    (doorIndex: number, roomId: string | null, wall: string | null, offset: number, x: number, y: number) => {
+    (
+      doorIndex: number,
+      roomId: string | null,
+      wall: string | null,
+      offset: number,
+      x: number,
+      y: number
+    ) => {
       const { config } = parseDSL(dslText);
       if (!config || !config.doors) return;
 
@@ -686,7 +707,14 @@ function App() {
   );
 
   const handleFreestandingWindowDragUpdate = useCallback(
-    (windowIndex: number, roomId: string | null, wall: string | null, offset: number, x: number, y: number) => {
+    (
+      windowIndex: number,
+      roomId: string | null,
+      wall: string | null,
+      offset: number,
+      x: number,
+      y: number
+    ) => {
       const { config } = parseDSL(dslText);
       if (!config || !config.windows) return;
 
@@ -727,7 +755,13 @@ function App() {
   );
 
   const handleObjectDragUpdate = useCallback(
-    (sourceRoomId: string, objectIndex: number, targetRoomId: string, newX: number, newY: number) => {
+    (
+      sourceRoomId: string,
+      objectIndex: number,
+      targetRoomId: string,
+      newX: number,
+      newY: number
+    ) => {
       const { config } = parseDSL(dslText);
       if (!config) return;
 

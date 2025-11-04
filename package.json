@@ -24,6 +24,8 @@
     "test:svg-rendering": "node scripts/run-cucumber.js tests/features/svg-rendering.feature",
     "test:error-handling": "node scripts/run-cucumber.js tests/features/error-handling.feature",
     "test:dsl-editor": "node scripts/run-cucumber.js tests/features/dsl-editor.feature",
+    "test:room-resizing": "node scripts/run-cucumber.js tests/features/room-resizing.feature",
+    "test:room-resizing:headed": "HEADLESS=false node scripts/run-cucumber.js tests/features/room-resizing.feature",
     "validate": "npm run lint && npm run format:check && npm run test"
   },
   "dependencies": {

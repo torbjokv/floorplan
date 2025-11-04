@@ -6,7 +6,12 @@ interface FreestandingObjectsRendererProps {
   roomMap: Record<string, ResolvedRoom>;
   mm: (val: number) => number;
   onObjectClick?: (objectIndex: number) => void;
-  onObjectDragUpdate?: (objectIndex: number, targetRoomId: string, newX: number, newY: number) => void;
+  onObjectDragUpdate?: (
+    objectIndex: number,
+    targetRoomId: string,
+    newX: number,
+    newY: number
+  ) => void;
 }
 
 export function FreestandingObjectsRenderer({
@@ -39,7 +44,12 @@ interface FreestandingObjectProps {
   roomMap: Record<string, ResolvedRoom>;
   mm: (val: number) => number;
   onObjectClick?: (objectIndex: number) => void;
-  onObjectDragUpdate?: (objectIndex: number, targetRoomId: string, newX: number, newY: number) => void;
+  onObjectDragUpdate?: (
+    objectIndex: number,
+    targetRoomId: string,
+    newX: number,
+    newY: number
+  ) => void;
 }
 
 function FreestandingObject({
@@ -58,7 +68,7 @@ function FreestandingObject({
   const DEFAULT_OBJECT_SIZE = 800;
 
   const width = obj.type === 'circle' ? obj.width : obj.width;
-  const height = obj.type === 'circle' ? obj.width : (obj.height || obj.width);
+  const height = obj.type === 'circle' ? obj.width : obj.height || obj.width;
 
   // Convert SVG screen coordinates to mm
   const screenToMM = useCallback((e: React.MouseEvent): { x: number; y: number } => {
@@ -89,15 +99,18 @@ function FreestandingObject({
   );
 
   // Helper to find which room contains a point
-  const findRoomAtPoint = useCallback((x: number, y: number): ResolvedRoom | null => {
-    for (const r of Object.values(roomMap)) {
-      if (r.id === 'zeropoint') continue; // Skip virtual zeropoint
-      if (x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.depth) {
-        return r;
+  const findRoomAtPoint = useCallback(
+    (x: number, y: number): ResolvedRoom | null => {
+      for (const r of Object.values(roomMap)) {
+        if (r.id === 'zeropoint') continue; // Skip virtual zeropoint
+        if (x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.depth) {
+          return r;
+        }
       }
-    }
-    return null;
-  }, [roomMap]);
+      return null;
+    },
+    [roomMap]
+  );
 
   // Add global mouse move and mouse up listeners when dragging
   useEffect(() => {
@@ -152,7 +165,17 @@ function FreestandingObject({
       window.removeEventListener('mousemove', handleGlobalMouseMove);
       window.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [isObjectDragging, findRoomAtPoint, width, height, onObjectDragUpdate, idx, targetRoomId, currentObjX, currentObjY]);
+  }, [
+    isObjectDragging,
+    findRoomAtPoint,
+    width,
+    height,
+    onObjectDragUpdate,
+    idx,
+    targetRoomId,
+    currentObjX,
+    currentObjY,
+  ]);
 
   // Calculate display position based on drag state
   let displayX, displayY;

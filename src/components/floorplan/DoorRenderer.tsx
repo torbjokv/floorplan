@@ -10,7 +10,14 @@ interface DoorRendererProps {
   roomMap: Record<string, ResolvedRoom>;
   mm: (val: number) => number;
   onClick?: (doorIndex: number) => void;
-  onDragUpdate?: (doorIndex: number, roomId: string | null, wall: WallPosition | null, offset: number, x: number, y: number) => void;
+  onDragUpdate?: (
+    doorIndex: number,
+    roomId: string | null,
+    wall: WallPosition | null,
+    offset: number,
+    x: number,
+    y: number
+  ) => void;
 }
 
 export function DoorRenderer({
@@ -27,7 +34,11 @@ export function DoorRenderer({
   const [currentOffset, setCurrentOffset] = useState(door.offset ?? 0);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [currentWall, setCurrentWall] = useState<WallPosition | null>(null);
-  const [snappedWall, setSnappedWall] = useState<{ roomId: string; wall: WallPosition; offset: number } | null>(null);
+  const [snappedWall, setSnappedWall] = useState<{
+    roomId: string;
+    wall: WallPosition;
+    offset: number;
+  } | null>(null);
 
   // Convert SVG screen coordinates to mm
   const screenToMM = useCallback((e: React.MouseEvent): { x: number; y: number } => {
@@ -61,36 +72,60 @@ export function DoorRenderer({
   );
 
   // Helper to find closest wall across all rooms (for snapping)
-  const findClosestWallToSnap = useCallback((x: number, y: number): { roomId: string; wall: WallPosition; offset: number } | null => {
-    let closest: { roomId: string; wall: WallPosition; offset: number; distance: number } | null = null;
+  const findClosestWallToSnap = useCallback(
+    (x: number, y: number): { roomId: string; wall: WallPosition; offset: number } | null => {
+      let closest: { roomId: string; wall: WallPosition; offset: number; distance: number } | null =
+        null;
 
-    for (const room of Object.values(roomMap)) {
-      if (room.id === 'zeropoint') continue;
+      for (const room of Object.values(roomMap)) {
+        if (room.id === 'zeropoint') continue;
 
-      // Check all four walls
-      const walls = [
-        { wall: 'top' as WallPosition, dist: Math.abs(y - room.y), offset: x - room.x, maxOffset: room.width },
-        { wall: 'bottom' as WallPosition, dist: Math.abs(y - (room.y + room.depth)), offset: x - room.x, maxOffset: room.width },
-        { wall: 'left' as WallPosition, dist: Math.abs(x - room.x), offset: y - room.y, maxOffset: room.depth },
-        { wall: 'right' as WallPosition, dist: Math.abs(x - (room.x + room.width)), offset: y - room.y, maxOffset: room.depth },
-      ];
+        // Check all four walls
+        const walls = [
+          {
+            wall: 'top' as WallPosition,
+            dist: Math.abs(y - room.y),
+            offset: x - room.x,
+            maxOffset: room.width,
+          },
+          {
+            wall: 'bottom' as WallPosition,
+            dist: Math.abs(y - (room.y + room.depth)),
+            offset: x - room.x,
+            maxOffset: room.width,
+          },
+          {
+            wall: 'left' as WallPosition,
+            dist: Math.abs(x - room.x),
+            offset: y - room.y,
+            maxOffset: room.depth,
+          },
+          {
+            wall: 'right' as WallPosition,
+            dist: Math.abs(x - (room.x + room.width)),
+            offset: y - room.y,
+            maxOffset: room.depth,
+          },
+        ];
 
-      for (const w of walls) {
-        if (w.dist < SNAP_DISTANCE && w.offset >= 0 && w.offset <= w.maxOffset - door.width) {
-          if (!closest || w.dist < closest.distance) {
-            closest = {
-              roomId: room.id,
-              wall: w.wall,
-              offset: Math.max(0, Math.min(w.offset, w.maxOffset - door.width)),
-              distance: w.dist,
-            };
+        for (const w of walls) {
+          if (w.dist < SNAP_DISTANCE && w.offset >= 0 && w.offset <= w.maxOffset - door.width) {
+            if (!closest || w.dist < closest.distance) {
+              closest = {
+                roomId: room.id,
+                wall: w.wall,
+                offset: Math.max(0, Math.min(w.offset, w.maxOffset - door.width)),
+                distance: w.dist,
+              };
+            }
           }
         }
       }
-    }
 
-    return closest;
-  }, [roomMap, door.width]);
+      return closest;
+    },
+    [roomMap, door.width]
+  );
 
   // Add global mouse move and mouse up listeners when dragging
   useEffect(() => {
@@ -134,7 +169,14 @@ export function DoorRenderer({
 
       if (snappedWall) {
         // Snap to wall
-        onDragUpdate(index, snappedWall.roomId, snappedWall.wall, snappedWall.offset, currentX, currentY);
+        onDragUpdate(
+          index,
+          snappedWall.roomId,
+          snappedWall.wall,
+          snappedWall.offset,
+          currentX,
+          currentY
+        );
       } else {
         // Go freestanding
         onDragUpdate(index, null, null, 0, currentX, currentY);
@@ -199,120 +241,120 @@ export function DoorRenderer({
   } else {
     // Wall-attached positioning
     switch (activeWall) {
-    case 'bottom':
-      // Bottom wall - door opens into room (upward)
-      x = mm(activeRoom.x) + offset;
-      y = mm(activeRoom.y + activeRoom.depth);
+      case 'bottom':
+        // Bottom wall - door opens into room (upward)
+        x = mm(activeRoom.x) + offset;
+        y = mm(activeRoom.y + activeRoom.depth);
 
-      if (isInwards) {
-        // Door swings into room (upward)
-        doorRect = { x: 0, y: -d, width: w, height: d };
-        if (isRight) {
-          // Hinge on right, arc from right edge to left
-          arcPath = `M ${w} ${-d} A ${w} ${w} 0 0 0 0 ${-d - w}`;
+        if (isInwards) {
+          // Door swings into room (upward)
+          doorRect = { x: 0, y: -d, width: w, height: d };
+          if (isRight) {
+            // Hinge on right, arc from right edge to left
+            arcPath = `M ${w} ${-d} A ${w} ${w} 0 0 0 0 ${-d - w}`;
+          } else {
+            // Hinge on left, arc from left edge to right
+            arcPath = `M 0 ${-d} A ${w} ${w} 0 0 1 ${w} ${-d - w}`;
+          }
         } else {
-          // Hinge on left, arc from left edge to right
-          arcPath = `M 0 ${-d} A ${w} ${w} 0 0 1 ${w} ${-d - w}`;
+          // Door swings out of room (downward)
+          doorRect = { x: 0, y: 0, width: w, height: d };
+          if (isRight) {
+            // Hinge on right, arc from right edge outward
+            arcPath = `M ${w} 0 A ${w} ${w} 0 0 1 0 ${w}`;
+          } else {
+            // Hinge on left, arc from left edge outward
+            arcPath = `M 0 0 A ${w} ${w} 0 0 0 ${w} ${w}`;
+          }
         }
-      } else {
-        // Door swings out of room (downward)
-        doorRect = { x: 0, y: 0, width: w, height: d };
-        if (isRight) {
-          // Hinge on right, arc from right edge outward
-          arcPath = `M ${w} 0 A ${w} ${w} 0 0 1 0 ${w}`;
-        } else {
-          // Hinge on left, arc from left edge outward
-          arcPath = `M 0 0 A ${w} ${w} 0 0 0 ${w} ${w}`;
-        }
-      }
-      break;
+        break;
 
-    case 'top':
-      // Top wall - door opens into room (downward)
-      x = mm(activeRoom.x) + offset;
-      y = mm(activeRoom.y);
+      case 'top':
+        // Top wall - door opens into room (downward)
+        x = mm(activeRoom.x) + offset;
+        y = mm(activeRoom.y);
 
-      if (isInwards) {
-        // Door swings into room (downward)
-        doorRect = { x: 0, y: 0, width: w, height: d };
-        if (isRight) {
-          // Hinge on right, arc from right edge to left
-          arcPath = `M ${w} ${d} A ${w} ${w} 0 0 1 0 ${d + w}`;
+        if (isInwards) {
+          // Door swings into room (downward)
+          doorRect = { x: 0, y: 0, width: w, height: d };
+          if (isRight) {
+            // Hinge on right, arc from right edge to left
+            arcPath = `M ${w} ${d} A ${w} ${w} 0 0 1 0 ${d + w}`;
+          } else {
+            // Hinge on left, arc from left edge to right
+            arcPath = `M 0 ${d} A ${w} ${w} 0 0 0 ${w} ${d + w}`;
+          }
         } else {
-          // Hinge on left, arc from left edge to right
-          arcPath = `M 0 ${d} A ${w} ${w} 0 0 0 ${w} ${d + w}`;
+          // Door swings out of room (upward)
+          doorRect = { x: 0, y: -d, width: w, height: d };
+          if (isRight) {
+            // Hinge on right, arc from right edge outward
+            arcPath = `M ${w} ${-d} A ${w} ${w} 0 0 0 0 ${-d - w}`;
+          } else {
+            // Hinge on left, arc from left edge outward
+            arcPath = `M 0 ${-d} A ${w} ${w} 0 0 1 ${w} ${-d - w}`;
+          }
         }
-      } else {
-        // Door swings out of room (upward)
-        doorRect = { x: 0, y: -d, width: w, height: d };
-        if (isRight) {
-          // Hinge on right, arc from right edge outward
-          arcPath = `M ${w} ${-d} A ${w} ${w} 0 0 0 0 ${-d - w}`;
-        } else {
-          // Hinge on left, arc from left edge outward
-          arcPath = `M 0 ${-d} A ${w} ${w} 0 0 1 ${w} ${-d - w}`;
-        }
-      }
-      break;
+        break;
 
-    case 'left':
-      // Left wall - door opens into room (rightward)
-      x = mm(activeRoom.x);
-      y = mm(activeRoom.y) + offset;
+      case 'left':
+        // Left wall - door opens into room (rightward)
+        x = mm(activeRoom.x);
+        y = mm(activeRoom.y) + offset;
 
-      if (isInwards) {
-        // Door swings into room (rightward)
-        doorRect = { x: 0, y: 0, width: d, height: w };
-        if (isRight) {
-          // Hinge on bottom, arc from bottom edge upward
-          arcPath = `M ${d} ${w} A ${w} ${w} 0 0 0 ${d + w} 0`;
+        if (isInwards) {
+          // Door swings into room (rightward)
+          doorRect = { x: 0, y: 0, width: d, height: w };
+          if (isRight) {
+            // Hinge on bottom, arc from bottom edge upward
+            arcPath = `M ${d} ${w} A ${w} ${w} 0 0 0 ${d + w} 0`;
+          } else {
+            // Hinge on top, arc from top edge downward
+            arcPath = `M ${d} 0 A ${w} ${w} 0 0 1 ${d + w} ${w}`;
+          }
         } else {
-          // Hinge on top, arc from top edge downward
-          arcPath = `M ${d} 0 A ${w} ${w} 0 0 1 ${d + w} ${w}`;
+          // Door swings out of room (leftward)
+          doorRect = { x: -d, y: 0, width: d, height: w };
+          if (isRight) {
+            // Hinge on bottom, arc from bottom edge outward
+            arcPath = `M ${-d} ${w} A ${w} ${w} 0 0 1 ${-d - w} 0`;
+          } else {
+            // Hinge on top, arc from top edge outward
+            arcPath = `M ${-d} 0 A ${w} ${w} 0 0 0 ${-d - w} ${w}`;
+          }
         }
-      } else {
-        // Door swings out of room (leftward)
-        doorRect = { x: -d, y: 0, width: d, height: w };
-        if (isRight) {
-          // Hinge on bottom, arc from bottom edge outward
-          arcPath = `M ${-d} ${w} A ${w} ${w} 0 0 1 ${-d - w} 0`;
-        } else {
-          // Hinge on top, arc from top edge outward
-          arcPath = `M ${-d} 0 A ${w} ${w} 0 0 0 ${-d - w} ${w}`;
-        }
-      }
-      break;
+        break;
 
-    case 'right':
-      // Right wall - door opens into room (leftward)
-      x = mm(activeRoom.x + activeRoom.width);
-      y = mm(activeRoom.y) + offset;
+      case 'right':
+        // Right wall - door opens into room (leftward)
+        x = mm(activeRoom.x + activeRoom.width);
+        y = mm(activeRoom.y) + offset;
 
-      if (isInwards) {
-        // Door swings into room (leftward)
-        doorRect = { x: -d, y: 0, width: d, height: w };
-        if (isRight) {
-          // Hinge on bottom, arc from bottom edge upward
-          arcPath = `M ${-d} ${w} A ${w} ${w} 0 0 1 ${-d - w} 0`;
+        if (isInwards) {
+          // Door swings into room (leftward)
+          doorRect = { x: -d, y: 0, width: d, height: w };
+          if (isRight) {
+            // Hinge on bottom, arc from bottom edge upward
+            arcPath = `M ${-d} ${w} A ${w} ${w} 0 0 1 ${-d - w} 0`;
+          } else {
+            // Hinge on top, arc from top edge downward
+            arcPath = `M ${-d} 0 A ${w} ${w} 0 0 0 ${-d - w} ${w}`;
+          }
         } else {
-          // Hinge on top, arc from top edge downward
-          arcPath = `M ${-d} 0 A ${w} ${w} 0 0 0 ${-d - w} ${w}`;
+          // Door swings out of room (rightward)
+          doorRect = { x: 0, y: 0, width: d, height: w };
+          if (isRight) {
+            // Hinge on bottom, arc from bottom edge outward
+            arcPath = `M ${d} ${w} A ${w} ${w} 0 0 0 ${d + w} 0`;
+          } else {
+            // Hinge on top, arc from top edge outward
+            arcPath = `M ${d} 0 A ${w} ${w} 0 0 1 ${d + w} ${w}`;
+          }
         }
-      } else {
-        // Door swings out of room (rightward)
-        doorRect = { x: 0, y: 0, width: d, height: w };
-        if (isRight) {
-          // Hinge on bottom, arc from bottom edge outward
-          arcPath = `M ${d} ${w} A ${w} ${w} 0 0 0 ${d + w} 0`;
-        } else {
-          // Hinge on top, arc from top edge outward
-          arcPath = `M ${d} 0 A ${w} ${w} 0 0 1 ${d + w} ${w}`;
-        }
-      }
-      break;
+        break;
 
-    default:
-      return null;
+      default:
+        return null;
     }
   }
 

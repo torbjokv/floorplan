@@ -10,6 +10,7 @@ import { FreestandingObjectsRenderer } from './floorplan/FreestandingObjectsRend
 import { FreestandingDoorsRenderer } from './floorplan/FreestandingDoorsRenderer';
 import { FreestandingWindowsRenderer } from './floorplan/FreestandingWindowsRenderer';
 import { CornerHighlights } from './floorplan/CornerHighlights';
+import { ResizeHandles, type ResizeEdge } from './floorplan/ResizeHandles';
 
 // Constants
 const BOUNDS_PADDING_PERCENTAGE = 0.1; // 10% padding on each side
@@ -26,13 +27,51 @@ interface FloorplanRendererProps {
   onRoomUpdate?: (updatedData: FloorplanData) => void;
   onRoomNameUpdate?: (roomId: string, newName: string) => void;
   onObjectClick?: (roomId: string, objectIndex: number) => void;
-  onDoorDragUpdate?: (doorIndex: number, roomId: string | null, wall: WallPosition | null, offset: number, x: number, y: number) => void;
-  onWindowDragUpdate?: (windowIndex: number, roomId: string | null, wall: WallPosition | null, offset: number, x: number, y: number) => void;
-  onObjectDragUpdate?: (sourceRoomId: string, objectIndex: number, targetRoomId: string, newX: number, newY: number) => void;
-  onFreestandingObjectDragUpdate?: (objectIndex: number, targetRoomId: string, newX: number, newY: number) => void;
-  onFreestandingDoorDragUpdate?: (doorIndex: number, roomId: string | null, wall: WallPosition | null, offset: number, x: number, y: number) => void;
-  onFreestandingWindowDragUpdate?: (windowIndex: number, roomId: string | null, wall: WallPosition | null, offset: number, x: number, y: number) => void;
-  onRoomResize?: (roomId: string, newWidth: number, newDepth: number) => void;
+  onDoorDragUpdate?: (
+    doorIndex: number,
+    roomId: string | null,
+    wall: WallPosition | null,
+    offset: number,
+    x: number,
+    y: number
+  ) => void;
+  onWindowDragUpdate?: (
+    windowIndex: number,
+    roomId: string | null,
+    wall: WallPosition | null,
+    offset: number,
+    x: number,
+    y: number
+  ) => void;
+  onObjectDragUpdate?: (
+    sourceRoomId: string,
+    objectIndex: number,
+    targetRoomId: string,
+    newX: number,
+    newY: number
+  ) => void;
+  onFreestandingObjectDragUpdate?: (
+    objectIndex: number,
+    targetRoomId: string,
+    newX: number,
+    newY: number
+  ) => void;
+  onFreestandingDoorDragUpdate?: (
+    doorIndex: number,
+    roomId: string | null,
+    wall: WallPosition | null,
+    offset: number,
+    x: number,
+    y: number
+  ) => void;
+  onFreestandingWindowDragUpdate?: (
+    windowIndex: number,
+    roomId: string | null,
+    wall: WallPosition | null,
+    offset: number,
+    x: number,
+    y: number
+  ) => void;
 }
 
 interface DragState {
@@ -83,7 +122,6 @@ const FloorplanRendererComponent = ({
   onFreestandingObjectDragUpdate,
   onFreestandingDoorDragUpdate,
   onFreestandingWindowDragUpdate,
-  onRoomResize,
 }: FloorplanRendererProps) => {
   const gridStep = data.grid_step || 1000;
   const svgRef = useRef<SVGSVGElement>(null);
@@ -98,15 +136,24 @@ const FloorplanRendererComponent = ({
   // Resize state
   const [resizeState, setResizeState] = useState<{
     roomId: string;
-    edge: 'width' | 'depth';
+    edge: ResizeEdge;
     startMouseX: number;
     startMouseY: number;
     startWidth: number;
     startDepth: number;
+    startX: number;
+    startY: number;
   } | null>(null);
+  const resizeStateRef = useRef(resizeState);
+  const [hoveredRoomId, setHoveredRoomId] = useState<string | null>(null);
 
   // Use ref to track animation frame for drag updates
   const dragAnimationFrame = useRef<number | null>(null);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    resizeStateRef.current = resizeState;
+  }, [resizeState]);
 
   // Memoize room resolution to avoid recalculating on every render
   const { roomMap, errors, partIds, partToParent } = useMemo(() => {
@@ -400,6 +447,199 @@ const FloorplanRendererComponent = ({
     }
   };
 
+  // Handle resize end
+  const handleResizeEnd = useCallback(() => {
+    // Just clear the resize state - the final update was already done in handleResizeMove
+    setResizeState(null);
+  }, []);
+
+  // Handle resize movement
+  const handleResizeMove = useCallback(
+    (x: number, y: number) => {
+      const currentResizeState = resizeStateRef.current;
+      if (!currentResizeState) return;
+
+      const room = roomMap[currentResizeState.roomId];
+      if (!room) return;
+
+      // Initialize start position on first move
+      if (currentResizeState.startMouseX === 0 && currentResizeState.startMouseY === 0) {
+        setResizeState({
+          ...currentResizeState,
+          startMouseX: x,
+          startMouseY: y,
+        });
+        return;
+      }
+
+      // Calculate delta from start position
+      const deltaX = x - currentResizeState.startMouseX;
+      const deltaY = y - currentResizeState.startMouseY;
+
+      // Calculate new dimensions based on which edge is being dragged
+      const MIN_SIZE = 500; // mm - minimum room dimension
+
+      let newWidth = currentResizeState.startWidth;
+      let newDepth = currentResizeState.startDepth;
+
+      switch (currentResizeState.edge) {
+        case 'right':
+          newWidth = Math.round(Math.max(MIN_SIZE, currentResizeState.startWidth + deltaX));
+          break;
+        case 'left':
+          newWidth = Math.round(Math.max(MIN_SIZE, currentResizeState.startWidth - deltaX));
+          break;
+        case 'bottom':
+          newDepth = Math.round(Math.max(MIN_SIZE, currentResizeState.startDepth + deltaY));
+          break;
+        case 'top':
+          newDepth = Math.round(Math.max(MIN_SIZE, currentResizeState.startDepth - deltaY));
+          break;
+      }
+
+      // Update the room in data to show live resize feedback
+      if (onRoomUpdate) {
+        const roomData = data.rooms.find(r => r.id === currentResizeState.roomId);
+        if (roomData) {
+          const updatedRoom = { ...roomData };
+          updatedRoom.width = newWidth;
+          updatedRoom.depth = newDepth;
+
+          // If left or top edge, also adjust position
+          if (currentResizeState.edge === 'left' || currentResizeState.edge === 'top') {
+            const deltaX =
+              currentResizeState.edge === 'left' ? currentResizeState.startWidth - newWidth : 0;
+            const deltaY =
+              currentResizeState.edge === 'top' ? currentResizeState.startDepth - newDepth : 0;
+
+            const newX = Math.round(currentResizeState.startX + deltaX);
+            const newY = Math.round(currentResizeState.startY + deltaY);
+            updatedRoom.attachTo = 'zeropoint:top-left';
+            updatedRoom.anchor = 'top-left';
+            updatedRoom.offset = [newX, newY];
+          }
+
+          const updatedRooms = data.rooms.map(r =>
+            r.id === currentResizeState.roomId ? updatedRoom : r
+          );
+          onRoomUpdate({ ...data, rooms: updatedRooms });
+        }
+      }
+    },
+    [roomMap, data, onRoomUpdate]
+  );
+
+  // Resize start handler
+  const handleResizeStart = useCallback(
+    (roomId: string, edge: ResizeEdge) => {
+      const room = roomMap[roomId];
+      if (!room) return;
+
+      // Get initial mouse position
+      const svgElement = svgRef.current;
+      if (!svgElement) return;
+
+      const handleMouseMove = (e: MouseEvent) => {
+        const { x, y } = screenToMM(e.clientX, e.clientY);
+        handleResizeMove(x, y);
+      };
+
+      const handleMouseUp = () => {
+        handleResizeEnd();
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+
+      // Set initial resize state (will be updated with actual mouse position on first move)
+      setResizeState({
+        roomId,
+        edge,
+        startMouseX: 0, // Will be set on first move
+        startMouseY: 0, // Will be set on first move
+        startWidth: room.width,
+        startDepth: room.depth,
+        startX: room.x,
+        startY: room.y,
+      });
+    },
+    [roomMap, handleResizeMove, handleResizeEnd]
+  );
+
+  // Handle numeric resize (double-click on handle)
+  const handleResizeNumeric = useCallback(
+    (roomId: string, edge: ResizeEdge, currentValue: number) => {
+      if (!onRoomUpdate) return;
+
+      const dimensionName = edge === 'left' || edge === 'right' ? 'width' : 'depth';
+      const promptMessage = `Enter new ${dimensionName} in mm (current: ${currentValue}mm):`;
+      const input = window.prompt(promptMessage, currentValue.toString());
+
+      if (input === null) return; // User cancelled
+
+      const newValue = parseInt(input, 10);
+      if (isNaN(newValue) || newValue < 500) {
+        alert('Please enter a valid number (minimum 500mm)');
+        return;
+      }
+
+      const room = data.rooms.find(r => r.id === roomId);
+      if (!room) return;
+
+      const resolvedRoom = roomMap[roomId];
+      if (!resolvedRoom) return;
+
+      const updatedRoom = { ...room };
+
+      // Update the appropriate dimension
+      if (edge === 'left' || edge === 'right') {
+        const widthDelta = newValue - room.width;
+        updatedRoom.width = newValue;
+
+        // If left edge, adjust position to keep right edge fixed
+        if (edge === 'left') {
+          const newX = resolvedRoom.x - widthDelta;
+          updatedRoom.attachTo = 'zeropoint:top-left';
+          updatedRoom.anchor = 'top-left';
+          updatedRoom.offset = [newX, resolvedRoom.y];
+        }
+      } else {
+        // top or bottom
+        const depthDelta = newValue - room.depth;
+        updatedRoom.depth = newValue;
+
+        // If top edge, adjust position to keep bottom edge fixed
+        if (edge === 'top') {
+          const newY = resolvedRoom.y - depthDelta;
+          updatedRoom.attachTo = 'zeropoint:top-left';
+          updatedRoom.anchor = 'top-left';
+          updatedRoom.offset = [resolvedRoom.x, newY];
+        }
+      }
+
+      const updatedRooms = data.rooms.map(r => (r.id === roomId ? updatedRoom : r));
+      onRoomUpdate({ ...data, rooms: updatedRooms });
+    },
+    [data, roomMap, onRoomUpdate]
+  );
+
+  // Handle dimensions update (double-click on dimensions text)
+  const handleRoomDimensionsUpdate = useCallback(
+    (roomId: string, newWidth: number, newDepth: number) => {
+      if (!onRoomUpdate) return;
+
+      const room = data.rooms.find(r => r.id === roomId);
+      if (!room) return;
+
+      const updatedRoom = { ...room, width: newWidth, depth: newDepth };
+      const updatedRooms = data.rooms.map(r => (r.id === roomId ? updatedRoom : r));
+      onRoomUpdate({ ...data, rooms: updatedRooms });
+    },
+    [data, onRoomUpdate]
+  );
+
   // Handle drag movement with requestAnimationFrame for smooth performance
   const handleDragMove = useCallback(
     (x: number, y: number) => {
@@ -639,6 +879,9 @@ const FloorplanRendererComponent = ({
               onMouseDown={handleMouseDown}
               onClick={onRoomClick}
               onNameUpdate={onRoomNameUpdate}
+              onDimensionsUpdate={handleRoomDimensionsUpdate}
+              onMouseEnter={setHoveredRoomId}
+              onMouseLeave={() => setHoveredRoomId(null)}
             />
           ))}
 
@@ -734,10 +977,26 @@ const FloorplanRendererComponent = ({
             objects={data.objects}
             roomMap={roomMap}
             mm={mm}
-            onObjectClick={(objectIndex) => onObjectClick?.('freestanding', objectIndex)}
+            onObjectClick={objectIndex => onObjectClick?.('freestanding', objectIndex)}
             onObjectDragUpdate={onFreestandingObjectDragUpdate}
           />
         )}
+
+        {/* Resize handles - rendered on top when hovering */}
+        {hoveredRoomId &&
+          !dragState &&
+          !resizeState &&
+          roomMap[hoveredRoomId] &&
+          !partIds.has(hoveredRoomId) && (
+            <ResizeHandles
+              room={roomMap[hoveredRoomId]}
+              mm={mm}
+              onResizeStart={handleResizeStart}
+              onResizeNumeric={handleResizeNumeric}
+              onMouseEnter={() => setHoveredRoomId(hoveredRoomId)}
+              visible={true}
+            />
+          )}
 
         {/* Corner highlights - rendered on top */}
         <CornerHighlights

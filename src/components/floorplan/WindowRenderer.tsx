@@ -10,7 +10,14 @@ interface WindowRendererProps {
   roomMap: Record<string, ResolvedRoom>;
   mm: (val: number) => number;
   onClick?: (windowIndex: number) => void;
-  onDragUpdate?: (windowIndex: number, roomId: string | null, wall: WallPosition | null, offset: number, x: number, y: number) => void;
+  onDragUpdate?: (
+    windowIndex: number,
+    roomId: string | null,
+    wall: WallPosition | null,
+    offset: number,
+    x: number,
+    y: number
+  ) => void;
 }
 
 export function WindowRenderer({
@@ -27,7 +34,11 @@ export function WindowRenderer({
   const [currentOffset, setCurrentOffset] = useState(window.offset ?? 0);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [currentWall, setCurrentWall] = useState<WallPosition | null>(null);
-  const [snappedWall, setSnappedWall] = useState<{ roomId: string; wall: WallPosition; offset: number } | null>(null);
+  const [snappedWall, setSnappedWall] = useState<{
+    roomId: string;
+    wall: WallPosition;
+    offset: number;
+  } | null>(null);
 
   // Convert SVG screen coordinates to mm
   const screenToMM = useCallback((e: React.MouseEvent): { x: number; y: number } => {
@@ -60,36 +71,60 @@ export function WindowRenderer({
   );
 
   // Helper to find closest wall across all rooms (for snapping)
-  const findClosestWallToSnap = useCallback((x: number, y: number): { roomId: string; wall: WallPosition; offset: number } | null => {
-    let closest: { roomId: string; wall: WallPosition; offset: number; distance: number } | null = null;
+  const findClosestWallToSnap = useCallback(
+    (x: number, y: number): { roomId: string; wall: WallPosition; offset: number } | null => {
+      let closest: { roomId: string; wall: WallPosition; offset: number; distance: number } | null =
+        null;
 
-    for (const room of Object.values(roomMap)) {
-      if (room.id === 'zeropoint') continue;
+      for (const room of Object.values(roomMap)) {
+        if (room.id === 'zeropoint') continue;
 
-      // Check all four walls
-      const walls = [
-        { wall: 'top' as WallPosition, dist: Math.abs(y - room.y), offset: x - room.x, maxOffset: room.width },
-        { wall: 'bottom' as WallPosition, dist: Math.abs(y - (room.y + room.depth)), offset: x - room.x, maxOffset: room.width },
-        { wall: 'left' as WallPosition, dist: Math.abs(x - room.x), offset: y - room.y, maxOffset: room.depth },
-        { wall: 'right' as WallPosition, dist: Math.abs(x - (room.x + room.width)), offset: y - room.y, maxOffset: room.depth },
-      ];
+        // Check all four walls
+        const walls = [
+          {
+            wall: 'top' as WallPosition,
+            dist: Math.abs(y - room.y),
+            offset: x - room.x,
+            maxOffset: room.width,
+          },
+          {
+            wall: 'bottom' as WallPosition,
+            dist: Math.abs(y - (room.y + room.depth)),
+            offset: x - room.x,
+            maxOffset: room.width,
+          },
+          {
+            wall: 'left' as WallPosition,
+            dist: Math.abs(x - room.x),
+            offset: y - room.y,
+            maxOffset: room.depth,
+          },
+          {
+            wall: 'right' as WallPosition,
+            dist: Math.abs(x - (room.x + room.width)),
+            offset: y - room.y,
+            maxOffset: room.depth,
+          },
+        ];
 
-      for (const w of walls) {
-        if (w.dist < SNAP_DISTANCE && w.offset >= 0 && w.offset <= w.maxOffset - window.width) {
-          if (!closest || w.dist < closest.distance) {
-            closest = {
-              roomId: room.id,
-              wall: w.wall,
-              offset: Math.max(0, Math.min(w.offset, w.maxOffset - window.width)),
-              distance: w.dist,
-            };
+        for (const w of walls) {
+          if (w.dist < SNAP_DISTANCE && w.offset >= 0 && w.offset <= w.maxOffset - window.width) {
+            if (!closest || w.dist < closest.distance) {
+              closest = {
+                roomId: room.id,
+                wall: w.wall,
+                offset: Math.max(0, Math.min(w.offset, w.maxOffset - window.width)),
+                distance: w.dist,
+              };
+            }
           }
         }
       }
-    }
 
-    return closest;
-  }, [roomMap, window.width]);
+      return closest;
+    },
+    [roomMap, window.width]
+  );
 
   // Add global mouse move and mouse up listeners when dragging
   useEffect(() => {
@@ -133,7 +168,14 @@ export function WindowRenderer({
 
       if (snappedWall) {
         // Snap to wall
-        onDragUpdate(index, snappedWall.roomId, snappedWall.wall, snappedWall.offset, currentX, currentY);
+        onDragUpdate(
+          index,
+          snappedWall.roomId,
+          snappedWall.wall,
+          snappedWall.offset,
+          currentX,
+          currentY
+        );
       } else {
         // Go freestanding
         onDragUpdate(index, null, null, 0, currentX, currentY);

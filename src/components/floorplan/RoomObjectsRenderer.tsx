@@ -131,15 +131,18 @@ function RoomObject({
   );
 
   // Helper to find which room contains a point
-  const findRoomAtPoint = useCallback((x: number, y: number): ResolvedRoom | null => {
-    for (const r of Object.values(roomMap)) {
-      if (r.id === 'zeropoint') continue; // Skip virtual zeropoint
-      if (x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.depth) {
-        return r;
+  const findRoomAtPoint = useCallback(
+    (x: number, y: number): ResolvedRoom | null => {
+      for (const r of Object.values(roomMap)) {
+        if (r.id === 'zeropoint') continue; // Skip virtual zeropoint
+        if (x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.depth) {
+          return r;
+        }
       }
-    }
-    return null;
-  }, [roomMap]);
+      return null;
+    },
+    [roomMap]
+  );
 
   // Add global mouse move and mouse up listeners when dragging
   useEffect(() => {
@@ -204,7 +207,22 @@ function RoomObject({
       window.removeEventListener('mousemove', handleGlobalMouseMove);
       window.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [isObjectDragging, dragStartObjX, dragStartObjY, dragStartX, dragStartY, obj, room, onObjectDragUpdate, idx, currentObjX, currentObjY, targetRoomId, findRoomAtPoint, roomMap]);
+  }, [
+    isObjectDragging,
+    dragStartObjX,
+    dragStartObjY,
+    dragStartX,
+    dragStartY,
+    obj,
+    room,
+    onObjectDragUpdate,
+    idx,
+    currentObjX,
+    currentObjY,
+    targetRoomId,
+    findRoomAtPoint,
+    roomMap,
+  ]);
 
   // Use current position when dragging, otherwise use obj position
   const activeX = isObjectDragging ? currentObjX : obj.x;
@@ -223,7 +241,8 @@ function RoomObject({
     const renderRoom = isObjectDragging && targetRoomId !== room.id ? roomMap[targetRoomId] : room;
     if (!renderRoom) return null;
 
-    const roomAnchor = isObjectDragging && targetRoomId !== room.id ? 'top-left' : (obj.roomAnchor || anchor);
+    const roomAnchor =
+      isObjectDragging && targetRoomId !== room.id ? 'top-left' : obj.roomAnchor || anchor;
     const roomCorner = getRoomCorner(renderRoom, roomAnchor);
 
     // Object position is: room corner + x,y offset
