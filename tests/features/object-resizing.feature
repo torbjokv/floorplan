@@ -29,8 +29,8 @@ Feature: Object Resizing
       """
     When I switch to the "Preview" tab
     And I hover over the object "Lamp" in room "livingroom"
-    Then I should see resize handles at all 4 corners of the object
-    And the resize handles should have the correct cursor styles
+    Then I should see 1 resize handle at the corner opposite to the anchor
+    And the resize handle should have the correct cursor style
 
   Scenario: Resize handles disappear when mouse leaves object
     Given I have the following DSL:

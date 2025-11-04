@@ -13,7 +13,7 @@ import { Notifications } from './components/ui/Notifications/Notifications';
 
 // Types
 import type { SavedProject } from './components/ui/ProjectMenu/ProjectMenu';
-import type { FloorplanData, Room } from './types';
+import type { FloorplanData, Room, Door, Window as FloorplanWindow, RoomObject } from './types';
 
 // Utilities and Hooks
 import {
@@ -403,7 +403,7 @@ function App() {
   const handleAddDoor = () => {
     // Count existing freestanding doors at zeropoint to space them apart
     const existingDoors = floorplanData.doors || [];
-    const freestandingDoors = existingDoors.filter(d => d.room.startsWith('zeropoint:'));
+    const freestandingDoors = existingDoors.filter(d => d.room?.startsWith('zeropoint:'));
     const offset = freestandingDoors.length * 1000; // Space doors 1000mm apart
 
     const newDoor: Door = {
@@ -426,10 +426,10 @@ function App() {
   const handleAddWindow = () => {
     // Count existing freestanding windows at zeropoint to space them apart
     const existingWindows = floorplanData.windows || [];
-    const freestandingWindows = existingWindows.filter(w => w.room.startsWith('zeropoint:'));
+    const freestandingWindows = existingWindows.filter(w => w.room?.startsWith('zeropoint:'));
     const offset = freestandingWindows.length * 1500; // Space windows 1500mm apart
 
-    const newWindow: Window = {
+    const newWindow: FloorplanWindow = {
       room: 'zeropoint:top',
       offset: offset,
       width: 1200,
@@ -776,7 +776,7 @@ function App() {
           // If moving within same location, just update position
           if (sourceRoomId === targetRoomId) {
             const updatedObjects = room.objects.map((obj, idx) =>
-              idx === objectIndex ? movedObject : obj
+              idx === objectIndex && movedObject ? movedObject : obj
             );
             return { ...room, objects: updatedObjects };
           }
@@ -795,7 +795,7 @@ function App() {
               // If moving within same part, just update position
               if (sourceRoomId === targetRoomId) {
                 const updatedObjects = part.objects.map((obj, idx) =>
-                  idx === objectIndex ? movedObject : obj
+                  idx === objectIndex && movedObject ? movedObject : obj
                 );
                 return { ...part, objects: updatedObjects };
               }
@@ -837,12 +837,18 @@ function App() {
       else if (sourceRoomId !== targetRoomId && movedObject) {
         const addObjectTo = (room: Room): Room => {
           // Check if adding to this room
-          if (room.id === targetRoomId) {
+          if (room.id === targetRoomId && movedObject) {
             // Reset anchors to top-left for cross-location move
-            const adjustedObject = {
-              ...movedObject,
-              anchor: 'top-left',
-              roomAnchor: 'top-left',
+            const adjustedObject: RoomObject = {
+              type: movedObject.type,
+              x: movedObject.x,
+              y: movedObject.y,
+              width: movedObject.width,
+              height: movedObject.height,
+              anchor: 'top-left' as const,
+              roomAnchor: 'top-left' as const,
+              ...(movedObject.color && { color: movedObject.color }),
+              ...(movedObject.text && { text: movedObject.text }),
             };
             return {
               ...room,
@@ -853,12 +859,18 @@ function App() {
           // Check if adding to a part of this room
           if (room.parts) {
             const updatedParts = room.parts.map(part => {
-              if (part.id === targetRoomId) {
+              if (part.id === targetRoomId && movedObject) {
                 // Reset anchors to top-left for cross-location move
-                const adjustedObject = {
-                  ...movedObject,
-                  anchor: 'top-left',
-                  roomAnchor: 'top-left',
+                const adjustedObject: RoomObject = {
+                  type: movedObject.type,
+                  x: movedObject.x,
+                  y: movedObject.y,
+                  width: movedObject.width,
+                  height: movedObject.height,
+                  anchor: 'top-left' as const,
+                  roomAnchor: 'top-left' as const,
+                  ...(movedObject.color && { color: movedObject.color }),
+                  ...(movedObject.text && { text: movedObject.text }),
                 };
                 return {
                   ...part,
@@ -913,10 +925,10 @@ function App() {
         const updatedRooms = config.rooms.map(room => {
           if (room.id === targetRoomId) {
             // Add to target room with top-left anchor
-            const roomObject = {
+            const roomObject: RoomObject = {
               ...movedObject,
-              anchor: 'top-left',
-              roomAnchor: 'top-left',
+              anchor: 'top-left' as const,
+              roomAnchor: 'top-left' as const,
             };
             return {
               ...room,
