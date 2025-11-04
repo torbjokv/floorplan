@@ -1437,8 +1437,6 @@ const FloorplanRendererComponent = ({
         {/* All room objects - rendered last so they appear on top */}
         <RoomObjectsRenderer
           roomMap={roomMap}
-          dragState={dragState}
-          dragOffset={dragOffset}
           mm={mm}
           onObjectClick={onObjectClick}
           onObjectDragUpdate={onObjectDragUpdate}
