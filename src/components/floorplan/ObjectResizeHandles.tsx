@@ -45,8 +45,22 @@ export function ObjectResizeHandles({
     ? `${room.id}-part-${partId}-${objectIndex}`
     : `${room.id}-${objectIndex}`;
 
+  // Helper to get opposite corner for circles
+  const getOppositeCorner = (anchor: Anchor): Anchor => {
+    switch (anchor) {
+      case 'top-left':
+        return 'bottom-right';
+      case 'top-right':
+        return 'bottom-left';
+      case 'bottom-left':
+        return 'top-right';
+      case 'bottom-right':
+        return 'top-left';
+    }
+  };
+
   // Calculate corner positions for handles (in screen pixels)
-  const corners: Array<{
+  const allCorners: Array<{
     anchor: Anchor;
     centerX: number; // Center point of the corner in screen pixels
     centerY: number;
@@ -77,6 +91,12 @@ export function ObjectResizeHandles({
       cursor: 'nwse-resize',
     },
   ];
+
+  // For circles, show only the handle opposite to the anchor
+  const corners =
+    object.type === 'circle'
+      ? allCorners.filter(c => c.anchor === getOppositeCorner(object.anchor || 'top-left'))
+      : allCorners;
 
   return (
     <g className="object-resize-handles" onMouseEnter={onMouseEnter}>
