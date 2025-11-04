@@ -99,6 +99,9 @@ When(
 
     const testId = getObjectTestId(roomId, result!.objectIndex);
     const objectElement = this.page.locator(`[data-testid="${testId}"]`);
+
+    // Wait for object to be visible before hovering
+    await objectElement.waitFor({ state: 'visible', timeout: 5000 });
     await objectElement.hover();
 
     // Store for later use
@@ -114,6 +117,9 @@ When(
 
     const testId = getObjectTestId(result!.roomId, result!.objectIndex, partId);
     const objectElement = this.page.locator(`[data-testid="${testId}"]`);
+
+    // Wait for object to be visible before hovering
+    await objectElement.waitFor({ state: 'visible', timeout: 5000 });
     await objectElement.hover();
 
     // Store for later use

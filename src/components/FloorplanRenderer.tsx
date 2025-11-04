@@ -1043,98 +1043,6 @@ const FloorplanRendererComponent = ({
     [data, roomMap, onRoomUpdate]
   );
 
-  const handleObjectNameUpdate = useCallback(
-    (roomId: string, objectIndex: number, newName: string) => {
-      if (!onRoomUpdate) return;
-
-      const roomData = data.rooms.find(r => r.id === roomId);
-      if (!roomData) return;
-
-      const updatedRoom = { ...roomData };
-
-      // Check if it's a room-level object or part-level object
-      if (updatedRoom.objects && updatedRoom.objects[objectIndex]) {
-        const updatedObjects = [...updatedRoom.objects];
-        updatedObjects[objectIndex] = {
-          ...updatedObjects[objectIndex],
-          text: newName || undefined,
-        };
-        updatedRoom.objects = updatedObjects;
-      } else if (updatedRoom.parts) {
-        // Search in parts
-        for (const part of updatedRoom.parts) {
-          if (part.objects && part.objects[objectIndex]) {
-            const updatedParts = updatedRoom.parts.map(p => {
-              if (p.id === part.id) {
-                const updatedObjects = [...(p.objects || [])];
-                updatedObjects[objectIndex] = {
-                  ...updatedObjects[objectIndex],
-                  text: newName || undefined,
-                };
-                return { ...p, objects: updatedObjects };
-              }
-              return p;
-            });
-            updatedRoom.parts = updatedParts;
-            break;
-          }
-        }
-      }
-
-      const updatedRooms = data.rooms.map(r => (r.id === roomId ? updatedRoom : r));
-      onRoomUpdate({ ...data, rooms: updatedRooms });
-    },
-    [data, onRoomUpdate]
-  );
-
-  const handleObjectDimensionsUpdate = useCallback(
-    (roomId: string, objectIndex: number, width: number, height?: number) => {
-      if (!onRoomUpdate) return;
-
-      const roomData = data.rooms.find(r => r.id === roomId);
-      if (!roomData) return;
-
-      const updatedRoom = { ...roomData };
-
-      // Check if it's a room-level object or part-level object
-      if (updatedRoom.objects && updatedRoom.objects[objectIndex]) {
-        const obj = updatedRoom.objects[objectIndex];
-        const updatedObjects = [...updatedRoom.objects];
-        updatedObjects[objectIndex] = {
-          ...obj,
-          width,
-          ...(obj.type === 'circle' ? {} : { height: height || width }),
-        };
-        updatedRoom.objects = updatedObjects;
-      } else if (updatedRoom.parts) {
-        // Search in parts
-        for (const part of updatedRoom.parts) {
-          if (part.objects && part.objects[objectIndex]) {
-            const updatedParts = updatedRoom.parts.map(p => {
-              if (p.id === part.id) {
-                const obj = p.objects![objectIndex];
-                const updatedObjects = [...(p.objects || [])];
-                updatedObjects[objectIndex] = {
-                  ...obj,
-                  width,
-                  ...(obj.type === 'circle' ? {} : { height: height || width }),
-                };
-                return { ...p, objects: updatedObjects };
-              }
-              return p;
-            });
-            updatedRoom.parts = updatedParts;
-            break;
-          }
-        }
-      }
-
-      const updatedRooms = data.rooms.map(r => (r.id === roomId ? updatedRoom : r));
-      onRoomUpdate({ ...data, rooms: updatedRooms });
-    },
-    [data, onRoomUpdate]
-  );
-
   // Handle drag movement with requestAnimationFrame for smooth performance
   const handleDragMove = useCallback(
     (x: number, y: number) => {
@@ -1437,6 +1345,8 @@ const FloorplanRendererComponent = ({
         {/* All room objects - rendered last so they appear on top */}
         <RoomObjectsRenderer
           roomMap={roomMap}
+          dragState={dragState}
+          dragOffset={dragOffset}
           mm={mm}
           onObjectClick={onObjectClick}
           onObjectDragUpdate={onObjectDragUpdate}
@@ -1447,8 +1357,6 @@ const FloorplanRendererComponent = ({
           onObjectMouseLeave={() => setHoveredObject(null)}
           onObjectResizeStart={handleObjectResizeStart}
           onObjectResizeNumeric={handleObjectResizeNumeric}
-          onObjectNameUpdate={handleObjectNameUpdate}
-          onObjectDimensionsUpdate={handleObjectDimensionsUpdate}
         />
 
         {/* Freestanding doors (at absolute coordinates) */}
