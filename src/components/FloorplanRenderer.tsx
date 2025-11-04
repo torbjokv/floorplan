@@ -714,6 +714,8 @@ const FloorplanRendererComponent = ({
 
       let newWidth = currentObjectResizeState.startWidth;
       let newHeight = currentObjectResizeState.startHeight;
+      let newX = currentObjectResizeState.startX;
+      let newY = currentObjectResizeState.startY;
 
       if (isCircle) {
         // For circles, resize proportionally based on diagonal distance
@@ -724,6 +726,7 @@ const FloorplanRendererComponent = ({
       } else {
         // For squares, resize based on corner
         const corner = currentObjectResizeState.corner;
+        const anchor = obj.anchor || 'top-left';
 
         switch (corner) {
           case 'bottom-right':
@@ -732,6 +735,14 @@ const FloorplanRendererComponent = ({
               MIN_SIZE,
               Math.round(currentObjectResizeState.startHeight + deltaY)
             );
+            // Adjust position if this corner is the anchor
+            if (anchor === 'bottom-right') {
+              newX =
+                currentObjectResizeState.startX + (newWidth - currentObjectResizeState.startWidth);
+              newY =
+                currentObjectResizeState.startY +
+                (newHeight - currentObjectResizeState.startHeight);
+            }
             break;
           case 'bottom-left':
             newWidth = Math.max(MIN_SIZE, Math.round(currentObjectResizeState.startWidth - deltaX));
@@ -739,6 +750,14 @@ const FloorplanRendererComponent = ({
               MIN_SIZE,
               Math.round(currentObjectResizeState.startHeight + deltaY)
             );
+            // Adjust position if this corner is the anchor
+            if (anchor === 'bottom-left') {
+              newX =
+                currentObjectResizeState.startX - (newWidth - currentObjectResizeState.startWidth);
+              newY =
+                currentObjectResizeState.startY +
+                (newHeight - currentObjectResizeState.startHeight);
+            }
             break;
           case 'top-right':
             newWidth = Math.max(MIN_SIZE, Math.round(currentObjectResizeState.startWidth + deltaX));
@@ -746,6 +765,14 @@ const FloorplanRendererComponent = ({
               MIN_SIZE,
               Math.round(currentObjectResizeState.startHeight - deltaY)
             );
+            // Adjust position if this corner is the anchor
+            if (anchor === 'top-right') {
+              newX =
+                currentObjectResizeState.startX + (newWidth - currentObjectResizeState.startWidth);
+              newY =
+                currentObjectResizeState.startY -
+                (newHeight - currentObjectResizeState.startHeight);
+            }
             break;
           case 'top-left':
             newWidth = Math.max(MIN_SIZE, Math.round(currentObjectResizeState.startWidth - deltaX));
@@ -753,6 +780,14 @@ const FloorplanRendererComponent = ({
               MIN_SIZE,
               Math.round(currentObjectResizeState.startHeight - deltaY)
             );
+            // Adjust position if this corner is the anchor
+            if (anchor === 'top-left') {
+              newX =
+                currentObjectResizeState.startX - (newWidth - currentObjectResizeState.startWidth);
+              newY =
+                currentObjectResizeState.startY -
+                (newHeight - currentObjectResizeState.startHeight);
+            }
             break;
         }
       }
@@ -773,6 +808,8 @@ const FloorplanRendererComponent = ({
               const updatedObjects = [...(updatedPart.objects || [])];
               updatedObjects[currentObjectResizeState.objectIndex] = {
                 ...updatedObjects[currentObjectResizeState.objectIndex],
+                x: newX,
+                y: newY,
                 width: newWidth,
                 height: isCircle ? undefined : newHeight,
               };
@@ -784,6 +821,8 @@ const FloorplanRendererComponent = ({
             const updatedObjects = [...updatedRoom.objects];
             updatedObjects[currentObjectResizeState.objectIndex] = {
               ...updatedObjects[currentObjectResizeState.objectIndex],
+              x: newX,
+              y: newY,
               width: newWidth,
               height: isCircle ? undefined : newHeight,
             };
