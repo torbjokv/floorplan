@@ -1,9 +1,324 @@
 import type { ResolvedRoom, Anchor, RoomObject as RoomObjectType } from '../../types';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { ObjectResizeHandles } from './ObjectResizeHandles';
 
 const DEFAULT_OBJECT_SIZE = 1000; // mm
 const HANDLE_HITBOX_SIZE_PX = 50; // pixels - must match ObjectResizeHandles
+
+interface EditableObjectLabelProps {
+  object: RoomObjectType;
+  x: number;
+  y: number;
+  onNameUpdate?: (roomId: string, objectIndex: number, newName: string) => void;
+  roomId: string;
+  objectIndex: number;
+}
+
+function EditableObjectLabel({
+  object,
+  x,
+  y,
+  onNameUpdate,
+  roomId,
+  objectIndex,
+}: EditableObjectLabelProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(object.text || '');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditing(true);
+    setEditValue(object.text || '');
+  };
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    if (editValue.trim() !== (object.text || '')) {
+      onNameUpdate?.(roomId, objectIndex, editValue.trim());
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleBlur();
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+      setEditValue(object.text || '');
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <foreignObject x={x - 100} y={y - 15} width={200} height={30}>
+        <input
+          ref={inputRef}
+          type="text"
+          value={editValue}
+          onChange={e => setEditValue(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          style={{
+            width: '100%',
+            height: '100%',
+            textAlign: 'center',
+            fontSize: '12px',
+            border: '2px solid #4a90e2',
+            borderRadius: '4px',
+            padding: '2px 4px',
+            background: 'white',
+            color: 'black',
+            outline: 'none',
+            boxSizing: 'border-box',
+          }}
+        />
+      </foreignObject>
+    );
+  }
+
+  if (!object.text) return null;
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fontSize="12"
+      textAnchor="middle"
+      dominantBaseline="middle"
+      fill="#000"
+      onDoubleClick={handleDoubleClick}
+      style={{ cursor: 'text', userSelect: 'none', pointerEvents: 'all' }}
+    >
+      {object.text}
+    </text>
+  );
+}
+
+interface EditableObjectDimensionsProps {
+  object: RoomObjectType;
+  x: number;
+  y: number;
+  onDimensionsUpdate?: (
+    roomId: string,
+    objectIndex: number,
+    width: number,
+    height?: number
+  ) => void;
+  roomId: string;
+  objectIndex: number;
+}
+
+function EditableObjectDimensions({
+  object,
+  x,
+  y,
+  onDimensionsUpdate,
+  roomId,
+  objectIndex,
+}: EditableObjectDimensionsProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [widthValue, setWidthValue] = useState(object.width.toString());
+  const [heightValue, setHeightValue] = useState(
+    (object.type === 'circle' ? object.width : object.height || object.width).toString()
+  );
+  const widthInputRef = useRef<HTMLInputElement>(null);
+  const heightInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing && widthInputRef.current) {
+      widthInputRef.current.focus();
+      widthInputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditing(true);
+    setWidthValue(object.width.toString());
+    setHeightValue(
+      (object.type === 'circle' ? object.width : object.height || object.width).toString()
+    );
+  };
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    const newWidth = parseInt(widthValue, 10);
+    const newHeight = parseInt(heightValue, 10);
+
+    if (!isNaN(newWidth) && newWidth >= 100) {
+      if (object.type === 'circle') {
+        if (newWidth !== object.width) {
+          onDimensionsUpdate?.(roomId, objectIndex, newWidth);
+        }
+      } else {
+        if (!isNaN(newHeight) && newHeight >= 100) {
+          if (newWidth !== object.width || newHeight !== (object.height || object.width)) {
+            onDimensionsUpdate?.(roomId, objectIndex, newWidth, newHeight);
+          }
+        }
+      }
+    }
+  };
+
+  const handleWidthKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleBlur();
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+      setWidthValue(object.width.toString());
+      setHeightValue(
+        (object.type === 'circle' ? object.width : object.height || object.width).toString()
+      );
+    } else if (e.key === 'Tab' && !e.shiftKey && object.type !== 'circle') {
+      e.preventDefault();
+      heightInputRef.current?.focus();
+      heightInputRef.current?.select();
+    }
+  };
+
+  const handleHeightKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleBlur();
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+      setWidthValue(object.width.toString());
+      setHeightValue(
+        (object.type === 'circle' ? object.width : object.height || object.width).toString()
+      );
+    } else if (e.key === 'Tab' && e.shiftKey) {
+      e.preventDefault();
+      widthInputRef.current?.focus();
+      widthInputRef.current?.select();
+    }
+  };
+
+  if (isEditing) {
+    if (object.type === 'circle') {
+      return (
+        <foreignObject x={x - 75} y={y - 15} width={150} height={30}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '4px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+            }}
+          >
+            <span style={{ color: 'black', fontSize: '12px' }}>⌀</span>
+            <input
+              ref={widthInputRef}
+              type="number"
+              value={widthValue}
+              onChange={e => setWidthValue(e.target.value)}
+              onBlur={handleBlur}
+              onKeyDown={handleWidthKeyDown}
+              placeholder="Diameter"
+              style={{
+                width: '80px',
+                height: '100%',
+                textAlign: 'center',
+                fontSize: '11px',
+                border: '2px solid #4a90e2',
+                borderRadius: '4px',
+                padding: '2px',
+                background: 'white',
+                color: 'black',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+        </foreignObject>
+      );
+    } else {
+      return (
+        <foreignObject x={x - 100} y={y - 15} width={200} height={30}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '4px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+            }}
+          >
+            <input
+              ref={widthInputRef}
+              type="number"
+              value={widthValue}
+              onChange={e => setWidthValue(e.target.value)}
+              onKeyDown={handleWidthKeyDown}
+              placeholder="Width"
+              style={{
+                width: '60px',
+                height: '100%',
+                textAlign: 'center',
+                fontSize: '11px',
+                border: '2px solid #4a90e2',
+                borderRadius: '4px',
+                padding: '2px',
+                background: 'white',
+                color: 'black',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+            <span style={{ color: 'black', fontSize: '12px', fontWeight: 'bold' }}>×</span>
+            <input
+              ref={heightInputRef}
+              type="number"
+              value={heightValue}
+              onChange={e => setHeightValue(e.target.value)}
+              onBlur={handleBlur}
+              onKeyDown={handleHeightKeyDown}
+              placeholder="Height"
+              style={{
+                width: '60px',
+                height: '100%',
+                textAlign: 'center',
+                fontSize: '11px',
+                border: '2px solid #4a90e2',
+                borderRadius: '4px',
+                padding: '2px',
+                background: 'white',
+                color: 'black',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+        </foreignObject>
+      );
+    }
+  }
+
+  const dimensionText =
+    object.type === 'circle'
+      ? `⌀${object.width}`
+      : `${object.width}×${object.height || object.width}`;
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fontSize="10"
+      textAnchor="middle"
+      dominantBaseline="middle"
+      onDoubleClick={handleDoubleClick}
+      style={{ cursor: 'text', userSelect: 'none', fill: '#888', pointerEvents: 'all' }}
+    >
+      {dimensionText}mm
+    </text>
+  );
+}
 
 interface DragState {
   roomId: string;
@@ -44,6 +359,13 @@ interface RoomObjectsRendererProps {
     currentWidth: number,
     currentHeight?: number,
     partId?: string
+  ) => void;
+  onObjectNameUpdate?: (roomId: string, objectIndex: number, newName: string) => void;
+  onObjectDimensionsUpdate?: (
+    roomId: string,
+    objectIndex: number,
+    width: number,
+    height?: number
   ) => void;
 }
 
@@ -95,6 +417,8 @@ function RoomObject({
   onObjectMouseLeave,
   onObjectResizeStart,
   onObjectResizeNumeric,
+  onObjectNameUpdate,
+  onObjectDimensionsUpdate,
   partId,
 }: {
   room: ResolvedRoom;
@@ -128,6 +452,13 @@ function RoomObject({
     currentWidth: number,
     currentHeight?: number,
     partId?: string
+  ) => void;
+  onObjectNameUpdate?: (roomId: string, objectIndex: number, newName: string) => void;
+  onObjectDimensionsUpdate?: (
+    roomId: string,
+    objectIndex: number,
+    width: number,
+    height?: number
   ) => void;
   partId?: string;
 }) {
@@ -363,33 +694,22 @@ function RoomObject({
               cursor: isObjectDragging ? 'grabbing' : onObjectDragUpdate ? 'grab' : 'pointer',
             }}
           />
-          {obj.text && (
-            <text
-              x={centerX}
-              y={centerY}
-              fontSize="12"
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fill="#000"
-              style={{ pointerEvents: 'none' }}
-            >
-              {obj.text}
-            </text>
-          )}
-          {isHovered && (
-            <text
-              data-testid={`${testIdBase}-dimensions`}
-              x={centerX}
-              y={mm(absY + objOffset.y - 15)}
-              fontSize="11"
-              fontWeight="bold"
-              textAnchor="middle"
-              fill="#4a90e2"
-              style={{ pointerEvents: 'none' }}
-            >
-              ⌀{diameter}
-            </text>
-          )}
+          <EditableObjectLabel
+            object={obj}
+            x={centerX}
+            y={centerY - (obj.text ? 8 : 0)}
+            onNameUpdate={onObjectNameUpdate}
+            roomId={room.id}
+            objectIndex={idx}
+          />
+          <EditableObjectDimensions
+            object={obj}
+            x={centerX}
+            y={centerY + (obj.text ? 16 : 8)}
+            onDimensionsUpdate={onObjectDimensionsUpdate}
+            roomId={room.id}
+            objectIndex={idx}
+          />
         </g>
         {isHovered && onObjectResizeStart && (
           <ObjectResizeHandles
@@ -460,33 +780,22 @@ function RoomObject({
               cursor: isObjectDragging ? 'grabbing' : onObjectDragUpdate ? 'grab' : 'pointer',
             }}
           />
-          {obj.text && (
-            <text
-              x={centerX}
-              y={centerY}
-              fontSize="12"
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fill="#000"
-              style={{ pointerEvents: 'none' }}
-            >
-              {obj.text}
-            </text>
-          )}
-          {isHovered && (
-            <text
-              data-testid={`${testIdBase}-dimensions`}
-              x={centerX}
-              y={rectY - 5}
-              fontSize="11"
-              fontWeight="bold"
-              textAnchor="middle"
-              fill="#4a90e2"
-              style={{ pointerEvents: 'none' }}
-            >
-              {width}×{height}
-            </text>
-          )}
+          <EditableObjectLabel
+            object={obj}
+            x={centerX}
+            y={centerY - (obj.text ? 8 : 0)}
+            onNameUpdate={onObjectNameUpdate}
+            roomId={room.id}
+            objectIndex={idx}
+          />
+          <EditableObjectDimensions
+            object={obj}
+            x={centerX}
+            y={centerY + (obj.text ? 16 : 8)}
+            onDimensionsUpdate={onObjectDimensionsUpdate}
+            roomId={room.id}
+            objectIndex={idx}
+          />
         </g>
         {isHovered && onObjectResizeStart && (
           <ObjectResizeHandles
@@ -523,6 +832,8 @@ export function RoomObjectsRenderer({
   onObjectMouseLeave,
   onObjectResizeStart,
   onObjectResizeNumeric,
+  onObjectNameUpdate,
+  onObjectDimensionsUpdate,
 }: RoomObjectsRendererProps) {
   return (
     <>
@@ -558,6 +869,8 @@ export function RoomObjectsRenderer({
                 onObjectMouseLeave={onObjectMouseLeave}
                 onObjectResizeStart={onObjectResizeStart}
                 onObjectResizeNumeric={onObjectResizeNumeric}
+                onObjectNameUpdate={onObjectNameUpdate}
+                onObjectDimensionsUpdate={onObjectDimensionsUpdate}
               />
             ))}
             {/* Render part-level objects */}
@@ -583,6 +896,8 @@ export function RoomObjectsRenderer({
                   onObjectMouseLeave={onObjectMouseLeave}
                   onObjectResizeStart={onObjectResizeStart}
                   onObjectResizeNumeric={onObjectResizeNumeric}
+                  onObjectNameUpdate={onObjectNameUpdate}
+                  onObjectDimensionsUpdate={onObjectDimensionsUpdate}
                   partId={part.id}
                 />
               ))
