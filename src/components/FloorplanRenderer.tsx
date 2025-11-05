@@ -854,7 +854,7 @@ const FloorplanRendererComponent = ({
     (
       roomId: string,
       objectIndex: number,
-      corner: Anchor,
+      _corner: Anchor,
       currentWidth: number,
       currentHeight?: number,
       partId?: string

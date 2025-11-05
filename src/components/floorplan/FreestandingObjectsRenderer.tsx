@@ -65,26 +65,8 @@ function FreestandingObject({
   const [currentObjY, setCurrentObjY] = useState(obj.y);
   const [targetRoomId, setTargetRoomId] = useState<string>('freestanding');
 
-  const DEFAULT_OBJECT_SIZE = 800;
-
   const width = obj.type === 'circle' ? obj.width : obj.width;
   const height = obj.type === 'circle' ? obj.width : obj.height || obj.width;
-
-  // Convert SVG screen coordinates to mm
-  const screenToMM = useCallback((e: React.MouseEvent): { x: number; y: number } => {
-    const svg = (e.target as SVGElement).ownerSVGElement;
-    if (!svg) return { x: 0, y: 0 };
-
-    const pt = svg.createSVGPoint();
-    pt.x = e.clientX;
-    pt.y = e.clientY;
-    const svgPt = pt.matrixTransform(svg.getScreenCTM()?.inverse());
-
-    return {
-      x: svgPt.x * 10,
-      y: svgPt.y * 10,
-    };
-  }, []);
 
   // Handle mouse down - start dragging
   const handleMouseDown = useCallback(
