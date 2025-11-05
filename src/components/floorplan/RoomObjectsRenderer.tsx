@@ -366,7 +366,7 @@ function RoomObject({
           {obj.text && (
             <text
               x={centerX}
-              y={centerY}
+              y={centerY - 10}
               fontSize="12"
               textAnchor="middle"
               dominantBaseline="middle"
@@ -376,20 +376,18 @@ function RoomObject({
               {obj.text}
             </text>
           )}
-          {isHovered && (
-            <text
-              data-testid={`${testIdBase}-dimensions`}
-              x={centerX}
-              y={mm(absY + objOffset.y - 15)}
-              fontSize="11"
-              fontWeight="bold"
-              textAnchor="middle"
-              fill="#4a90e2"
-              style={{ pointerEvents: 'none' }}
-            >
-              ⌀{diameter}
-            </text>
-          )}
+          <text
+            data-testid={`${testIdBase}-dimensions`}
+            x={centerX}
+            y={obj.text ? centerY + 12 : centerY}
+            fontSize="10"
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fill="#888"
+            style={{ pointerEvents: 'none' }}
+          >
+            ⌀{diameter}
+          </text>
         </g>
         {isHovered && onObjectResizeStart && (
           <ObjectResizeHandles
@@ -463,7 +461,7 @@ function RoomObject({
           {obj.text && (
             <text
               x={centerX}
-              y={centerY}
+              y={centerY - 10}
               fontSize="12"
               textAnchor="middle"
               dominantBaseline="middle"
@@ -473,20 +471,18 @@ function RoomObject({
               {obj.text}
             </text>
           )}
-          {isHovered && (
-            <text
-              data-testid={`${testIdBase}-dimensions`}
-              x={centerX}
-              y={rectY - 5}
-              fontSize="11"
-              fontWeight="bold"
-              textAnchor="middle"
-              fill="#4a90e2"
-              style={{ pointerEvents: 'none' }}
-            >
-              {width}×{height}
-            </text>
-          )}
+          <text
+            data-testid={`${testIdBase}-dimensions`}
+            x={centerX}
+            y={obj.text ? centerY + 12 : centerY}
+            fontSize="10"
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fill="#888"
+            style={{ pointerEvents: 'none' }}
+          >
+            {width}×{height}
+          </text>
         </g>
         {isHovered && onObjectResizeStart && (
           <ObjectResizeHandles
