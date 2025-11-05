@@ -20,7 +20,17 @@ class CustomWorld extends World implements FloorplanWorld {
 
   async init() {
     const headless = process.env.HEADLESS !== 'false';
-    this.browser = await chromium.launch({ headless });
+    this.browser = await chromium.launch({
+      headless,
+      args: [
+        '--disable-dev-shm-usage', // Prevents shared memory issues
+        '--disable-gpu', // Disables GPU hardware acceleration
+        '--no-sandbox', // Disables Chrome sandbox (needed in some environments)
+        '--single-process', // Runs browser in single process
+        '--disable-setuid-sandbox',
+        '--disable-software-rasterizer',
+      ],
+    });
     this.context = await this.browser.newContext();
     this.page = await this.context.newPage();
   }
