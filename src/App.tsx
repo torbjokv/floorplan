@@ -513,11 +513,9 @@ function App() {
       // Immediately update floorplan data for instant visual feedback
       setFloorplanData(data);
 
-      // Defer DSL conversion to avoid blocking UI on drop
-      setTimeout(() => {
-        const dsl = jsonToDSL(data);
-        updateDslText(dsl);
-      }, 0);
+      // Immediately convert to DSL and update (no debounce for programmatic updates)
+      const dsl = jsonToDSL(data);
+      updateDslText(dsl);
     },
     [updateDslText]
   );
