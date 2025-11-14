@@ -444,7 +444,10 @@ When('I double-click on the dimensions text', async function (this: World) {
   const dimensionsTestId = `${this.currentObject!.testId}-dimensions`;
   const dimensionsText = this.page.locator(`[data-testid="${dimensionsTestId}"]`);
 
-  await dimensionsText.dblclick();
+  await dimensionsText.waitFor({ state: 'visible', timeout: 5000 });
+
+  // Store for next step
+  this.pendingDoubleClickElement = dimensionsText;
 });
 
 When('I double-click on the diameter text', async function (this: World) {
@@ -454,29 +457,42 @@ When('I double-click on the diameter text', async function (this: World) {
   const dimensionsTestId = `${this.currentObject!.testId}-dimensions`;
   const dimensionsText = this.page.locator(`[data-testid="${dimensionsTestId}"]`);
 
-  await dimensionsText.dblclick();
+  await dimensionsText.waitFor({ state: 'visible', timeout: 5000 });
+
+  // Store for next step
+  this.pendingDoubleClickElement = dimensionsText;
 });
 
 When('I enter dimensions {string} in the prompt', async function (this: World, dimensions: string) {
-  // Handle the browser prompt
-  this.page.once('dialog', async dialog => {
-    expect(dialog.type()).toBe('prompt');
-    await dialog.accept(dimensions);
-  });
+  // Set up dialog handler FIRST (but don't await yet), then trigger the double-click
+  const dialogPromise = this.page.waitForEvent('dialog');
 
-  // Wait for the prompt to be handled
-  await this.page.waitForTimeout(100);
+  // Trigger the double-click (don't await - let it happen in parallel)
+  this.pendingDoubleClickElement.dblclick();
+
+  // Now wait for and handle the dialog
+  const dialog = await dialogPromise;
+  expect(dialog.type()).toBe('prompt');
+  await dialog.accept(dimensions);
+
+  // Wait for the update to propagate
+  await this.page.waitForTimeout(1000);
 });
 
 When('I enter diameter {string} in the prompt', async function (this: World, diameter: string) {
-  // Handle the browser prompt
-  this.page.once('dialog', async dialog => {
-    expect(dialog.type()).toBe('prompt');
-    await dialog.accept(diameter);
-  });
+  // Set up dialog handler FIRST (but don't await yet), then trigger the double-click
+  const dialogPromise = this.page.waitForEvent('dialog');
 
-  // Wait for the prompt to be handled
-  await this.page.waitForTimeout(100);
+  // Trigger the double-click (don't await - let it happen in parallel)
+  this.pendingDoubleClickElement.dblclick({ force: true });
+
+  // Now wait for and handle the dialog
+  const dialog = await dialogPromise;
+  expect(dialog.type()).toBe('prompt');
+  await dialog.accept(diameter);
+
+  // Wait for the update to propagate
+  await this.page.waitForTimeout(1000);
 });
 
 When('I press {string}', async function (this: World, keyCombo: string) {

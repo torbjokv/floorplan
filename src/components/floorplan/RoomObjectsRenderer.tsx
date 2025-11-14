@@ -384,7 +384,11 @@ function RoomObject({
             textAnchor="middle"
             dominantBaseline="middle"
             fill="#888"
-            style={{ pointerEvents: 'none' }}
+            style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+            onDoubleClick={e => {
+              e.stopPropagation();
+              onObjectResizeNumeric?.(room.id, idx, anchor, diameter, undefined, partId);
+            }}
           >
             ⌀{diameter}
           </text>
@@ -479,7 +483,11 @@ function RoomObject({
             textAnchor="middle"
             dominantBaseline="middle"
             fill="#888"
-            style={{ pointerEvents: 'none' }}
+            style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+            onDoubleClick={e => {
+              e.stopPropagation();
+              onObjectResizeNumeric?.(room.id, idx, anchor, width, height, partId);
+            }}
           >
             {width}×{height}
           </text>
