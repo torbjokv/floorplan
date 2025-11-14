@@ -358,9 +358,9 @@ function formatFreestandingObject(obj: RoomObject): string {
   }
 
   if (obj.type === 'square' && obj.height) {
-    line += ` ${obj.width}x${obj.height}`;
+    line += ` ${Math.round(obj.width)}x${Math.round(obj.height)}`;
   } else {
-    line += ` ${obj.width}`; // For circles, width is the diameter
+    line += ` ${Math.round(obj.width)}`; // For circles, width is the diameter
   }
 
   if (obj.color) {
@@ -384,9 +384,9 @@ function formatObject(obj: RoomObject, indent: string): string {
   }
 
   if (obj.type === 'square' && obj.height) {
-    line += ` ${obj.width}x${obj.height}`;
+    line += ` ${Math.round(obj.width)}x${Math.round(obj.height)}`;
   } else {
-    line += ` ${obj.width}`; // For circles, width is the diameter
+    line += ` ${Math.round(obj.width)}`; // For circles, width is the diameter
   }
 
   if (obj.color && obj.color !== '#ffffff') {

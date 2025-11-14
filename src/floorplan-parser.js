@@ -536,14 +536,14 @@ function peg$parse(input, options) {
 
     return { children, doors, windows };
   }
-  function peg$f13(id, dims, anchor, attach, offset, children) {
+  function peg$f13(id, label, dims, anchor, attach, offset, children) {
     const partId = id.toLowerCase();
     const target = attach.target === 'room' ? 'parent' : attach.target.toLowerCase();
     const attachInfo = { target, anchor: attach.anchor };
 
     // Convert children.objects array into proper format for buildPart
     const childrenForBuild = (children?.objects || []).map(obj => ({ type: 'object', data: obj }));
-    const part = buildPart(id, null, dims, anchor, attachInfo, offset, childrenForBuild);
+    const part = buildPart(id, label, dims, anchor, attachInfo, offset, childrenForBuild);
 
     // Replace part ID placeholders in doors and windows
     const doors = (children?.doors || []).map(door => {
@@ -1551,7 +1551,7 @@ function peg$parse(input, options) {
   }
 
   function peg$parsePartDefinition() {
-    let s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15;
+    let s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17;
 
     s0 = peg$currPos;
     s1 = peg$parseSingleIndent();
@@ -1568,36 +1568,41 @@ function peg$parse(input, options) {
         s4 = peg$parseIdentifier();
         if (s4 !== peg$FAILED) {
           s5 = peg$parse_();
-          s6 = peg$parseDimensions();
-          if (s6 !== peg$FAILED) {
-            s7 = peg$parse_();
-            s8 = peg$parseAnchor();
-            if (s8 === peg$FAILED) {
-              s8 = null;
-            }
+          s6 = peg$parseLabel();
+          if (s6 === peg$FAILED) {
+            s6 = null;
+          }
+          s7 = peg$parse_();
+          s8 = peg$parseDimensions();
+          if (s8 !== peg$FAILED) {
             s9 = peg$parse_();
-            s10 = input.substr(peg$currPos, 2);
-            if (s10.toLowerCase() === peg$c2) {
+            s10 = peg$parseAnchor();
+            if (s10 === peg$FAILED) {
+              s10 = null;
+            }
+            s11 = peg$parse_();
+            s12 = input.substr(peg$currPos, 2);
+            if (s12.toLowerCase() === peg$c2) {
               peg$currPos += (2);
             } else {
-              s10 = peg$FAILED;
+              s12 = peg$FAILED;
               if (peg$silentFails === 0) { peg$fail(peg$e2); }
             }
-            if (s10 !== peg$FAILED) {
-              s11 = peg$parse_();
-              s12 = peg$parsePartAttachTo();
-              if (s12 !== peg$FAILED) {
-                s13 = peg$parse__();
-                s14 = peg$parseOffset();
-                if (s14 === peg$FAILED) {
-                  s14 = null;
+            if (s12 !== peg$FAILED) {
+              s13 = peg$parse_();
+              s14 = peg$parsePartAttachTo();
+              if (s14 !== peg$FAILED) {
+                s15 = peg$parse__();
+                s16 = peg$parseOffset();
+                if (s16 === peg$FAILED) {
+                  s16 = null;
                 }
-                s15 = peg$parsePartChildren();
-                if (s15 === peg$FAILED) {
-                  s15 = null;
+                s17 = peg$parsePartChildren();
+                if (s17 === peg$FAILED) {
+                  s17 = null;
                 }
                 peg$savedPos = s0;
-                s0 = peg$f13(s4, s6, s8, s12, s14, s15);
+                s0 = peg$f13(s4, s6, s8, s10, s14, s16, s17);
               } else {
                 peg$currPos = s0;
                 s0 = peg$FAILED;

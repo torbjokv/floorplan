@@ -24,14 +24,14 @@ Before(async function (this: FloorplanWorld) {
 
 // After each scenario
 After(async function (this: FloorplanWorld, { result }) {
-  // Take screenshot on failure (only if page exists)
-  if (result?.status === 'FAILED' && this.page) {
-    try {
-      const screenshot = await this.page.screenshot();
-      await this.attach(screenshot, 'image/png');
-    } catch (error) {
-      console.log('Could not capture screenshot:', error);
-    }
-  }
+  // TEMPORARILY DISABLED: Take screenshot on failure (causing browser crashes)
+  // if (result?.status === 'FAILED' && this.page) {
+  //   try {
+  //     const screenshot = await this.page.screenshot();
+  //     await this.attach(screenshot, 'image/png');
+  //   } catch (error) {
+  //     console.log('Could not capture screenshot:', error);
+  //   }
+  // }
   await this.cleanup();
 });

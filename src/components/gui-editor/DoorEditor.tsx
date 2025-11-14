@@ -33,7 +33,7 @@ export function DoorEditor({
       </div>
       {doors.map((door, index) => {
         const roomName =
-          rooms.find(r => r.id === door.room.split(':')[0])?.name || door.room.split(':')[0];
+          rooms.find(r => r.id === door.room?.split(':')[0])?.name || door.room?.split(':')[0];
         return (
           <div
             key={index}
@@ -57,9 +57,9 @@ export function DoorEditor({
               <label>
                 Room:
                 <select
-                  value={door.room.split(':')[0]}
+                  value={door.room?.split(':')[0]}
                   onChange={e => {
-                    const wall = door.room.split(':')[1] || 'bottom';
+                    const wall = door.room?.split(':')[1] || 'bottom';
                     onUpdateDoor(index, { ...door, room: `${e.target.value}:${wall}` });
                   }}
                 >
@@ -73,9 +73,9 @@ export function DoorEditor({
               <label>
                 Wall:
                 <select
-                  value={door.room.split(':')[1] || 'bottom'}
+                  value={door.room?.split(':')[1] || 'bottom'}
                   onChange={e => {
-                    const roomName = door.room.split(':')[0];
+                    const roomName = door.room?.split(':')[0];
                     onUpdateDoor(index, { ...door, room: `${roomName}:${e.target.value}` });
                   }}
                 >

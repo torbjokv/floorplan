@@ -331,14 +331,14 @@ RoomChildItem
 
 // Part definition (single indent - room-level child)
 PartDefinition
-  = SingleIndent "part"i _ id:Identifier _ dims:Dimensions _ anchor:Anchor? _ "at"i _ attach:PartAttachTo __ offset:Offset? children:PartChildren? {
+  = SingleIndent "part"i _ id:Identifier _ label:Label? _ dims:Dimensions _ anchor:Anchor? _ "at"i _ attach:PartAttachTo __ offset:Offset? children:PartChildren? {
       const partId = id.toLowerCase();
       const target = attach.target === 'room' ? 'parent' : attach.target.toLowerCase();
       const attachInfo = { target, anchor: attach.anchor };
 
       // Convert children.objects array into proper format for buildPart
       const childrenForBuild = (children?.objects || []).map(obj => ({ type: 'object', data: obj }));
-      const part = buildPart(id, null, dims, anchor, attachInfo, offset, childrenForBuild);
+      const part = buildPart(id, label, dims, anchor, attachInfo, offset, childrenForBuild);
 
       // Replace part ID placeholders in doors and windows
       const doors = (children?.doors || []).map(door => {

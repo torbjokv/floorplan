@@ -1,8 +1,25 @@
 import { StreamLanguage } from '@codemirror/language';
+import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { tags as t } from '@lezer/highlight';
 
-// Define DSL language for syntax highlighting
-const dslLanguage = StreamLanguage.define({
+// Define DSL language for syntax highlighting with token table
+const dslLanguageDefinition = StreamLanguage.define({
+  // Token table mapping token names to tags
+  tokenTable: {
+    keyword: t.keyword,
+    identifier: t.variableName,
+    string: t.string,
+    comment: t.comment,
+    number: t.number,
+    wall: t.propertyName,
+    swing: t.propertyName,
+    anchor: t.name,
+    'object-type': t.typeName,
+    parent: t.variableName,
+    color: t.string,
+    punctuation: t.punctuation,
+  },
+
   token(stream) {
     // Handle strings first (double or single quoted)
     if (stream.match(/"(?:[^"\\]|\\.)*"/)) {
@@ -111,12 +128,20 @@ const dslLanguage = StreamLanguage.define({
   },
 });
 
-// Define style tags for the DSL tokens
-export const dslHighlightStyle = [
+// Create highlight style for the DSL
+const dslHighlightStyle = HighlightStyle.define([
   { tag: t.keyword, class: 'cm-keyword' },
+  { tag: t.variableName, class: 'cm-identifier' },
   { tag: t.string, class: 'cm-string' },
   { tag: t.comment, class: 'cm-comment' },
   { tag: t.number, class: 'cm-number' },
-];
+  { tag: t.propertyName, class: 'cm-wall' },
+  { tag: t.name, class: 'cm-anchor' },
+  { tag: t.typeName, class: 'cm-object-type' },
+  { tag: t.punctuation, class: 'cm-punctuation' },
+]);
 
-export { dslLanguage };
+// Export the language with syntax highlighting
+export const dslLanguage = [dslLanguageDefinition, syntaxHighlighting(dslHighlightStyle)];
+
+export { dslHighlightStyle };

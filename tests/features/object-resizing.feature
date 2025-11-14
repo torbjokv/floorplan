@@ -14,7 +14,6 @@ Feature: Object Resizing
       room livingroom "Living Room" 5000x4000 at zeropoint
           object square "Table" 1000x800 #33d17a at top-left (1000, 1000)
       """
-    When I switch to the "Preview" tab
     And I hover over the object "Table" in room "livingroom"
     Then I should see resize handles at all 4 corners of the object
     And the resize handles should have the correct cursor styles
@@ -27,7 +26,6 @@ Feature: Object Resizing
       room livingroom "Living Room" 5000x4000 at zeropoint
           object circle "Lamp" 500 #ffd700 at top-right (500, 500)
       """
-    When I switch to the "Preview" tab
     And I hover over the object "Lamp" in room "livingroom"
     Then I should see resize handles at all 4 corners of the object
     And the resize handles should have the correct cursor styles
@@ -40,7 +38,6 @@ Feature: Object Resizing
       room livingroom "Living Room" 5000x4000 at zeropoint
           object square "Table" 1000x800 #33d17a at top-left (1000, 1000)
       """
-    When I switch to the "Preview" tab
     And I hover over the object "Table" in room "livingroom"
     And I move the mouse away from the object
     Then I should not see any resize handles for the object
@@ -53,7 +50,6 @@ Feature: Object Resizing
       room livingroom "Living Room" 5000x4000 at zeropoint
           object square "Table" 1000x800 #33d17a at top-left (1000, 1000)
       """
-    When I switch to the "Preview" tab
     And I hover over the object "Table" in room "livingroom"
     Then I should see the dimensions "1000×800" displayed on the object
 
@@ -65,7 +61,6 @@ Feature: Object Resizing
       room livingroom "Living Room" 5000x4000 at zeropoint
           object circle "Lamp" 500 #ffd700 at top-right (500, 500)
       """
-    When I switch to the "Preview" tab
     And I hover over the object "Lamp" in room "livingroom"
     Then I should see the diameter "⌀500" displayed on the object
 
@@ -77,7 +72,6 @@ Feature: Object Resizing
       room livingroom "Living Room" 5000x4000 at zeropoint
           object square "Table" 1000x800 #33d17a at top-left (1000, 1000)
       """
-    When I switch to the "Preview" tab
     And I hover over the object "Table" in room "livingroom"
     And I drag the bottom-right resize handle by (200, 100) mm
     Then the object should have dimensions 1200x900
@@ -91,7 +85,6 @@ Feature: Object Resizing
       room livingroom "Living Room" 5000x4000 at zeropoint
           object square "Table" 1000x800 #33d17a at top-left (1000, 1000)
       """
-    When I switch to the "Preview" tab
     And I hover over the object "Table" in room "livingroom"
     And I drag the top-left resize handle by (-200, -100) mm
     Then the object should have dimensions 1200x900
@@ -105,7 +98,6 @@ Feature: Object Resizing
       room livingroom "Living Room" 5000x4000 at zeropoint
           object circle "Lamp" 500 #ffd700 at top-right (500, 500)
       """
-    When I switch to the "Preview" tab
     And I hover over the object "Lamp" in room "livingroom"
     And I drag any corner resize handle to change the size
     Then the object should maintain its circular shape
@@ -119,7 +111,6 @@ Feature: Object Resizing
       room livingroom "Living Room" 5000x4000 at zeropoint
           object square "Small" 200x200 #33d17a at top-left (1000, 1000)
       """
-    When I switch to the "Preview" tab
     And I hover over the object "Small" in room "livingroom"
     And I drag the bottom-right resize handle by (-150, -150) mm
     Then the object should not be smaller than the minimum size of 100mm
@@ -133,7 +124,6 @@ Feature: Object Resizing
       room livingroom "Living Room" 5000x4000 at zeropoint
           object square "Table" 1000x800 #33d17a at top-left (1000, 1000)
       """
-    When I switch to the "Preview" tab
     And I hover over the object "Table" in room "livingroom"
     And I double-click on the dimensions text
     And I enter dimensions "1500x1200" in the prompt
@@ -148,7 +138,6 @@ Feature: Object Resizing
       room livingroom "Living Room" 5000x4000 at zeropoint
           object circle "Lamp" 500 #ffd700 at top-right (500, 500)
       """
-    When I switch to the "Preview" tab
     And I hover over the object "Lamp" in room "livingroom"
     And I double-click on the diameter text
     And I enter diameter "800" in the prompt
@@ -163,7 +152,6 @@ Feature: Object Resizing
       room livingroom "Living Room" 5000x4000 at zeropoint
           object square "Table" 1000x800 #33d17a at top-left (1000, 1000)
       """
-    When I switch to the "Preview" tab
     And I hover over the object "Table" in room "livingroom"
     And I drag the bottom-right resize handle by (200, 100) mm
     And I press "Control+z"
@@ -178,7 +166,6 @@ Feature: Object Resizing
       room livingroom "Living Room" 5000x4000 at zeropoint
           object square "Table" 1000x800 #33d17a at top-left (1000, 1000)
       """
-    When I switch to the "Preview" tab
     And I hover over the object "Table" in room "livingroom"
     And I drag the bottom-right resize handle by (200, 100) mm
     And I press "Control+z"
@@ -195,7 +182,6 @@ Feature: Object Resizing
           part closet "Closet" 2000x1500 at parent:bottom-left
               object square "Shelf" 500x1200 #9141ac at top-left (100, 100)
       """
-    When I switch to the "Preview" tab
     And I hover over the object "Shelf" in part "closet"
     And I drag the bottom-right resize handle by (100, 200) mm
     Then the object should have dimensions 600x1400
@@ -210,7 +196,6 @@ Feature: Object Resizing
           object square "Table" 1000x800 #33d17a at top-left (1000, 1000)
           object circle "Lamp" 500 #ffd700 at top-right (500, 500)
       """
-    When I switch to the "Preview" tab
     And I hover over the object "Table" in room "livingroom"
     And I drag the bottom-right resize handle by (200, 100) mm
     Then the object "Table" should have dimensions 1200x900
