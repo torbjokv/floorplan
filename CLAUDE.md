@@ -20,7 +20,7 @@ This is a browser-based SVG floorplan designer built with React, TypeScript, and
 
 ## General claude behavoiur
 
-- Be very pessimistic when testing, test the smallest part possible, like a single test, or one singe suite. Then when everything works, then do the full test.
+- Be very pessimistic when testing, test the smallest part possible, like a single test, or one single suite. Then when everything works, then do the full test.
 - When testing, do not grep. Prefer to get the full output but if too large, pass to file and look at that.
 
 ## Architecture

@@ -356,10 +356,18 @@ Then(
     const result = findObject(this, this.currentObject!.name);
     expect(result).not.toBeNull();
 
-    // Use higher tolerance for objects in parts due to additional coordinate transformations
-    const TOLERANCE = result!.partId ? 30 : 10;
-    expect(Math.abs(result!.object.width - expectedWidth)).toBeLessThanOrEqual(TOLERANCE);
-    expect(Math.abs(result!.object.height - expectedHeight)).toBeLessThanOrEqual(TOLERANCE);
+    // Use pixel-based tolerance (more accurate than mm since SVG works in pixels)
+    // At DISPLAY_SCALE=1: 1mm = 0.1px, so 1px tolerance = 10mm tolerance
+    const mm = (val: number) => val / 10; // Convert mm to screen pixels
+    const TOLERANCE_PX = result!.partId ? 3 : 1; // pixels (equivalent to 30mm or 10mm)
+
+    const actualWidthPx = mm(result!.object.width);
+    const actualHeightPx = mm(result!.object.height);
+    const expectedWidthPx = mm(expectedWidth);
+    const expectedHeightPx = mm(expectedHeight);
+
+    expect(Math.abs(actualWidthPx - expectedWidthPx)).toBeLessThanOrEqual(TOLERANCE_PX);
+    expect(Math.abs(actualHeightPx - expectedHeightPx)).toBeLessThanOrEqual(TOLERANCE_PX);
   }
 );
 
@@ -496,10 +504,17 @@ Then(
     const result = findObject(this, objectName);
     expect(result).not.toBeNull();
 
-    // Use tolerance for coordinate-based operations
-    const TOLERANCE = 10;
-    expect(Math.abs(result!.object.width - expectedWidth)).toBeLessThanOrEqual(TOLERANCE);
-    expect(Math.abs(result!.object.height - expectedHeight)).toBeLessThanOrEqual(TOLERANCE);
+    // Use pixel-based tolerance (SVG works in pixels, not mm)
+    const mm = (val: number) => val / 10;
+    const TOLERANCE_PX = 1; // 1 pixel = 10mm at DISPLAY_SCALE=1
+
+    const actualWidthPx = mm(result!.object.width);
+    const actualHeightPx = mm(result!.object.height);
+    const expectedWidthPx = mm(expectedWidth);
+    const expectedHeightPx = mm(expectedHeight);
+
+    expect(Math.abs(actualWidthPx - expectedWidthPx)).toBeLessThanOrEqual(TOLERANCE_PX);
+    expect(Math.abs(actualHeightPx - expectedHeightPx)).toBeLessThanOrEqual(TOLERANCE_PX);
   }
 );
 
@@ -547,10 +562,17 @@ Then(
     const result = findObject(this, objectName);
     expect(result).not.toBeNull();
 
-    // Use tolerance for coordinate-based operations
-    const TOLERANCE = 10;
-    expect(Math.abs(result!.object.width - expectedWidth)).toBeLessThanOrEqual(TOLERANCE);
-    expect(Math.abs(result!.object.height - expectedHeight)).toBeLessThanOrEqual(TOLERANCE);
+    // Use pixel-based tolerance (SVG works in pixels, not mm)
+    const mm = (val: number) => val / 10;
+    const TOLERANCE_PX = 1; // 1 pixel = 10mm at DISPLAY_SCALE=1
+
+    const actualWidthPx = mm(result!.object.width);
+    const actualHeightPx = mm(result!.object.height);
+    const expectedWidthPx = mm(expectedWidth);
+    const expectedHeightPx = mm(expectedHeight);
+
+    expect(Math.abs(actualWidthPx - expectedWidthPx)).toBeLessThanOrEqual(TOLERANCE_PX);
+    expect(Math.abs(actualHeightPx - expectedHeightPx)).toBeLessThanOrEqual(TOLERANCE_PX);
   }
 );
 
@@ -574,8 +596,13 @@ Then(
     const result = findObject(this, objectName);
     expect(result).not.toBeNull();
 
-    // Use tolerance for coordinate-based operations (now using correct diagonal math)
-    const TOLERANCE = 10;
-    expect(Math.abs(result!.object.width - expectedDiameter)).toBeLessThanOrEqual(TOLERANCE);
+    // Use pixel-based tolerance (SVG works in pixels, not mm)
+    const mm = (val: number) => val / 10;
+    const TOLERANCE_PX = 1; // 1 pixel = 10mm at DISPLAY_SCALE=1
+
+    const actualDiameterPx = mm(result!.object.width);
+    const expectedDiameterPx = mm(expectedDiameter);
+
+    expect(Math.abs(actualDiameterPx - expectedDiameterPx)).toBeLessThanOrEqual(TOLERANCE_PX);
   }
 );
