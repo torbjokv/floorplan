@@ -301,6 +301,10 @@ When(
     const currentDiameter = result!.object.width;
     const deltaSize = targetDiameter - currentDiameter;
 
+    // Circle resize uses diagonal: sqrt(deltaX² + deltaY²)
+    // To get exact deltaSize, we need to drag by deltaSize/sqrt(2) in each direction
+    const dragDistance = deltaSize / Math.sqrt(2);
+
     // Drag bottom-right corner to increase diameter - manually call the step logic
     expect(this.currentObject).toBeDefined();
 
@@ -311,8 +315,9 @@ When(
     const box = await handle.boundingBox();
     expect(box).not.toBeNull();
 
-    const screenDeltaX = deltaSize * 0.1;
-    const screenDeltaY = deltaSize * 0.1;
+    // Convert to screen pixels (1mm = 0.1px)
+    const screenDeltaX = dragDistance * 0.1;
+    const screenDeltaY = dragDistance * 0.1;
 
     const startX = box!.x + box!.width / 2;
     const startY = box!.y + box!.height / 2;
@@ -351,8 +356,8 @@ Then(
     const result = findObject(this, this.currentObject!.name);
     expect(result).not.toBeNull();
 
-    // Allow tolerance (±30mm) due to SVG coordinate transformation rounding
-    const TOLERANCE = 30;
+    // Use higher tolerance for objects in parts due to additional coordinate transformations
+    const TOLERANCE = result!.partId ? 30 : 10;
     expect(Math.abs(result!.object.width - expectedWidth)).toBeLessThanOrEqual(TOLERANCE);
     expect(Math.abs(result!.object.height - expectedHeight)).toBeLessThanOrEqual(TOLERANCE);
   }
@@ -492,7 +497,7 @@ Then(
     expect(result).not.toBeNull();
 
     // Use tolerance for coordinate-based operations
-    const TOLERANCE = 30;
+    const TOLERANCE = 10;
     expect(Math.abs(result!.object.width - expectedWidth)).toBeLessThanOrEqual(TOLERANCE);
     expect(Math.abs(result!.object.height - expectedHeight)).toBeLessThanOrEqual(TOLERANCE);
   }
@@ -543,7 +548,7 @@ Then(
     expect(result).not.toBeNull();
 
     // Use tolerance for coordinate-based operations
-    const TOLERANCE = 30;
+    const TOLERANCE = 10;
     expect(Math.abs(result!.object.width - expectedWidth)).toBeLessThanOrEqual(TOLERANCE);
     expect(Math.abs(result!.object.height - expectedHeight)).toBeLessThanOrEqual(TOLERANCE);
   }
@@ -569,8 +574,8 @@ Then(
     const result = findObject(this, objectName);
     expect(result).not.toBeNull();
 
-    // Use tolerance due to diagonal calculation in circle resize (sqrt(2) factor)
-    const TOLERANCE = 100;
+    // Use tolerance for coordinate-based operations (now using correct diagonal math)
+    const TOLERANCE = 10;
     expect(Math.abs(result!.object.width - expectedDiameter)).toBeLessThanOrEqual(TOLERANCE);
   }
 );
