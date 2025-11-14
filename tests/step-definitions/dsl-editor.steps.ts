@@ -334,12 +334,12 @@ Then('the room should have {int} window(s)', async function (count: number) {
 
 // Syntax highlighting steps
 Then('the keyword {string} should be highlighted', async function (keyword: string) {
-  const highlightedKeyword = this.page.locator('.dsl-keyword').filter({ hasText: keyword });
+  const highlightedKeyword = this.page.locator('.cm-keyword').filter({ hasText: keyword });
   await expect(highlightedKeyword).toBeVisible();
 });
 
 Then('the room id {string} should be highlighted', async function (roomId: string) {
-  const highlightedId = this.page.locator('.dsl-identifier').filter({ hasText: roomId });
+  const highlightedId = this.page.locator('.cm-identifier').filter({ hasText: roomId });
   await expect(highlightedId).toBeVisible();
 });
 

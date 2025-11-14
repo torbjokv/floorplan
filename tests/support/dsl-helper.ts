@@ -20,11 +20,10 @@ export async function fillCodeMirror(page: Page, content: string) {
 
   const contentEditable = await getCodeMirrorContent(dslContainer);
 
-  // Clear existing content and set new value
+  // Select all and replace with new content (creates single undo entry)
   await contentEditable.focus();
   await page.keyboard.press('Control+A');
-  await page.keyboard.press('Backspace');
-  await contentEditable.fill(content);
+  await page.keyboard.type(content);
 }
 
 /**
