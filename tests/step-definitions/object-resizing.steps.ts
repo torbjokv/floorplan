@@ -387,7 +387,19 @@ Then(
 Then(
   'the object should have diameter {int}',
   async function (this: World, expectedDiameter: number) {
-    await this.page.waitForTimeout(100);
+    await this.page.waitForTimeout(200);
+
+    // Re-read and re-parse the DSL to get updated data
+    const dslModule = await import('../../src/dslUtils.js');
+    const lines = await this.page.locator('.cm-line').allTextContents();
+    this.currentDSL = lines.join('\n');
+
+    try {
+      const result = dslModule.parseDSL(this.currentDSL);
+      this.currentDSLData = result.config;
+    } catch (error) {
+      console.error('Failed to parse DSL:', error);
+    }
 
     const result = findObject(this, this.currentObject!.name);
     expect(result).not.toBeNull();
