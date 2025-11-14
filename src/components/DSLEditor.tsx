@@ -41,7 +41,7 @@ export function DSLEditor({ value, onChange, readOnly }: DSLEditorProps) {
             lintKeymap: false,
           }}
           extensions={[
-            dslLanguage,
+            ...dslLanguage,
             EditorView.lineWrapping,
             // Overlay custom syntax highlighting colors for DSL-specific tokens
             EditorView.theme({

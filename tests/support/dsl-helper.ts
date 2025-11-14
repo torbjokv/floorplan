@@ -1,29 +1,34 @@
 import { jsonToDSL } from '../../src/dslUtils';
 import type { FloorplanWorld } from './world';
-import type { Page, Locator } from '@playwright/test';
-
-/**
- * Helper to get CodeMirror's contenteditable element
- */
-async function getCodeMirrorContent(dslContainer: Locator): Promise<Locator> {
-  const contentEditable = dslContainer.locator('.cm-content[contenteditable="true"]');
-  await contentEditable.waitFor({ state: 'visible', timeout: 5000 });
-  return contentEditable;
-}
+import type { Page } from '@playwright/test';
 
 /**
  * Helper to fill CodeMirror editor with content
+ * Uses CodeMirror's setValue API to set content as a single atomic operation
+ * This creates a single undo entry instead of one per character
  */
 export async function fillCodeMirror(page: Page, content: string) {
   const dslContainer = page.getByTestId('dsl-editor');
   await dslContainer.waitFor({ state: 'visible', timeout: 5000 });
 
-  const contentEditable = await getCodeMirrorContent(dslContainer);
-
-  // Select all and replace with new content (creates single undo entry)
-  await contentEditable.focus();
-  await page.keyboard.press('Control+A');
-  await page.keyboard.type(content);
+  // Use CodeMirror's API to set value directly
+  // This ensures onChange is called once with the full content
+  await page.evaluate(
+    ({ content: newContent }) => {
+      // Find the CodeMirror instance
+      const editorElement = document.querySelector('[data-testid="dsl-editor"] .cm-content');
+      if (editorElement) {
+        const cmView = (editorElement as any).cmView?.view;
+        if (cmView) {
+          // Use CodeMirror's dispatch to update content
+          cmView.dispatch({
+            changes: { from: 0, to: cmView.state.doc.length, insert: newContent },
+          });
+        }
+      }
+    },
+    { content }
+  );
 }
 
 /**
