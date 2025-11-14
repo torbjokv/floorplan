@@ -15,7 +15,7 @@ async function getCodeMirrorContent(dslContainer: Locator): Promise<Locator> {
  * Helper to fill CodeMirror editor with content
  */
 export async function fillCodeMirror(page: Page, content: string) {
-  const dslContainer = page.getByTestId('dsl-textarea');
+  const dslContainer = page.getByTestId('dsl-editor');
   await dslContainer.waitFor({ state: 'visible', timeout: 5000 });
 
   const contentEditable = await getCodeMirrorContent(dslContainer);
@@ -31,7 +31,7 @@ export async function fillCodeMirror(page: Page, content: string) {
  * Helper to get value from CodeMirror editor
  */
 export async function getCodeMirrorValue(page: Page): Promise<string> {
-  const dslContainer = page.getByTestId('dsl-textarea');
+  const dslContainer = page.getByTestId('dsl-editor');
   await dslContainer.waitFor({ state: 'visible', timeout: 5000 });
 
   // Get the text content from CodeMirror

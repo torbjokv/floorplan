@@ -31,12 +31,12 @@ Then('the DSL editor should be visible', async function () {
 });
 
 Then('the DSL editor should have line numbers', async function () {
-  const lineNumbers = this.page.getByTestId('dsl-line-numbers');
+  const lineNumbers = this.page.locator('.cm-gutters');
   await expect(lineNumbers).toBeVisible();
 });
 
 Then('the DSL editor should be editable', async function () {
-  const textarea = this.page.getByTestId('dsl-textarea');
+  const textarea = this.page.locator('.cm-content');
   await expect(textarea).toBeEditable();
   await expect(textarea).not.toBeDisabled();
 });
