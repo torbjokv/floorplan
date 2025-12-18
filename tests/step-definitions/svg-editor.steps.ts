@@ -418,7 +418,9 @@ When('I drag the object resize handle', async function () {
   await this.page.waitForTimeout(100);
 
   // Find a resize handle (bottom-right for example)
-  const resizeHandle = this.page.locator('[data-testid*="resize-handle"][data-testid*="bottom-right"]').first();
+  const resizeHandle = this.page
+    .locator('[data-testid*="resize-handle"][data-testid*="bottom-right"]')
+    .first();
 
   // If handle exists, drag it
   const handleVisible = await resizeHandle.isVisible().catch(() => false);
