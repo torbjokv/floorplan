@@ -2,23 +2,18 @@ import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 
 // Helper to fill CodeMirror editor (matching working pattern from object-resizing)
-async function fillDSLEditor(page: any, dsl: string, switchToPreview = false) {
+async function fillDSLEditor(page: any, dsl: string) {
   const dslTab = page.locator('[data-testid="tab-dsl"]');
   await dslTab.click();
   await page.waitForTimeout(100);
 
   const editorSelector = '.cm-content[contenteditable="true"]';
-  await page.waitForSelector(editorSelector);
+  await page.waitForSelector(editorSelector, { timeout: 5000 });
   const editor = page.locator(editorSelector);
   await editor.click();
   await editor.fill(dsl);
   await page.waitForTimeout(600);
-
-  if (switchToPreview) {
-    const previewTab = page.locator('[data-testid="tab-preview"]');
-    await previewTab.click();
-    await page.waitForTimeout(100);
-  }
+  // Note: Preview is always visible - no need to switch tabs
 }
 
 // Setup steps for Given conditions
@@ -26,7 +21,7 @@ Given('I have a room in the floorplan', async function () {
   const dsl = `grid 1000
 
 room livingroom "Living Room" 5000x4000 at zeropoint`;
-  await fillDSLEditor(this.page, dsl, true); // Switch to preview for drag tests
+  await fillDSLEditor(this.page, dsl);
 });
 
 Given('I have a room with a door', async function () {
@@ -34,7 +29,7 @@ Given('I have a room with a door', async function () {
 
 room livingroom "Living Room" 5000x4000 at zeropoint
     door 900 inwards-right at bottom (1000)`;
-  await fillDSLEditor(this.page, dsl, true);
+  await fillDSLEditor(this.page, dsl);
 });
 
 Given('I have a room with a window', async function () {
@@ -42,7 +37,7 @@ Given('I have a room with a window', async function () {
 
 room livingroom "Living Room" 5000x4000 at zeropoint
     window 1200 at top (500)`;
-  await fillDSLEditor(this.page, dsl, true);
+  await fillDSLEditor(this.page, dsl);
 });
 
 Given('I have a room with an object', async function () {
@@ -50,7 +45,7 @@ Given('I have a room with an object', async function () {
 
 room livingroom "Living Room" 5000x4000 at zeropoint
     object square "Table" 800x800 #33d17a at top-left (1000, 1000)`;
-  await fillDSLEditor(this.page, dsl, true);
+  await fillDSLEditor(this.page, dsl);
 });
 
 Given('I have multiple rooms in the floorplan', async function () {
@@ -59,7 +54,7 @@ Given('I have multiple rooms in the floorplan', async function () {
 room livingroom "Living Room" 5000x4000 at zeropoint
 room kitchen "Kitchen" 4000x3000 at livingroom:bottom-right
 room bedroom "Bedroom" 4000x4000 at livingroom:top-right`;
-  await fillDSLEditor(this.page, dsl, true);
+  await fillDSLEditor(this.page, dsl);
 });
 
 // Button visibility steps
@@ -420,7 +415,7 @@ Given('I have a room with a square object', async function () {
 
 room livingroom "Living Room" 5000x4000 at zeropoint
     object square "Table" 800x800 #33d17a at top-left (1000, 1000)`;
-  await fillDSLEditor(this.page, dsl, true);
+  await fillDSLEditor(this.page, dsl);
 });
 
 When('I drag the object resize handle', async function () {
