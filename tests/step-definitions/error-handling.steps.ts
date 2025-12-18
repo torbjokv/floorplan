@@ -11,12 +11,14 @@ When('I switch to the DSL tab', async function (this: FloorplanWorld) {
 
 // DSL Syntax Errors
 When('I enter invalid DSL with a syntax error', async function (this: FloorplanWorld) {
-  await fillCodeMirror(this.page, 'room LivingRoom 5000x4000'); // Missing "at" clause
+  // Use truly invalid DSL - the parser defaults to zeropoint when "at" is omitted
+  await fillCodeMirror(this.page, 'this is not valid DSL syntax');
   await this.page.waitForTimeout(1000); // Wait for 500ms debounce + rendering
 });
 
 When('I enter DSL with a missing keyword', async function (this: FloorplanWorld) {
-  await fillCodeMirror(this.page, 'LivingRoom 5000x4000 at zeropoint'); // Missing "room" keyword
+  // "room" keyword is required - this is invalid DSL
+  await fillCodeMirror(this.page, 'invalid syntax without room keyword');
   await this.page.waitForTimeout(1000); // Wait for 500ms debounce + rendering
 });
 

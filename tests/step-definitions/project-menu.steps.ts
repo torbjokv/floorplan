@@ -93,14 +93,17 @@ When('I upload the JSON file', async function (this: FloorplanWorld) {
 });
 
 When('I click outside the menu', async function (this: FloorplanWorld) {
-  // Click on the floorplan preview (outside the project header)
-  const svg = this.page.locator('svg').first();
-  if (await svg.isVisible()) {
-    await svg.click();
-  } else {
-    // If no SVG, click on the editor section
-    await this.page.locator('.editor-container').first().click();
-  }
+  // The menu closes on mousedown outside the project-header
+  // Use dispatchEvent to ensure mousedown event fires
+  await this.page.evaluate(() => {
+    const svg = document.querySelector('svg');
+    if (svg) {
+      svg.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    } else {
+      // Fallback to clicking on body
+      document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    }
+  });
   // Wait for menu to close
   await this.page.waitForTimeout(300);
 });
@@ -398,8 +401,10 @@ Then('changes should not be auto-saved', async function (this: FloorplanWorld) {
 
 // Given steps with setup
 Given('I have created a room', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('add-room-btn').click();
-  await this.page.waitForTimeout(100);
+  // The app starts with a default room, so we don't need to do anything
+  // Just wait for the app to be ready
+  const svg = this.page.locator('.floorplan-svg');
+  await svg.waitFor({ state: 'visible', timeout: 5000 });
 });
 
 Given(

@@ -4,31 +4,26 @@ import type { Page } from '@playwright/test';
 
 /**
  * Helper to fill CodeMirror editor with content
- * Uses CodeMirror's setValue API to set content as a single atomic operation
- * This creates a single undo entry instead of one per character
+ * Uses keyboard interactions to ensure React's onChange is triggered
  */
 export async function fillCodeMirror(page: Page, content: string) {
   const dslContainer = page.getByTestId('dsl-editor');
   await dslContainer.waitFor({ state: 'visible', timeout: 5000 });
 
-  // Use CodeMirror's API to set value directly
-  // This ensures onChange is called once with the full content
-  await page.evaluate(
-    ({ content: newContent }) => {
-      // Find the CodeMirror instance
-      const editorElement = document.querySelector('[data-testid="dsl-editor"] .cm-content');
-      if (editorElement) {
-        const cmView = (editorElement as any).cmView?.view;
-        if (cmView) {
-          // Use CodeMirror's dispatch to update content
-          cmView.dispatch({
-            changes: { from: 0, to: cmView.state.doc.length, insert: newContent },
-          });
-        }
-      }
-    },
-    { content }
-  );
+  // Click on the editor to focus it
+  const cmContent = dslContainer.locator('.cm-content');
+  await cmContent.click();
+
+  // Select all existing content
+  await page.keyboard.press('Control+a');
+
+  // Use insertText which handles newlines properly
+  // This replaces selected text with the new content
+  if (content.length > 0) {
+    await page.keyboard.insertText(content);
+  } else {
+    await page.keyboard.press('Delete');
+  }
 }
 
 /**
