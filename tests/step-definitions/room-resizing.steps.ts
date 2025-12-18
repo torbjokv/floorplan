@@ -1,7 +1,7 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import type { FloorplanWorld } from '../support/world';
-import { fillDSLFromJSON, getCodeMirrorValue } from '../support/dsl-helper';
+import { fillDSLFromJSON, getCodeMirrorValue, fillCodeMirror } from '../support/dsl-helper';
 
 // Helper function to convert millimeters to pixels (DISPLAY_SCALE = 2)
 const mm = (millimeters: number): number => millimeters / 5;
@@ -9,24 +9,28 @@ const mm = (millimeters: number): number => millimeters / 5;
 Given(
   'I have a room with size {int}x{int} attached to Zero Point',
   async function (this: FloorplanWorld, width: number, depth: number) {
-    const json = {
-      grid_step: 1000,
-      rooms: [
-        {
-          id: 'testroom',
-          name: 'Test Room',
-          width: width,
-          depth: depth,
-          attachTo: 'zeropoint:top-left',
-        },
-      ],
-    };
+    // Use direct DSL instead of JSON conversion for faster execution
+    const dsl = `grid 1000
 
-    await fillDSLFromJSON(this, json);
+room testroom "Test Room" ${width}x${depth} at zeropoint`;
+
+    // Fill DSL and wait for update
+    await this.page.getByTestId('tab-dsl').click();
+    const editorSelector = '.cm-content[contenteditable="true"]';
+    await this.page.waitForSelector(editorSelector, { timeout: 5000 });
+    const editor = this.page.locator(editorSelector);
+    await editor.click();
+    await editor.fill(dsl);
     await this.page.waitForTimeout(600);
-    await this.page.getByTestId('tab-preview').click();
 
-    (this as any).currentJson = json;
+    // Switch to preview
+    await this.page.getByTestId('tab-preview').click();
+    await this.page.waitForTimeout(100);
+
+    (this as any).currentJson = {
+      grid_step: 1000,
+      rooms: [{ id: 'testroom', name: 'Test Room', width, depth, attachTo: 'zeropoint:top-left' }],
+    };
     (this as any).roomId = 'testroom';
   }
 );
@@ -34,24 +38,28 @@ Given(
 Given(
   'I have a room {string} with size {int}x{int} attached to Zero Point',
   async function (this: FloorplanWorld, roomId: string, width: number, depth: number) {
-    const json = {
-      grid_step: 1000,
-      rooms: [
-        {
-          id: roomId,
-          name: roomId,
-          width: width,
-          depth: depth,
-          attachTo: 'zeropoint:top-left',
-        },
-      ],
-    };
+    // Use direct DSL instead of JSON conversion for faster execution
+    const dsl = `grid 1000
 
-    await fillDSLFromJSON(this, json);
+room ${roomId} "${roomId}" ${width}x${depth} at zeropoint`;
+
+    // Fill DSL and wait for update
+    await this.page.getByTestId('tab-dsl').click();
+    const editorSelector = '.cm-content[contenteditable="true"]';
+    await this.page.waitForSelector(editorSelector, { timeout: 5000 });
+    const editor = this.page.locator(editorSelector);
+    await editor.click();
+    await editor.fill(dsl);
     await this.page.waitForTimeout(600);
-    await this.page.getByTestId('tab-preview').click();
 
-    (this as any).currentJson = json;
+    // Switch to preview
+    await this.page.getByTestId('tab-preview').click();
+    await this.page.waitForTimeout(100);
+
+    (this as any).currentJson = {
+      grid_step: 1000,
+      rooms: [{ id: roomId, name: roomId, width, depth, attachTo: 'zeropoint:top-left' }],
+    };
     (this as any).roomId = roomId;
   }
 );
