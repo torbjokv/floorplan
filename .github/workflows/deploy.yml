@@ -16,7 +16,7 @@
 
         steps:
           - name: Checkout code
-            uses: actions/checkout@v5
+            uses: actions/checkout@v6
 
           - name: Setup Node.js
             uses: actions/setup-node@v6
@@ -54,7 +54,7 @@
 
           - name: Upload test results
             if: always()
-            uses: actions/upload-artifact@v4
+            uses: actions/upload-artifact@v5
             with:
               name: test-results
               path: test-results/
@@ -71,7 +71,7 @@
 
         steps:
           - name: Checkout repository
-            uses: actions/checkout@v5
+            uses: actions/checkout@v6
 
           - name: Set up Node.js
             uses: actions/setup-node@v6
