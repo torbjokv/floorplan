@@ -1,7 +1,7 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import type { FloorplanWorld } from '../support/world';
-import { fillDSLFromJSON, getCodeMirrorValue, fillCodeMirror } from '../support/dsl-helper';
+import { fillDSLFromJSON, getCodeMirrorValue } from '../support/dsl-helper';
 
 // Helper function to convert millimeters to pixels (DISPLAY_SCALE = 2)
 const mm = (millimeters: number): number => millimeters / 5;
