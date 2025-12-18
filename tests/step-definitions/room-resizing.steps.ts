@@ -9,7 +9,6 @@ const mm = (millimeters: number): number => millimeters / 5;
 Given(
   'I have a room with size {int}x{int} attached to Zero Point',
   async function (this: FloorplanWorld, width: number, depth: number) {
-    // Use direct DSL instead of JSON conversion for faster execution
     const dsl = `grid 1000
 
 room testroom "Test Room" ${width}x${depth} at zeropoint`;
@@ -19,18 +18,13 @@ room testroom "Test Room" ${width}x${depth} at zeropoint`;
     await dslTab.click();
     await this.page.waitForTimeout(100);
 
-    // Enter DSL using fill()
+    // Enter DSL using fill() - fast and preserves newlines
     const editorSelector = '.cm-content[contenteditable="true"]';
-    await this.page.waitForSelector(editorSelector);
+    await this.page.waitForSelector(editorSelector, { timeout: 5000 });
     const editor = this.page.locator(editorSelector);
     await editor.click();
     await editor.fill(dsl);
     await this.page.waitForTimeout(600); // Wait for debounce
-
-    // Switch to preview
-    const previewTab = this.page.locator('[data-testid="tab-preview"]');
-    await previewTab.click();
-    await this.page.waitForTimeout(100);
 
     (this as any).currentJson = {
       grid_step: 1000,
@@ -43,7 +37,6 @@ room testroom "Test Room" ${width}x${depth} at zeropoint`;
 Given(
   'I have a room {string} with size {int}x{int} attached to Zero Point',
   async function (this: FloorplanWorld, roomId: string, width: number, depth: number) {
-    // Use direct DSL instead of JSON conversion for faster execution
     const dsl = `grid 1000
 
 room ${roomId} "${roomId}" ${width}x${depth} at zeropoint`;
@@ -55,16 +48,11 @@ room ${roomId} "${roomId}" ${width}x${depth} at zeropoint`;
 
     // Enter DSL using fill()
     const editorSelector = '.cm-content[contenteditable="true"]';
-    await this.page.waitForSelector(editorSelector);
+    await this.page.waitForSelector(editorSelector, { timeout: 5000 });
     const editor = this.page.locator(editorSelector);
     await editor.click();
     await editor.fill(dsl);
     await this.page.waitForTimeout(600); // Wait for debounce
-
-    // Switch to preview
-    const previewTab = this.page.locator('[data-testid="tab-preview"]');
-    await previewTab.click();
-    await this.page.waitForTimeout(100);
 
     (this as any).currentJson = {
       grid_step: 1000,
@@ -75,9 +63,11 @@ room ${roomId} "${roomId}" ${width}x${depth} at zeropoint`;
 );
 
 When('I hover over the room in the preview', async function (this: FloorplanWorld) {
+  // Preview is always visible (not a tab), just wait for room to appear
   const roomId = (this as any).roomId || 'testroom';
   const room = this.page.locator(`[data-room-id="${roomId}"]`).first();
-  await room.hover();
+  await room.waitFor({ state: 'visible', timeout: 5000 });
+  await room.hover({ timeout: 3000 });
   await this.page.waitForTimeout(100); // Wait for hover effects
 });
 
@@ -293,9 +283,10 @@ Then(
   'the room width should be {int}mm',
   async function (this: FloorplanWorld, expectedWidth: number) {
     const roomId = (this as any).roomId || 'testroom';
-    const room = this.page.locator(`[data-room-id="${roomId}"]`).first();
+    // The rect is inside the g with data-room-id
+    const rect = this.page.locator(`[data-room-id="${roomId}"] rect.room-rect`).first();
 
-    const width = await room.getAttribute('width');
+    const width = await rect.getAttribute('width');
     const actualWidth = Math.round(parseFloat(width || '0') * 5); // Convert pixels to mm
 
     expect(actualWidth).toBe(expectedWidth);
@@ -306,9 +297,9 @@ Then(
   'the room depth should remain {int}mm',
   async function (this: FloorplanWorld, expectedDepth: number) {
     const roomId = (this as any).roomId || 'testroom';
-    const room = this.page.locator(`[data-room-id="${roomId}"]`).first();
+    const rect = this.page.locator(`[data-room-id="${roomId}"] rect.room-rect`).first();
 
-    const height = await room.getAttribute('height');
+    const height = await rect.getAttribute('height');
     const actualDepth = Math.round(parseFloat(height || '0') * 5); // Convert pixels to mm
 
     expect(actualDepth).toBe(expectedDepth);
@@ -319,9 +310,9 @@ Then(
   'the room depth should be {int}mm',
   async function (this: FloorplanWorld, expectedDepth: number) {
     const roomId = (this as any).roomId || 'testroom';
-    const room = this.page.locator(`[data-room-id="${roomId}"]`).first();
+    const rect = this.page.locator(`[data-room-id="${roomId}"] rect.room-rect`).first();
 
-    const height = await room.getAttribute('height');
+    const height = await rect.getAttribute('height');
     const actualDepth = Math.round(parseFloat(height || '0') * 5); // Convert pixels to mm
 
     expect(actualDepth).toBe(expectedDepth);
@@ -332,9 +323,9 @@ Then(
   'the room width should remain {int}mm',
   async function (this: FloorplanWorld, expectedWidth: number) {
     const roomId = (this as any).roomId || 'testroom';
-    const room = this.page.locator(`[data-room-id="${roomId}"]`).first();
+    const rect = this.page.locator(`[data-room-id="${roomId}"] rect.room-rect`).first();
 
-    const width = await room.getAttribute('width');
+    const width = await rect.getAttribute('width');
     const actualWidth = Math.round(parseFloat(width || '0') * 5); // Convert pixels to mm
 
     expect(actualWidth).toBe(expectedWidth);
@@ -448,11 +439,8 @@ Given(
       ],
     };
 
-    await this.page.getByTestId('tab-preview').click();
-    await this.page.getByTestId('tab-dsl').click();
     await fillDSLFromJSON(this, json);
     await this.page.waitForTimeout(600);
-    await this.page.getByTestId('tab-preview').click();
 
     (this as any).currentJson = json;
     (this as any).roomId = 'composite-part1';
@@ -494,10 +482,8 @@ Given(
       attachTo: attachTo,
     });
 
-    await this.page.getByTestId('tab-dsl').click();
     await fillDSLFromJSON(this, currentJson);
     await this.page.waitForTimeout(600);
-    await this.page.getByTestId('tab-preview').click();
 
     (this as any).currentJson = currentJson;
   }
@@ -560,7 +546,7 @@ Given('I am viewing the DSL editor', async function (this: FloorplanWorld) {
 });
 
 When('I switch to the preview tab', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-preview').click();
+  // Preview is always visible (not a separate tab), nothing to do
   await this.page.waitForTimeout(100);
 });
 
