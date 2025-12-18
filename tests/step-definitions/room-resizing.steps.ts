@@ -14,17 +14,22 @@ Given(
 
 room testroom "Test Room" ${width}x${depth} at zeropoint`;
 
-    // Fill DSL and wait for update
-    await this.page.getByTestId('tab-dsl').click();
+    // Switch to DSL editor tab (matching working pattern from object-resizing)
+    const dslTab = this.page.locator('[data-testid="tab-dsl"]');
+    await dslTab.click();
+    await this.page.waitForTimeout(100);
+
+    // Enter DSL using fill()
     const editorSelector = '.cm-content[contenteditable="true"]';
-    await this.page.waitForSelector(editorSelector, { timeout: 5000 });
+    await this.page.waitForSelector(editorSelector);
     const editor = this.page.locator(editorSelector);
     await editor.click();
     await editor.fill(dsl);
-    await this.page.waitForTimeout(600);
+    await this.page.waitForTimeout(600); // Wait for debounce
 
     // Switch to preview
-    await this.page.getByTestId('tab-preview').click();
+    const previewTab = this.page.locator('[data-testid="tab-preview"]');
+    await previewTab.click();
     await this.page.waitForTimeout(100);
 
     (this as any).currentJson = {
@@ -43,17 +48,22 @@ Given(
 
 room ${roomId} "${roomId}" ${width}x${depth} at zeropoint`;
 
-    // Fill DSL and wait for update
-    await this.page.getByTestId('tab-dsl').click();
+    // Switch to DSL editor tab (matching working pattern from object-resizing)
+    const dslTab = this.page.locator('[data-testid="tab-dsl"]');
+    await dslTab.click();
+    await this.page.waitForTimeout(100);
+
+    // Enter DSL using fill()
     const editorSelector = '.cm-content[contenteditable="true"]';
-    await this.page.waitForSelector(editorSelector, { timeout: 5000 });
+    await this.page.waitForSelector(editorSelector);
     const editor = this.page.locator(editorSelector);
     await editor.click();
     await editor.fill(dsl);
-    await this.page.waitForTimeout(600);
+    await this.page.waitForTimeout(600); // Wait for debounce
 
     // Switch to preview
-    await this.page.getByTestId('tab-preview').click();
+    const previewTab = this.page.locator('[data-testid="tab-preview"]');
+    await previewTab.click();
     await this.page.waitForTimeout(100);
 
     (this as any).currentJson = {
