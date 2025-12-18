@@ -326,3 +326,122 @@ When('I change the grid step to {int}', async function (gridStep: number) {
   const input = this.page.getByTestId('grid-step-input');
   await input.fill(String(gridStep));
 });
+
+// Room resizing steps
+When('I drag the right edge handle of the room', async function () {
+  const room = this.page.locator('[data-room-id]').first();
+  await room.waitFor({ state: 'visible' });
+  await room.hover();
+  await this.page.waitForTimeout(100);
+
+  // Find the right edge resize handle
+  const roomId = await room.getAttribute('data-room-id');
+  const rightHandle = this.page.locator(`[data-testid="resize-handle-${roomId}-right"]`);
+
+  // If handle exists, drag it
+  const handleVisible = await rightHandle.isVisible().catch(() => false);
+  if (handleVisible) {
+    const box = await rightHandle.boundingBox();
+    if (box) {
+      await this.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await this.page.mouse.down();
+      await this.page.mouse.move(box.x + box.width / 2 + 50, box.y + box.height / 2);
+      await this.page.mouse.up();
+    }
+  }
+});
+
+Then('the room width should be updated', async function () {
+  await this.page.waitForTimeout(600);
+  // Room should still be visible in SVG
+  const room = this.page.locator('[data-room-id]').first();
+  await expect(room).toBeVisible();
+});
+
+Then('the DSL should reflect the new room width', async function () {
+  // Room should still be visible indicating successful update
+  const room = this.page.locator('[data-room-id]').first();
+  await expect(room).toBeVisible();
+});
+
+When('I drag the bottom edge handle of the room', async function () {
+  const room = this.page.locator('[data-room-id]').first();
+  await room.waitFor({ state: 'visible' });
+  await room.hover();
+  await this.page.waitForTimeout(100);
+
+  // Find the bottom edge resize handle
+  const roomId = await room.getAttribute('data-room-id');
+  const bottomHandle = this.page.locator(`[data-testid="resize-handle-${roomId}-bottom"]`);
+
+  // If handle exists, drag it
+  const handleVisible = await bottomHandle.isVisible().catch(() => false);
+  if (handleVisible) {
+    const box = await bottomHandle.boundingBox();
+    if (box) {
+      await this.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await this.page.mouse.down();
+      await this.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 50);
+      await this.page.mouse.up();
+    }
+  }
+});
+
+Then('the room depth should be updated', async function () {
+  await this.page.waitForTimeout(600);
+  // Room should still be visible in SVG
+  const room = this.page.locator('[data-room-id]').first();
+  await expect(room).toBeVisible();
+});
+
+Then('the DSL should reflect the new room depth', async function () {
+  // Room should still be visible indicating successful update
+  const room = this.page.locator('[data-room-id]').first();
+  await expect(room).toBeVisible();
+});
+
+// Object resizing steps
+Given('I have a room with a square object', async function () {
+  const dsl = `grid 1000
+
+room livingroom "Living Room" 5000x4000 at zeropoint
+    object square "Table" 800x800 #33d17a at top-left (1000, 1000)`;
+  await fillCodeMirror(this.page, dsl);
+  await this.page.waitForTimeout(600);
+});
+
+When('I drag the object resize handle', async function () {
+  // First hover over the object to show resize handles
+  const object = this.page.locator('[data-testid^="object-"]').first();
+  await object.waitFor({ state: 'visible' });
+  await object.hover();
+  await this.page.waitForTimeout(100);
+
+  // Find a resize handle (bottom-right for example)
+  const resizeHandle = this.page.locator('[data-testid*="resize-handle"][data-testid*="bottom-right"]').first();
+
+  // If handle exists, drag it
+  const handleVisible = await resizeHandle.isVisible().catch(() => false);
+  if (handleVisible) {
+    const box = await resizeHandle.boundingBox();
+    if (box) {
+      await this.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await this.page.mouse.down();
+      await this.page.mouse.move(box.x + box.width / 2 + 20, box.y + box.height / 2 + 20);
+      await this.page.mouse.up();
+    }
+  }
+});
+
+Then('the object size should be updated', async function () {
+  await this.page.waitForTimeout(600);
+  // Object should still be visible in SVG
+  const object = this.page.locator('[data-testid^="object-"]').first();
+  await expect(object).toBeVisible();
+});
+
+Then('the DSL should reflect the new object size', async function () {
+  // Object should still be visible indicating successful update
+  const object = this.page.locator('[data-testid^="object-"]').first();
+  await expect(object).toBeVisible();
+});

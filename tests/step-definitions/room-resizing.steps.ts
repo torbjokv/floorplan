@@ -1,7 +1,7 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import type { FloorplanWorld } from '../support/world';
-import { fillDSLFromJSON } from '../support/dsl-helper';
+import { fillDSLFromJSON, getCodeMirrorValue } from '../support/dsl-helper';
 
 // Helper function to convert millimeters to pixels (DISPLAY_SCALE = 2)
 const mm = (millimeters: number): number => millimeters / 5;
@@ -22,8 +22,6 @@ Given(
       ],
     };
 
-    await this.page.getByTestId('tab-preview').click();
-    await this.page.getByTestId('tab-dsl').click();
     await fillDSLFromJSON(this, json);
     await this.page.waitForTimeout(600);
     await this.page.getByTestId('tab-preview').click();
@@ -49,8 +47,6 @@ Given(
       ],
     };
 
-    await this.page.getByTestId('tab-preview').click();
-    await this.page.getByTestId('tab-dsl').click();
     await fillDSLFromJSON(this, json);
     await this.page.waitForTimeout(600);
     await this.page.getByTestId('tab-preview').click();
@@ -329,7 +325,7 @@ Then(
 
 Then('the DSL should reflect the updated width', async function (this: FloorplanWorld) {
   await this.page.getByTestId('tab-dsl').click();
-  const dslContent = await this.page.getByTestId('dsl-textarea').inputValue();
+  const dslContent = await getCodeMirrorValue(this.page);
 
   // Check that DSL has been updated with new dimensions
   expect(dslContent).toBeTruthy();
@@ -338,7 +334,7 @@ Then('the DSL should reflect the updated width', async function (this: Floorplan
 
 Then('the DSL should reflect the updated depth', async function (this: FloorplanWorld) {
   await this.page.getByTestId('tab-dsl').click();
-  const dslContent = await this.page.getByTestId('dsl-textarea').inputValue();
+  const dslContent = await getCodeMirrorValue(this.page);
 
   // Check that DSL has been updated
   expect(dslContent).toBeTruthy();
@@ -358,7 +354,7 @@ Then(
   'the DSL should reflect the updated dimensions and position',
   async function (this: FloorplanWorld) {
     await this.page.getByTestId('tab-dsl').click();
-    const dslContent = await this.page.getByTestId('dsl-textarea').inputValue();
+    const dslContent = await getCodeMirrorValue(this.page);
 
     expect(dslContent).toBeTruthy();
     expect(dslContent.length).toBeGreaterThan(0);
@@ -525,7 +521,7 @@ Then(
   async function (this: FloorplanWorld, roomId: string, attachTo: string) {
     // Check DSL to verify attachTo is preserved
     await this.page.getByTestId('tab-dsl').click();
-    const dslContent = await this.page.getByTestId('dsl-textarea').inputValue();
+    const dslContent = await getCodeMirrorValue(this.page);
 
     expect(dslContent).toContain(roomId);
     expect(dslContent).toContain(attachTo.split(':')[0]);
@@ -558,8 +554,42 @@ When('I switch to the DSL editor tab', async function (this: FloorplanWorld) {
 Then(
   'the DSL should show {string} for the room dimensions',
   async function (this: FloorplanWorld, expectedDimensions: string) {
-    const dslContent = await this.page.getByTestId('dsl-textarea').inputValue();
+    const dslContent = await getCodeMirrorValue(this.page);
     expect(dslContent).toContain(expectedDimensions);
+  }
+);
+
+When(
+  'I resize the room width to {int}mm',
+  async function (this: FloorplanWorld, targetWidth: number) {
+    const roomId = (this as any).roomId || 'testroom';
+
+    // Hover over room to show resize handles
+    const room = this.page.locator(`[data-room-id="${roomId}"]`).first();
+    await room.hover();
+    await this.page.waitForTimeout(100);
+
+    // Get current width from room element
+    const widthAttr = await room.getAttribute('width');
+    const currentWidthPx = parseFloat(widthAttr || '0');
+    const currentWidthMm = currentWidthPx * 10; // At DISPLAY_SCALE=1: 1mm = 0.1px, so px * 10 = mm
+
+    // Calculate delta
+    const deltaX = targetWidth - currentWidthMm;
+
+    // Drag right handle
+    const rightHandle = this.page.locator(`[data-testid="resize-handle-${roomId}-right"]`);
+    const bbox = await rightHandle.boundingBox();
+    if (!bbox) throw new Error('Right handle not found');
+
+    const startX = bbox.x + bbox.width / 2;
+    const startY = bbox.y + bbox.height / 2;
+    const endX = startX + mm(deltaX);
+
+    await this.page.mouse.move(startX, startY);
+    await this.page.mouse.down();
+    await this.page.mouse.move(endX, startY);
+    await this.page.mouse.up();
   }
 );
 
@@ -572,11 +602,11 @@ When('I press Ctrl+Shift+Z', async function (this: FloorplanWorld) {
 });
 
 Then('the DSL should reflect the original dimensions', async function (this: FloorplanWorld) {
-  const dslContent = await this.page.getByTestId('dsl-textarea').inputValue();
+  const dslContent = await getCodeMirrorValue(this.page);
   expect(dslContent).toBeTruthy();
 });
 
 Then('the DSL should reflect the resized dimensions', async function (this: FloorplanWorld) {
-  const dslContent = await this.page.getByTestId('dsl-textarea').inputValue();
+  const dslContent = await getCodeMirrorValue(this.page);
   expect(dslContent).toBeTruthy();
 });

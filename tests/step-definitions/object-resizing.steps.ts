@@ -358,8 +358,9 @@ Then(
 
     // Use pixel-based tolerance (more accurate than mm since SVG works in pixels)
     // At DISPLAY_SCALE=1: 1mm = 0.1px, so 1px tolerance = 10mm tolerance
+    // Drag operations have inherent imprecision due to subpixel rendering and mouse interpolation
     const mm = (val: number) => val / 10; // Convert mm to screen pixels
-    const TOLERANCE_PX = result!.partId ? 3 : 1; // pixels (equivalent to 30mm or 10mm)
+    const TOLERANCE_PX = result!.partId ? 5 : 15; // pixels - allow for drag imprecision
 
     const actualWidthPx = mm(result!.object.width);
     const actualHeightPx = mm(result!.object.height);

@@ -4,26 +4,20 @@ import type { Page } from '@playwright/test';
 
 /**
  * Helper to fill CodeMirror editor with content
- * Uses keyboard interactions to ensure React's onChange is triggered
+ * Uses fill() method for fast and reliable content insertion
  */
 export async function fillCodeMirror(page: Page, content: string) {
   const dslContainer = page.getByTestId('dsl-editor');
   await dslContainer.waitFor({ state: 'visible', timeout: 5000 });
 
-  // Click on the editor to focus it
-  const cmContent = dslContainer.locator('.cm-content');
-  await cmContent.click();
+  // Find the contenteditable element in CodeMirror
+  const editorSelector = '.cm-content[contenteditable="true"]';
+  await page.waitForSelector(editorSelector, { timeout: 5000 });
+  const editor = page.locator(editorSelector);
 
-  // Select all existing content
-  await page.keyboard.press('Control+a');
-
-  // Use insertText which handles newlines properly
-  // This replaces selected text with the new content
-  if (content.length > 0) {
-    await page.keyboard.insertText(content);
-  } else {
-    await page.keyboard.press('Delete');
-  }
+  // Click to focus, then fill with content
+  await editor.click();
+  await editor.fill(content);
 }
 
 /**
