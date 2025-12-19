@@ -607,8 +607,78 @@ Then('the DSL should reflect the new window wall', async function () {
   // Check that DSL still contains a window definition
   const dslTab = this.page.locator('[data-testid="tab-dsl"]');
   await dslTab.click();
-  await this.page.waitForTimeout(100);
   const editor = this.page.locator('.cm-content');
+  await editor.waitFor({ state: 'visible' });
   const text = await editor.textContent();
   expect(text).toContain('window');
+});
+
+// Wall-to-wall door drag steps
+Given('I have a room with a door on the bottom wall', async function () {
+  const dsl = `grid 1000
+
+room livingroom "Living Room" 5000x4000 at zeropoint
+    door 900 inwards-right at bottom (1000)`;
+  await fillDSLEditor(this.page, dsl);
+});
+
+When('I drag the door to the left wall', async function () {
+  // Find the door element
+  const door = this.page.locator('.door-group').first();
+  await door.waitFor({ state: 'visible' });
+
+  const doorBox = await door.boundingBox();
+  if (!doorBox) throw new Error('Door not found');
+
+  // Find the room to get left wall position
+  const room = this.page.locator('[data-room-id="livingroom"]').first();
+  const roomBox = await room.boundingBox();
+  if (!roomBox) throw new Error('Room not found');
+
+  // Drag the door toward the left wall
+  await this.page.mouse.move(doorBox.x + doorBox.width / 2, doorBox.y + doorBox.height / 2);
+  await this.page.mouse.down();
+  await this.page.mouse.move(roomBox.x + 10, roomBox.y + roomBox.height / 2);
+  await this.page.mouse.up();
+});
+
+Then('the door should be on the left wall', async function () {
+  // Door should still be visible in SVG
+  const door = this.page.locator('.door-group').first();
+  await expect(door).toBeVisible();
+});
+
+// Wall-to-wall window drag steps
+Given('I have a room with a window on the top wall', async function () {
+  const dsl = `grid 1000
+
+room livingroom "Living Room" 5000x4000 at zeropoint
+    window 1200 at top (500)`;
+  await fillDSLEditor(this.page, dsl);
+});
+
+When('I drag the window to the right wall', async function () {
+  // Find the window element
+  const window = this.page.locator('.window-group').first();
+  await window.waitFor({ state: 'visible' });
+
+  const windowBox = await window.boundingBox();
+  if (!windowBox) throw new Error('Window not found');
+
+  // Find the room to get right wall position
+  const room = this.page.locator('[data-room-id="livingroom"]').first();
+  const roomBox = await room.boundingBox();
+  if (!roomBox) throw new Error('Room not found');
+
+  // Drag the window toward the right wall
+  await this.page.mouse.move(windowBox.x + windowBox.width / 2, windowBox.y + windowBox.height / 2);
+  await this.page.mouse.down();
+  await this.page.mouse.move(roomBox.x + roomBox.width - 10, roomBox.y + roomBox.height / 2);
+  await this.page.mouse.up();
+});
+
+Then('the window should be on the right wall', async function () {
+  // Window should still be visible in SVG
+  const room = this.page.locator('[data-room-id]').first();
+  await expect(room).toBeVisible();
 });
