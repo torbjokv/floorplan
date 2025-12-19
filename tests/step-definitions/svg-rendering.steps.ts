@@ -833,10 +833,6 @@ Then(
 
 Given('I am viewing the floorplan preview', async function (this: FloorplanWorld) {
   // Create a basic room to view
-  await this.page.getByTestId('tab-dsl').click();
-  await this.page.waitForTimeout(200);
-
-  const jsonTextarea = this.page.getByTestId('dsl-textarea');
   const json = {
     grid_step: 1000,
     rooms: [
