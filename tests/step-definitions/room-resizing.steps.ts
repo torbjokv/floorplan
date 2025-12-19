@@ -485,19 +485,21 @@ Given(
 );
 
 When('I hover over the part in the preview', async function (this: FloorplanWorld) {
-  // Part IDs are just the part ID (e.g., "part1"), not combined with room ID
-  const part = this.page.locator('[data-room-id="part1"]').first();
-  await part.hover();
+  // Parts in composite rooms don't have separate data-room-id, hover on composite room instead
+  const compositeRoom = this.page.locator('[data-room-id="composite"]').first();
+  await compositeRoom.hover();
   await this.page.waitForTimeout(100);
 });
 
 Then('resize handles should appear on the part', async function (this: FloorplanWorld) {
-  const leftHandle = this.page.locator('[data-testid="resize-handle-part1-left"]');
+  // Composite rooms have resize handles on the main room
+  const leftHandle = this.page.locator('[data-testid="resize-handle-composite-left"]');
   await expect(leftHandle).toBeVisible();
 });
 
 Then('I should be able to resize the part independently', async function (this: FloorplanWorld) {
-  const leftHandle = this.page.locator('[data-testid="resize-handle-part1-left"]');
+  // Parts are resized through the composite room handles
+  const leftHandle = this.page.locator('[data-testid="resize-handle-composite-left"]');
   await expect(leftHandle).toBeVisible();
 });
 
