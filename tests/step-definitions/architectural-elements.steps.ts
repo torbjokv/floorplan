@@ -1194,8 +1194,6 @@ room composite1 "Composite Room" 3000x2000 at livingroom1:bottom-left
 `;
 
   // Use the fillDSL helper to avoid timeout issues
-  const dslTab = this.page.getByTestId('tab-dsl');
-  await dslTab.click();
   await this.page.waitForTimeout(100);
 
   const textarea = this.page.getByTestId('dsl-editor-textarea');

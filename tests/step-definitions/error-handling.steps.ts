@@ -5,7 +5,7 @@ import { fillDSLFromJSON, fillCodeMirror, getCodeMirrorValue } from '../support/
 
 // DSL Tab Navigation
 When('I switch to the DSL tab', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-dsl').click();
+  
   await this.page.waitForTimeout(300);
 });
 
@@ -45,7 +45,7 @@ Then('a DSL syntax error should be displayed with ❌ icon', async function (thi
 
 // JSON Syntax Errors (legacy)
 When('I enter JSON with a syntax error', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-dsl').click();
+  
   await fillCodeMirror(this.page, '{ "grid_step": 1000, "rooms": [ } '); // Missing closing bracket
   await this.page.waitForTimeout(300);
 });
@@ -321,7 +321,7 @@ Then(
 
 // Error Recovery
 Given('I have JSON with multiple errors', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-dsl').click();
+  
   await fillCodeMirror(this.page, '{ invalid json');
   await this.page.waitForTimeout(300);
 });
@@ -397,7 +397,7 @@ Then('errors should be listed with clear descriptions', async function (this: Fl
 });
 
 When('I switch between JSON and GUI tabs', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-dsl').click();
+  
   await this.page.waitForTimeout(200);
   await this.page.getByTestId('tab-gui').click();
   await this.page.waitForTimeout(200);
@@ -928,7 +928,7 @@ Then('successfully positioned rooms should still render', async function (this: 
 });
 
 Given('I have a JSON syntax error displayed', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-dsl').click();
+  
   await fillCodeMirror(this.page, '{ invalid json');
   await this.page.waitForTimeout(700);
   const errorOverlay = this.page.getByTestId('error-panel').first();
@@ -1066,7 +1066,7 @@ Then('all rooms should render successfully', async function (this: FloorplanWorl
 });
 
 When('an error occurs', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-dsl').click();
+  
   await fillCodeMirror(this.page, '{ invalid json');
   await this.page.waitForTimeout(700);
 });
@@ -1134,7 +1134,7 @@ Then('the visual distinction should be clear', async function (this: FloorplanWo
 });
 
 Given('I have an error in the JSON editor', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-dsl').click();
+  
   await fillCodeMirror(this.page, '{ invalid');
   await this.page.waitForTimeout(700);
   const errorOverlay = this.page.getByTestId('error-panel').first();
@@ -1147,7 +1147,7 @@ When('I switch to the GUI editor tab', async function (this: FloorplanWorld) {
 });
 
 When('I switch back to the JSON editor tab', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-dsl').click();
+  
   await this.page.waitForTimeout(200);
 });
 

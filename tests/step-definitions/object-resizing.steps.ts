@@ -48,8 +48,6 @@ function getObjectTestId(roomId: string, objectIndex: number, partId?: string): 
 // Common step definitions
 Given('I have the following DSL:', async function (this: World, dslText: string) {
   // Switch to DSL editor tab
-  const dslTab = this.page.locator('[data-testid="tab-dsl"]');
-  await dslTab.click();
   await this.page.waitForTimeout(100);
 
   // Enter DSL using fill() - fast and preserves newlines

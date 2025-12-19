@@ -7,8 +7,7 @@ import { fillDSLFromJSON } from '../support/dsl-helper';
 When(
   'I create a room attached to {string}',
   async function (this: FloorplanWorld, attachTo: string) {
-    await this.page.getByTestId('tab-dsl').click();
-    const jsonTextarea = this.page.getByTestId('dsl-textarea');
+    
 
     const json = {
       grid_step: 1000,
@@ -57,8 +56,7 @@ Then(
 Given(
   'I have a room {string} at position {int},{int}',
   async function (this: FloorplanWorld, roomId: string, x: number, y: number) {
-    await this.page.getByTestId('tab-dsl').click();
-    const jsonTextarea = this.page.getByTestId('dsl-textarea');
+    
 
     const json = {
       grid_step: 1000,
@@ -85,7 +83,7 @@ Given(
 When(
   'I create room {string} attached to {string}',
   async function (this: FloorplanWorld, newRoomId: string, attachTo: string) {
-    await this.page.getByTestId('tab-dsl').click();
+    
     await this.page.waitForTimeout(200);
 
     const currentRooms = (this as any).currentRooms || [];
@@ -100,7 +98,6 @@ When(
 
     currentRooms.push(newRoom);
 
-    const jsonTextarea = this.page.getByTestId('dsl-textarea');
     const json = {
       grid_step: 1000,
       rooms: currentRooms,
@@ -147,7 +144,6 @@ When(
 
     currentRooms.push(newRoom);
 
-    const jsonTextarea = this.page.getByTestId('dsl-textarea');
     const json = {
       grid_step: 1000,
       rooms: currentRooms,
@@ -177,7 +173,6 @@ When(
     if (room) {
       room.anchor = anchor;
 
-      const jsonTextarea = this.page.getByTestId('dsl-textarea');
       const json = {
         grid_step: 1000,
         rooms: currentRooms,
@@ -207,7 +202,6 @@ When(
     if (room) {
       room.offset = [offsetX, offsetY];
 
-      const jsonTextarea = this.page.getByTestId('dsl-textarea');
       const json = {
         grid_step: 1000,
         rooms: currentRooms,
@@ -229,8 +223,7 @@ Then(
 
 // Composite Rooms
 When('I create a composite room with parts', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-dsl').click();
-  const jsonTextarea = this.page.getByTestId('dsl-textarea');
+  
 
   const json = {
     grid_step: 1000,
@@ -286,10 +279,9 @@ Then('it should resolve relative to the parent room', async function (this: Floo
 When(
   'I create room {string} attached to room {string}',
   async function (this: FloorplanWorld, roomAId: string, roomBId: string) {
-    await this.page.getByTestId('tab-dsl').click();
+    
     await this.page.waitForTimeout(200);
 
-    const jsonTextarea = this.page.getByTestId('dsl-textarea');
 
     const json = {
       grid_step: 1000,
@@ -340,8 +332,7 @@ Then('neither room should render', async function (this: FloorplanWorld) {
 When(
   'I create a room attached to non-existent room {string}',
   async function (this: FloorplanWorld, nonExistentId: string) {
-    await this.page.getByTestId('tab-dsl').click();
-    const jsonTextarea = this.page.getByTestId('dsl-textarea');
+    
 
     const json = {
       grid_step: 1000,
@@ -373,8 +364,7 @@ Then('the room should not render', async function (this: FloorplanWorld) {
 
 // Zero Point Validation
 When('I create rooms without any zeropoint attachment', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-dsl').click();
-  const jsonTextarea = this.page.getByTestId('dsl-textarea');
+  
 
   const json = {
     grid_step: 1000,
@@ -428,8 +418,7 @@ When('I create a chain of {int} rooms', async function (this: FloorplanWorld, co
     });
   }
 
-  await this.page.getByTestId('tab-dsl').click();
-  const jsonTextarea = this.page.getByTestId('dsl-textarea');
+  
 
   const json = {
     grid_step: 1000,
@@ -497,8 +486,7 @@ Given(
       },
     ];
 
-    await this.page.getByTestId('tab-dsl').click();
-    const jsonTextarea = this.page.getByTestId('dsl-textarea');
+    
 
     const json = {
       grid_step: 1000,
@@ -534,8 +522,7 @@ Then('all rooms should render at correct positions', async function (this: Floor
 Given(
   'I have a room named {string} attached to Zero Point',
   async function (this: FloorplanWorld, roomName: string) {
-    await this.page.getByTestId('tab-dsl').click();
-    const jsonTextarea = this.page.getByTestId('dsl-textarea');
+    
 
     const roomId = roomName.toLowerCase().replace(/\s+/g, '');
 
@@ -593,7 +580,6 @@ When(
 
     currentRooms.push(newRoom);
 
-    const jsonTextarea = this.page.getByTestId('dsl-textarea');
     const json = {
       grid_step: 1000,
       rooms: currentRooms,
@@ -637,7 +623,6 @@ When(
 
     currentRooms.push(newRoom);
 
-    const jsonTextarea = this.page.getByTestId('dsl-textarea');
     const json = {
       grid_step: 1000,
       rooms: currentRooms,
@@ -708,8 +693,7 @@ When(
       ],
     };
 
-    await this.page.getByTestId('tab-dsl').click();
-    const jsonTextarea = this.page.getByTestId('dsl-textarea');
+    
     await fillDSLFromJSON(this, json);
     await this.page.waitForTimeout(700);
   }
@@ -769,8 +753,7 @@ When('I create a composite room with part A and part B', async function (this: F
     ],
   };
 
-  await this.page.getByTestId('tab-dsl').click();
-  const jsonTextarea = this.page.getByTestId('dsl-textarea');
+  
   await fillDSLFromJSON(this, json);
   await this.page.waitForTimeout(700);
 });
@@ -831,8 +814,7 @@ When(
       });
     }
 
-    await this.page.getByTestId('tab-dsl').click();
-    const jsonTextarea = this.page.getByTestId('dsl-textarea');
+    
 
     const json = {
       grid_step: 1000,
@@ -881,8 +863,7 @@ When(
       });
     }
 
-    await this.page.getByTestId('tab-dsl').click();
-    const jsonTextarea = this.page.getByTestId('dsl-textarea');
+    
 
     const json = {
       grid_step: 1000,
