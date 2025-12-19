@@ -18,6 +18,12 @@ This is a browser-based SVG floorplan designer built with React, TypeScript, and
 - `npm test` - Run all tests (~5 minutes, 145 scenarios)
 - `npm run test:headed` - Run tests in headed mode (see browser)
 
+## General claude behavoiur
+
+- Be very pessimistic when testing, test the smallest part possible, like a single test, or one single suite. Then when everything works, then do the full test.
+- When testing, do not grep. Prefer to get the full output but if too large, pass to file and look at that.
+- adding timeout to tests is never a good solution. always find out why it times out. the error is most likely a test step issue.
+
 ## Architecture
 
 ### Core Positioning System

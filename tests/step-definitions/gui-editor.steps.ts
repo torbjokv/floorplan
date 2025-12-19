@@ -1,6 +1,7 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import type { FloorplanWorld } from '../support/world';
+import { getCodeMirrorValue } from '../support/dsl-helper';
 
 // Background steps (already defined in project-menu.steps.ts but included here for clarity)
 
@@ -829,14 +830,12 @@ When('the room uses attachTo positioning', async function (this: FloorplanWorld)
 Then('the DSL editor should reflect the change', async function (this: FloorplanWorld) {
   await this.page.getByTestId('tab-dsl').click();
   await this.page.waitForTimeout(300);
-  const dslTextarea = this.page.getByTestId('dsl-textarea');
-  const content = await dslTextarea.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   expect(content).toContain('grid 2000'); // The grid step was changed to 2000
 });
 
 Then('the DSL should contain the updated value', async function (this: FloorplanWorld) {
-  const dslTextarea = this.page.getByTestId('dsl-textarea');
-  const content = await dslTextarea.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   expect(content).toContain('grid 2000');
 });
 

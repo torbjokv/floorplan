@@ -1338,8 +1338,9 @@ Then('a grid should be displayed', async function (this: FloorplanWorld) {
 });
 
 Then('no rooms should be rendered', async function (this: FloorplanWorld) {
+  // Look specifically in the SVG (exclude GUI editor elements)
   const svg = this.page.locator('.floorplan-svg');
-  const rooms = this.page.locator('[data-room-id]');
+  const rooms = svg.locator('[data-room-id]');
   const count = await rooms.count();
   expect(count).toBe(0);
 });

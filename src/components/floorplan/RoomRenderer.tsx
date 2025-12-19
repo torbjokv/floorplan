@@ -435,6 +435,7 @@ export function RoomRenderer({
   return (
     <g
       key={room.id}
+      data-room-id={room.id}
       transform={transform}
       onMouseEnter={() => onMouseEnter?.(room.id)}
       onMouseLeave={() => onMouseLeave?.()}

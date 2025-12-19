@@ -1,6 +1,7 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { FloorplanWorld } from '../support/world';
+import { getCodeMirrorValue } from '../support/dsl-helper';
 
 // Background steps
 Given('I am on the floorplan designer page', async function (this: FloorplanWorld) {
@@ -92,14 +93,17 @@ When('I upload the JSON file', async function (this: FloorplanWorld) {
 });
 
 When('I click outside the menu', async function (this: FloorplanWorld) {
-  // Click on the floorplan preview (outside the project header)
-  const svg = this.page.locator('svg').first();
-  if (await svg.isVisible()) {
-    await svg.click();
-  } else {
-    // If no SVG, click on the editor section
-    await this.page.locator('.editor-container').first().click();
-  }
+  // The menu closes on mousedown outside the project-header
+  // Use dispatchEvent to ensure mousedown event fires
+  await this.page.evaluate(() => {
+    const svg = document.querySelector('svg');
+    if (svg) {
+      svg.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    } else {
+      // Fallback to clicking on body
+      document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    }
+  });
   // Wait for menu to close
   await this.page.waitForTimeout(300);
 });
@@ -176,10 +180,10 @@ Then('a new empty project should be created', async function (this: FloorplanWor
   // Switch to DSL tab to check content
   await this.page.getByTestId('tab-dsl').click();
   await this.page.waitForTimeout(300);
-  // Check the DSL editor content
-  const dslEditor = this.page.getByTestId('dsl-textarea');
+  // Check the DSL editor content using CodeMirror helper
+  const dslEditor = this.page.getByTestId('dsl-editor');
   await expect(dslEditor).toBeVisible();
-  const content = await dslEditor.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   // New projects have a default room configuration in DSL format
   expect(content).toContain('grid');
   expect(content).toContain('room');
@@ -298,8 +302,9 @@ Then('the floorplan should match the uploaded data', async function (this: Floor
   await expect(svg).toBeVisible();
 
   // Verify the DSL editor contains the uploaded room data
-  const dslTextarea = this.page.getByTestId('dsl-textarea');
-  const dslContent = await dslTextarea.inputValue();
+  await this.page.getByTestId('tab-dsl').click();
+  await this.page.waitForTimeout(300);
+  const dslContent = await getCodeMirrorValue(this.page);
   expect(dslContent).toContain('Test Room');
   expect(dslContent).toContain('3000x3000');
 });
@@ -396,8 +401,10 @@ Then('changes should not be auto-saved', async function (this: FloorplanWorld) {
 
 // Given steps with setup
 Given('I have created a room', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('add-room-btn').click();
-  await this.page.waitForTimeout(100);
+  // The app starts with a default room, so we don't need to do anything
+  // Just wait for the app to be ready
+  const svg = this.page.locator('.floorplan-svg');
+  await svg.waitFor({ state: 'visible', timeout: 5000 });
 });
 
 Given(

@@ -13,7 +13,7 @@ interface DSLEditorProps {
 export function DSLEditor({ value, onChange, readOnly }: DSLEditorProps) {
   return (
     <div className="dsl-editor-container" data-testid="dsl-editor">
-      <div className="dsl-code-mirror-wrapper" data-testid="dsl-textarea">
+      <div className="dsl-code-mirror-wrapper">
         <CodeMirror
           value={value}
           onChange={onChange}
@@ -41,7 +41,7 @@ export function DSLEditor({ value, onChange, readOnly }: DSLEditorProps) {
             lintKeymap: false,
           }}
           extensions={[
-            dslLanguage,
+            ...dslLanguage,
             EditorView.lineWrapping,
             // Overlay custom syntax highlighting colors for DSL-specific tokens
             EditorView.theme({
