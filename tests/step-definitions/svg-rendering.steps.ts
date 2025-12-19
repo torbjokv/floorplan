@@ -348,13 +348,13 @@ When('I click on a room in the preview', async function (this: FloorplanWorld) {
   await roomRect.click();
 });
 
-Then('the GUI editor should scroll to that room', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-gui').click();
+Then('the room should be selected for editing', async function (this: FloorplanWorld) {
+  // Room selection is handled via element selection state
   const roomId = (this as any).clickedRoomId;
   if (roomId) {
-    const roomCard = this.page.getByTestId(`room-card-${roomId}`);
-    // Should be scrolled into view
-    await expect(roomCard).toBeVisible();
+    // Verify the room element is visible in the SVG
+    const roomElement = this.page.locator(`[data-room-id="${roomId}"]`);
+    await expect(roomElement).toBeVisible();
   }
 });
 

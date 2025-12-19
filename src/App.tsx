@@ -2,12 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import './App.css';
 
 // Components
-import { GUIEditor } from './components/GUIEditor';
 import { DSLEditor } from './components/DSLEditor';
 import { FloorplanRenderer } from './components/FloorplanRenderer';
 import { ProjectHeader } from './components/ui/ProjectHeader/ProjectHeader';
 import { UndoRedoControls } from './components/ui/UndoRedoControls/UndoRedoControls';
-import { EditorTabs } from './components/ui/EditorTabs/EditorTabs';
 import { ErrorPanel } from './components/ui/ErrorPanel/ErrorPanel';
 import { Notifications } from './components/ui/Notifications/Notifications';
 
@@ -99,7 +97,6 @@ function App() {
   // UI State
   // ============================================================================
 
-  const [activeTab, setActiveTab] = useState<'gui' | 'dsl'>('dsl'); // Default to DSL
   const [dslErrors, setDslErrors] = useState<DSLError[]>([]);
   const [editorCollapsed, setEditorCollapsed] = useState(() => {
     const saved = localStorage.getItem('floorplan_editor_collapsed');
@@ -272,71 +269,20 @@ function App() {
     setPositioningErrors(errors);
   }, []);
 
-  const handleRoomClick = useCallback(
-    (roomId: string) => {
-      // If DSL tab is active, select the room for potential deletion
-      if (activeTab === 'dsl') {
-        setSelectedElement({ type: 'room', roomId });
-        return;
-      }
-      // Otherwise switch to GUI tab and scroll to room
-      if (activeTab !== 'gui') {
-        setActiveTab('gui');
-      }
-      // Wait for tab switch, then scroll to room
-      setTimeout(() => {
-        const roomElement = document.querySelector(`[data-room-id="${roomId}"]`);
-        if (roomElement) {
-          roomElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 100);
-    },
-    [activeTab]
-  );
+  const handleRoomClick = useCallback((roomId: string) => {
+    // Select the room for potential deletion
+    setSelectedElement({ type: 'room', roomId });
+  }, []);
 
-  const handleDoorClick = useCallback(
-    (doorIndex: number) => {
-      // If DSL tab is active, select the door for potential deletion
-      if (activeTab === 'dsl') {
-        setSelectedElement({ type: 'door', index: doorIndex });
-        return;
-      }
-      // Otherwise switch to GUI tab and scroll
-      if (activeTab !== 'gui') {
-        setActiveTab('gui');
-      }
-      // Wait for tab switch, then scroll to door
-      setTimeout(() => {
-        const doorElement = document.querySelector(`[data-door-index="${doorIndex}"]`);
-        if (doorElement) {
-          doorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 100);
-    },
-    [activeTab]
-  );
+  const handleDoorClick = useCallback((doorIndex: number) => {
+    // Select the door for potential deletion
+    setSelectedElement({ type: 'door', index: doorIndex });
+  }, []);
 
-  const handleWindowClick = useCallback(
-    (windowIndex: number) => {
-      // If DSL tab is active, select the window for potential deletion
-      if (activeTab === 'dsl') {
-        setSelectedElement({ type: 'window', index: windowIndex });
-        return;
-      }
-      // Otherwise switch to GUI tab and scroll
-      if (activeTab !== 'gui') {
-        setActiveTab('gui');
-      }
-      // Wait for tab switch, then scroll to window
-      setTimeout(() => {
-        const windowElement = document.querySelector(`[data-window-index="${windowIndex}"]`);
-        if (windowElement) {
-          windowElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 100);
-    },
-    [activeTab]
-  );
+  const handleWindowClick = useCallback((windowIndex: number) => {
+    // Select the window for potential deletion
+    setSelectedElement({ type: 'window', index: windowIndex });
+  }, []);
 
   const handleAddRoom = () => {
     const DEFAULT_ROOM_SIZE = 3000; // mm
@@ -394,17 +340,6 @@ function App() {
 
     const dsl = jsonToDSL(updatedData);
     updateDslText(dsl);
-
-    // Switch to GUI tab and scroll to new room
-    if (activeTab !== 'gui') {
-      setActiveTab('gui');
-    }
-    setTimeout(() => {
-      const roomElement = document.querySelector(`[data-room-id="${newRoom.id}"]`);
-      if (roomElement) {
-        roomElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 100);
   };
 
   const handleAddDoor = () => {
@@ -502,12 +437,6 @@ function App() {
     updateDslText(dsl);
   };
 
-  const handleGUIChange = (data: FloorplanData) => {
-    // Convert FloorplanData to DSL
-    const dsl = jsonToDSL(data);
-    updateDslText(dsl);
-  };
-
   const handleRoomUpdate = useCallback(
     (data: FloorplanData) => {
       // Immediately update floorplan data for instant visual feedback
@@ -535,35 +464,10 @@ function App() {
     [dslText, updateDslText]
   );
 
-  const handleObjectClick = useCallback(
-    (roomId: string, objectIndex: number) => {
-      // If DSL tab is active, select the object for potential deletion
-      if (activeTab === 'dsl') {
-        setSelectedElement({ type: 'object', index: objectIndex, roomId });
-        return;
-      }
-      // Otherwise switch to GUI tab and scroll to the specific object
-      if (activeTab !== 'gui') {
-        setActiveTab('gui');
-      }
-      setTimeout(() => {
-        // Try to find the specific object first
-        const objectElement = document.querySelector(
-          `[data-room-id="${roomId}"][data-object-index="${objectIndex}"]`
-        );
-        if (objectElement) {
-          objectElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else {
-          // Fallback to room if object not found
-          const roomElement = document.querySelector(`[data-room-id="${roomId}"]`);
-          if (roomElement) {
-            roomElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }
-      }, 100);
-    },
-    [activeTab]
-  );
+  const handleObjectClick = useCallback((roomId: string, objectIndex: number) => {
+    // Select the object for potential deletion
+    setSelectedElement({ type: 'object', index: objectIndex, roomId });
+  }, []);
 
   // ============================================================================
   // Drag Handlers for Doors, Windows, and Objects
@@ -1250,22 +1154,15 @@ function App() {
         </button>
         {!editorCollapsed && (
           <>
-            <EditorTabs activeTab={activeTab} onTabChange={setActiveTab} />
-            {activeTab === 'dsl' ? (
-              <DSLEditor value={dslText} onChange={updateDslText} readOnly={false} />
-            ) : (
-              <GUIEditor data={floorplanData} onChange={handleGUIChange} />
-            )}
+            <DSLEditor value={dslText} onChange={updateDslText} readOnly={false} />
             <div className="button-row" data-testid="editor-button-row">
-              {activeTab === 'dsl' && (
-                <button
-                  className="format-button"
-                  onClick={handleFormatDSL}
-                  data-testid="format-dsl-btn"
-                >
-                  Format DSL
-                </button>
-              )}
+              <button
+                className="format-button"
+                onClick={handleFormatDSL}
+                data-testid="format-dsl-btn"
+              >
+                Format DSL
+              </button>
               <button
                 className="download-button"
                 onClick={handleDownloadDSL}
