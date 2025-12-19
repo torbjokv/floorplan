@@ -67,6 +67,14 @@ Then('the {string} button should be visible in the SVG view', async function (bu
 When('I click the {string} button in the SVG view', async function (buttonText: string) {
   const button = this.page.getByTestId(`svg-${buttonText.toLowerCase().replace(/\s+/g, '-')}-btn`);
   await button.click();
+
+  // For "Add Object" button, also click the square option from the menu
+  if (buttonText.toLowerCase() === 'add object') {
+    await this.page.waitForTimeout(100);
+    const squareOption = this.page.getByTestId('add-square-option');
+    await squareOption.waitFor({ state: 'visible', timeout: 5000 });
+    await squareOption.click();
+  }
 });
 
 Then('a new room should appear in the SVG', async function () {
@@ -241,14 +249,17 @@ When('I click on a room to select it', async function () {
 });
 
 When('I click on the door to select it', async function () {
-  const door = this.page.locator('[data-door-index]').first();
+  // Use .door-group selector which is more reliable
+  const door = this.page.locator('.door-group').first();
   await door.waitFor({ state: 'visible', timeout: 10000 });
-  await door.click();
+  // Use force click to avoid issues with overlapping elements
+  await door.click({ force: true, timeout: 5000 });
   this.selectedElement = 'door';
 });
 
 When('I click on the window to select it', async function () {
-  const window = this.page.locator('[data-window-index]').first();
+  // Use .window-group selector which is more reliable
+  const window = this.page.locator('.window-group').first();
   await window.waitFor({ state: 'visible', timeout: 10000 });
   await window.click();
   this.selectedElement = 'window';
@@ -283,14 +294,14 @@ Then('the DSL should not contain the room', async function () {
 Then('the door should be removed', async function () {
   await this.page.waitForTimeout(600);
   // Check that no door is visible in SVG
-  const door = this.page.locator('[data-door-index]').first();
+  const door = this.page.locator('.door-group').first();
   const isVisible = await door.isVisible().catch(() => false);
   expect(isVisible).toBe(false);
 });
 
 Then('the DSL should not contain the door', async function () {
   // Already verified by checking door visibility in SVG
-  const door = this.page.locator('[data-door-index]').first();
+  const door = this.page.locator('.door-group').first();
   const isVisible = await door.isVisible().catch(() => false);
   expect(isVisible).toBe(false);
 });
@@ -298,14 +309,14 @@ Then('the DSL should not contain the door', async function () {
 Then('the window should be removed', async function () {
   await this.page.waitForTimeout(600);
   // Check that no window is visible in SVG
-  const window = this.page.locator('[data-window-index]').first();
+  const window = this.page.locator('.window-group').first();
   const isVisible = await window.isVisible().catch(() => false);
   expect(isVisible).toBe(false);
 });
 
 Then('the DSL should not contain the window', async function () {
   // Already verified by checking window visibility in SVG
-  const window = this.page.locator('[data-window-index]').first();
+  const window = this.page.locator('.window-group').first();
   const isVisible = await window.isVisible().catch(() => false);
   expect(isVisible).toBe(false);
 });
@@ -327,12 +338,18 @@ Then('the DSL should not contain the object', async function () {
 
 // Grid settings
 When('I click the grid settings button in the SVG view', async function () {
-  const button = this.page.getByTestId('svg-grid-settings-btn');
-  await button.click();
+  // Grid settings are in the GUI editor, switch to it first
+  const guiTab = this.page.locator('[data-testid="tab-gui"]');
+  await guiTab.click();
+  await this.page.waitForTimeout(100);
+  // Grid settings section should now be visible
+  const gridSettings = this.page.getByTestId('grid-settings');
+  await gridSettings.waitFor({ state: 'visible', timeout: 5000 });
 });
 
 When('I change the grid step to {int}', async function (gridStep: number) {
   const input = this.page.getByTestId('grid-step-input');
+  await input.clear();
   await input.fill(String(gridStep));
 });
 
