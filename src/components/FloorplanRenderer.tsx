@@ -1267,6 +1267,7 @@ const FloorplanRendererComponent = ({
 
         {/* Rooms (without objects) */}
         {Object.values(roomMap)
+          .filter(room => room.id !== 'zeropoint') // Exclude virtual zeropoint
           .filter(room => !partIds.has(room.id)) // Only render top-level rooms, not parts
           .map(room => (
             <RoomRenderer
