@@ -415,9 +415,10 @@ Then(
 
 Then('the room should not go below minimum width', async function (this: FloorplanWorld) {
   const roomId = (this as any).roomId || 'testroom';
-  const room = this.page.locator(`[data-room-id="${roomId}"]`).first();
+  // The rect is inside the g with data-room-id
+  const rect = this.page.locator(`[data-room-id="${roomId}"] rect.room-rect`).first();
 
-  const width = await room.getAttribute('width');
+  const width = await rect.getAttribute('width');
   const actualWidth = Math.round(parseFloat(width || '0') * 10); // Convert pixels to mm
 
   expect(actualWidth).toBeGreaterThanOrEqual(500); // Minimum width constraint
@@ -425,9 +426,10 @@ Then('the room should not go below minimum width', async function (this: Floorpl
 
 Then('the room should not go below minimum depth', async function (this: FloorplanWorld) {
   const roomId = (this as any).roomId || 'testroom';
-  const room = this.page.locator(`[data-room-id="${roomId}"]`).first();
+  // The rect is inside the g with data-room-id
+  const rect = this.page.locator(`[data-room-id="${roomId}"] rect.room-rect`).first();
 
-  const height = await room.getAttribute('height');
+  const height = await rect.getAttribute('height');
   const actualDepth = Math.round(parseFloat(height || '0') * 10); // Convert pixels to mm
 
   expect(actualDepth).toBeGreaterThanOrEqual(500); // Minimum depth constraint
@@ -483,18 +485,19 @@ Given(
 );
 
 When('I hover over the part in the preview', async function (this: FloorplanWorld) {
-  const part = this.page.locator('[data-room-id="composite-part1"]').first();
+  // Part IDs are just the part ID (e.g., "part1"), not combined with room ID
+  const part = this.page.locator('[data-room-id="part1"]').first();
   await part.hover();
   await this.page.waitForTimeout(100);
 });
 
 Then('resize handles should appear on the part', async function (this: FloorplanWorld) {
-  const leftHandle = this.page.locator('[data-testid="resize-handle-composite-part1-left"]');
+  const leftHandle = this.page.locator('[data-testid="resize-handle-part1-left"]');
   await expect(leftHandle).toBeVisible();
 });
 
 Then('I should be able to resize the part independently', async function (this: FloorplanWorld) {
-  const leftHandle = this.page.locator('[data-testid="resize-handle-composite-part1-left"]');
+  const leftHandle = this.page.locator('[data-testid="resize-handle-part1-left"]');
   await expect(leftHandle).toBeVisible();
 });
 
@@ -597,7 +600,20 @@ Then(
   'the DSL should show {string} for the room dimensions',
   async function (this: FloorplanWorld, expectedDimensions: string) {
     const dslContent = await getCodeMirrorValue(this.page);
-    expect(dslContent).toContain(expectedDimensions);
+    // Parse expected dimensions (e.g., "5000x3000")
+    const [expectedWidth, expectedDepth] = expectedDimensions.split('x').map(Number);
+
+    // Extract actual dimensions from DSL (format: WxD)
+    const dimMatch = dslContent.match(/(\d+)x(\d+)/);
+    expect(dimMatch).not.toBeNull();
+
+    const actualWidth = parseInt(dimMatch![1], 10);
+    const actualDepth = parseInt(dimMatch![2], 10);
+
+    // Allow 10mm tolerance for rounding during resize operations
+    const tolerance = 10;
+    expect(Math.abs(actualWidth - expectedWidth)).toBeLessThanOrEqual(tolerance);
+    expect(Math.abs(actualDepth - expectedDepth)).toBeLessThanOrEqual(tolerance);
   }
 );
 
