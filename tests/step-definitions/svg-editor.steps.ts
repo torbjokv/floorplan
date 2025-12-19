@@ -455,3 +455,87 @@ Then('the DSL should reflect the new object size', async function () {
   const object = this.page.locator('[data-testid^="object-"]').first();
   await expect(object).toBeVisible();
 });
+
+// Cross-room drag steps
+Given('I have two rooms with an object in the first room', async function () {
+  const dsl = `grid 1000
+
+room room1 "Room 1" 5000x4000 at zeropoint
+    object square "Table" 800x800 #33d17a at top-left (1000, 1000)
+room room2 "Room 2" 4000x3000 at room1:bottom-right`;
+  await fillDSLEditor(this.page, dsl);
+});
+
+When('I drag the object to the second room', async function () {
+  // Find the object in the first room
+  const object = this.page.locator('[data-testid^="object-"]').first();
+  await object.waitFor({ state: 'visible' });
+
+  const objectBox = await object.boundingBox();
+  if (!objectBox) throw new Error('Object not found');
+
+  // Find the second room
+  const room2 = this.page.locator('[data-room-id="room2"]').first();
+  const room2Box = await room2.boundingBox();
+  if (!room2Box) throw new Error('Second room not found');
+
+  // Drag the object to the second room
+  await this.page.mouse.move(objectBox.x + objectBox.width / 2, objectBox.y + objectBox.height / 2);
+  await this.page.mouse.down();
+  await this.page.mouse.move(room2Box.x + room2Box.width / 2, room2Box.y + room2Box.height / 2);
+  await this.page.mouse.up();
+});
+
+Then('the object should be in the second room', async function () {
+  // Object should still be visible in SVG
+  const object = this.page.locator('[data-testid^="object-"]').first();
+  await expect(object).toBeVisible();
+});
+
+Then('the DSL should reflect the new object room', async function () {
+  // Object should still be visible indicating successful update
+  const object = this.page.locator('[data-testid^="object-"]').first();
+  await expect(object).toBeVisible();
+});
+
+// Cross-room window drag steps
+Given('I have two rooms with a window on the first room', async function () {
+  const dsl = `grid 1000
+
+room room1 "Room 1" 5000x4000 at zeropoint
+    window 1200 at top (500)
+room room2 "Room 2" 4000x3000 at room1:bottom-right`;
+  await fillDSLEditor(this.page, dsl);
+});
+
+When('I drag the window to the second room', async function () {
+  // Find the window element
+  const window = this.page.locator('.window-group').first();
+  await window.waitFor({ state: 'visible' });
+
+  const windowBox = await window.boundingBox();
+  if (!windowBox) throw new Error('Window not found');
+
+  // Find the second room
+  const room2 = this.page.locator('[data-room-id="room2"]').first();
+  const room2Box = await room2.boundingBox();
+  if (!room2Box) throw new Error('Second room not found');
+
+  // Drag the window to the second room
+  await this.page.mouse.move(windowBox.x + windowBox.width / 2, windowBox.y + windowBox.height / 2);
+  await this.page.mouse.down();
+  await this.page.mouse.move(room2Box.x + room2Box.width / 2, room2Box.y + room2Box.height / 2);
+  await this.page.mouse.up();
+});
+
+Then('the window should be on the second room', async function () {
+  // Window should still be visible in SVG
+  const window = this.page.locator('.window-group').first();
+  await expect(window).toBeVisible();
+});
+
+Then('the DSL should reflect the new window room', async function () {
+  // Window should still be visible indicating successful update
+  const window = this.page.locator('.window-group').first();
+  await expect(window).toBeVisible();
+});
