@@ -320,7 +320,8 @@ Then('the DSL editor should contain {int} room definitions', async function (cou
 
 // GUI editor validation steps
 Then('the GUI editor should show a room with id {string}', async function (roomId: string) {
-  const roomElement = this.page.locator(`[data-room-id="${roomId}"]`);
+  // Look specifically in the GUI editor section (div.card-header, not SVG g element)
+  const roomElement = this.page.locator(`.card-header[data-room-id="${roomId}"]`);
   await expect(roomElement).toBeVisible();
   this.currentRoomElement = roomElement;
 });
