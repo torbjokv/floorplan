@@ -714,6 +714,8 @@ const FloorplanRendererComponent = ({
 
       let newWidth = currentObjectResizeState.startWidth;
       let newHeight = currentObjectResizeState.startHeight;
+      let newX = currentObjectResizeState.startX;
+      let newY = currentObjectResizeState.startY;
 
       if (isCircle) {
         // For circles, resize proportionally based on diagonal distance
@@ -724,6 +726,18 @@ const FloorplanRendererComponent = ({
       } else {
         // For squares, resize based on corner
         const corner = currentObjectResizeState.corner;
+        const anchor = obj.anchor || 'top-left';
+
+        // Helper to check if corner affects anchor's edges
+        const affectsLeftEdge = (c: Anchor) => c === 'top-left' || c === 'bottom-left';
+        const affectsRightEdge = (c: Anchor) => c === 'top-right' || c === 'bottom-right';
+        const affectsTopEdge = (c: Anchor) => c === 'top-left' || c === 'top-right';
+        const affectsBottomEdge = (c: Anchor) => c === 'bottom-left' || c === 'bottom-right';
+
+        const anchorOnLeft = affectsLeftEdge(anchor);
+        const anchorOnRight = affectsRightEdge(anchor);
+        const anchorOnTop = affectsTopEdge(anchor);
+        const anchorOnBottom = affectsBottomEdge(anchor);
 
         switch (corner) {
           case 'bottom-right':
@@ -732,6 +746,17 @@ const FloorplanRendererComponent = ({
               MIN_SIZE,
               Math.round(currentObjectResizeState.startHeight + deltaY)
             );
+            // Adjust X if anchor is on the right edge
+            if (anchorOnRight) {
+              newX =
+                currentObjectResizeState.startX + (newWidth - currentObjectResizeState.startWidth);
+            }
+            // Adjust Y if anchor is on the bottom edge
+            if (anchorOnBottom) {
+              newY =
+                currentObjectResizeState.startY +
+                (newHeight - currentObjectResizeState.startHeight);
+            }
             break;
           case 'bottom-left':
             newWidth = Math.max(MIN_SIZE, Math.round(currentObjectResizeState.startWidth - deltaX));
@@ -739,6 +764,17 @@ const FloorplanRendererComponent = ({
               MIN_SIZE,
               Math.round(currentObjectResizeState.startHeight + deltaY)
             );
+            // Adjust X if anchor is on the left edge
+            if (anchorOnLeft) {
+              newX =
+                currentObjectResizeState.startX - (newWidth - currentObjectResizeState.startWidth);
+            }
+            // Adjust Y if anchor is on the bottom edge
+            if (anchorOnBottom) {
+              newY =
+                currentObjectResizeState.startY +
+                (newHeight - currentObjectResizeState.startHeight);
+            }
             break;
           case 'top-right':
             newWidth = Math.max(MIN_SIZE, Math.round(currentObjectResizeState.startWidth + deltaX));
@@ -746,6 +782,17 @@ const FloorplanRendererComponent = ({
               MIN_SIZE,
               Math.round(currentObjectResizeState.startHeight - deltaY)
             );
+            // Adjust X if anchor is on the right edge
+            if (anchorOnRight) {
+              newX =
+                currentObjectResizeState.startX + (newWidth - currentObjectResizeState.startWidth);
+            }
+            // Adjust Y if anchor is on the top edge
+            if (anchorOnTop) {
+              newY =
+                currentObjectResizeState.startY -
+                (newHeight - currentObjectResizeState.startHeight);
+            }
             break;
           case 'top-left':
             newWidth = Math.max(MIN_SIZE, Math.round(currentObjectResizeState.startWidth - deltaX));
@@ -753,6 +800,17 @@ const FloorplanRendererComponent = ({
               MIN_SIZE,
               Math.round(currentObjectResizeState.startHeight - deltaY)
             );
+            // Adjust X if anchor is on the left edge
+            if (anchorOnLeft) {
+              newX =
+                currentObjectResizeState.startX - (newWidth - currentObjectResizeState.startWidth);
+            }
+            // Adjust Y if anchor is on the top edge
+            if (anchorOnTop) {
+              newY =
+                currentObjectResizeState.startY -
+                (newHeight - currentObjectResizeState.startHeight);
+            }
             break;
         }
       }
@@ -773,6 +831,8 @@ const FloorplanRendererComponent = ({
               const updatedObjects = [...(updatedPart.objects || [])];
               updatedObjects[currentObjectResizeState.objectIndex] = {
                 ...updatedObjects[currentObjectResizeState.objectIndex],
+                x: newX,
+                y: newY,
                 width: newWidth,
                 height: isCircle ? undefined : newHeight,
               };
@@ -784,6 +844,8 @@ const FloorplanRendererComponent = ({
             const updatedObjects = [...updatedRoom.objects];
             updatedObjects[currentObjectResizeState.objectIndex] = {
               ...updatedObjects[currentObjectResizeState.objectIndex],
+              x: newX,
+              y: newY,
               width: newWidth,
               height: isCircle ? undefined : newHeight,
             };
@@ -854,7 +916,7 @@ const FloorplanRendererComponent = ({
     (
       roomId: string,
       objectIndex: number,
-      corner: Anchor,
+      _corner: Anchor,
       currentWidth: number,
       currentHeight?: number,
       partId?: string
@@ -1205,6 +1267,7 @@ const FloorplanRendererComponent = ({
 
         {/* Rooms (without objects) */}
         {Object.values(roomMap)
+          .filter(room => room.id !== 'zeropoint') // Exclude virtual zeropoint
           .filter(room => !partIds.has(room.id)) // Only render top-level rooms, not parts
           .map(room => (
             <RoomRenderer

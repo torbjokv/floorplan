@@ -31,12 +31,12 @@ Then('the DSL editor should be visible', async function () {
 });
 
 Then('the DSL editor should have line numbers', async function () {
-  const lineNumbers = this.page.getByTestId('dsl-line-numbers');
+  const lineNumbers = this.page.locator('.cm-gutters');
   await expect(lineNumbers).toBeVisible();
 });
 
 Then('the DSL editor should be editable', async function () {
-  const textarea = this.page.getByTestId('dsl-textarea');
+  const textarea = this.page.locator('.cm-content');
   await expect(textarea).toBeEditable();
   await expect(textarea).not.toBeDisabled();
 });
@@ -86,8 +86,7 @@ Then('the room should have offset {string}', async function (offset: string) {
 // Window validation steps
 Then('the JSON editor should contain a window', async function () {
   await this.page.getByTestId('tab-dsl').click();
-  const jsonTextarea = this.page.getByTestId('dsl-textarea');
-  const content = await jsonTextarea.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
   expect(json?.windows).toBeDefined();
@@ -110,8 +109,7 @@ Then('the window should have offset {string}', async function (offset: string) {
 // Door validation steps
 Then('the JSON editor should contain a door', async function () {
   await this.page.getByTestId('tab-dsl').click();
-  const jsonTextarea = this.page.getByTestId('dsl-textarea');
-  const content = await jsonTextarea.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
   expect(json?.doors).toBeDefined();
@@ -142,8 +140,7 @@ Then('the door should have offset {string}', async function (offset: string) {
 // Object validation steps
 Then('the JSON editor should contain a room object', async function () {
   await this.page.getByTestId('tab-dsl').click();
-  const jsonTextarea = this.page.getByTestId('dsl-textarea');
-  const content = await jsonTextarea.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
   const room = json?.rooms?.[0];
@@ -207,8 +204,7 @@ Then('the part should be attached to {string}', async function (attachTo: string
 
 Then('the JSON editor should contain a window in part {string}', async function (partId: string) {
   await this.page.getByTestId('tab-dsl').click();
-  const jsonTextarea = this.page.getByTestId('dsl-textarea');
-  const content = await jsonTextarea.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
   expect(json?.windows).toBeDefined();
@@ -237,8 +233,7 @@ Then('the part should contain an object with text {string}', async function (tex
 
 Then('the JSON editor should contain a door in part {string}', async function (partId: string) {
   await this.page.getByTestId('tab-dsl').click();
-  const jsonTextarea = this.page.getByTestId('dsl-textarea');
-  const content = await jsonTextarea.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
   expect(json?.doors).toBeDefined();
@@ -264,8 +259,7 @@ Then('the part should have {int} objects', async function (count: number) {
   if (!this.currentPart) {
     // Find the part from parsed DSL
     await this.page.getByTestId('tab-dsl').click();
-    const jsonTextarea = this.page.getByTestId('dsl-textarea');
-    const content = await jsonTextarea.inputValue();
+    const content = await getCodeMirrorValue(this.page);
     const { config: json } = parseDSL(content);
 
     const rooms = json?.rooms || [];
@@ -284,8 +278,7 @@ Then('the part should have {int} objects', async function (count: number) {
 // Count validation steps
 Then('the JSON editor should contain {int} rooms', async function (count: number) {
   await this.page.getByTestId('tab-dsl').click();
-  const jsonTextarea = this.page.getByTestId('dsl-textarea');
-  const content = await jsonTextarea.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
   expect(json?.rooms?.length).toBe(count);
@@ -293,8 +286,7 @@ Then('the JSON editor should contain {int} rooms', async function (count: number
 
 Then('the JSON editor should contain {int} windows', async function (count: number) {
   await this.page.getByTestId('tab-dsl').click();
-  const jsonTextarea = this.page.getByTestId('dsl-textarea');
-  const content = await jsonTextarea.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
   expect(json?.windows?.length).toBe(count);
@@ -302,8 +294,7 @@ Then('the JSON editor should contain {int} windows', async function (count: numb
 
 Then('the JSON editor should contain {int} doors', async function (count: number) {
   await this.page.getByTestId('tab-dsl').click();
-  const jsonTextarea = this.page.getByTestId('dsl-textarea');
-  const content = await jsonTextarea.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
   expect(json?.doors?.length).toBe(count);
@@ -311,28 +302,26 @@ Then('the JSON editor should contain {int} doors', async function (count: number
 
 // DSL content validation steps
 Then('the DSL editor should contain {string}', async function (expectedContent: string) {
-  const textarea = this.page.getByTestId('dsl-textarea');
-  const content = await textarea.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   expect(content).toContain(expectedContent);
 });
 
 Then('the DSL editor should contain only {int} room definition(s)', async function (count: number) {
-  const textarea = this.page.getByTestId('dsl-textarea');
-  const content = await textarea.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   const roomMatches = content.match(/^room\s+/gm);
   expect(roomMatches?.length || 0).toBe(count);
 });
 
 Then('the DSL editor should contain {int} room definitions', async function (count: number) {
-  const textarea = this.page.getByTestId('dsl-textarea');
-  const content = await textarea.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   const roomMatches = content.match(/^room\s+/gm);
   expect(roomMatches?.length || 0).toBe(count);
 });
 
 // GUI editor validation steps
 Then('the GUI editor should show a room with id {string}', async function (roomId: string) {
-  const roomElement = this.page.locator(`[data-room-id="${roomId}"]`);
+  // Look specifically in the GUI editor section (div.card-header, not SVG g element)
+  const roomElement = this.page.locator(`.card-header[data-room-id="${roomId}"]`);
   await expect(roomElement).toBeVisible();
   this.currentRoomElement = roomElement;
 });
@@ -346,12 +335,12 @@ Then('the room should have {int} window(s)', async function (count: number) {
 
 // Syntax highlighting steps
 Then('the keyword {string} should be highlighted', async function (keyword: string) {
-  const highlightedKeyword = this.page.locator('.dsl-keyword').filter({ hasText: keyword });
+  const highlightedKeyword = this.page.locator('.cm-keyword').filter({ hasText: keyword });
   await expect(highlightedKeyword).toBeVisible();
 });
 
 Then('the room id {string} should be highlighted', async function (roomId: string) {
-  const highlightedId = this.page.locator('.dsl-identifier').filter({ hasText: roomId });
+  const highlightedId = this.page.locator('.cm-identifier').filter({ hasText: roomId });
   await expect(highlightedId).toBeVisible();
 });
 
@@ -386,21 +375,19 @@ When('I visit the shared project URL', async function () {
 });
 
 Then('the DSL editor should contain the shared floor plan definition', async function () {
-  const textarea = this.page.getByTestId('dsl-textarea');
-  const content = await textarea.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   expect(content.length).toBeGreaterThan(0);
 });
 
 Then('the DSL editor should be read-only', async function () {
-  const textarea = this.page.getByTestId('dsl-textarea');
+  const textarea = this.page.locator('.cm-content');
   await expect(textarea).toBeDisabled();
 });
 
 // Grid step validation
 Then('the JSON editor should have grid_step {string}', async function (gridStep: string) {
   await this.page.getByTestId('tab-dsl').click();
-  const jsonTextarea = this.page.getByTestId('dsl-textarea');
-  const content = await jsonTextarea.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
   expect(json?.grid_step).toBe(parseInt(gridStep));
@@ -408,8 +395,7 @@ Then('the JSON editor should have grid_step {string}', async function (gridStep:
 
 Then('the preview should show grid lines at {int}mm intervals', async function (interval: number) {
   // Verify the grid step is set correctly in the parsed JSON
-  const textarea = this.page.getByTestId('dsl-textarea');
-  const content = await textarea.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   const { parseDSL } = await import('../../src/dslUtils');
   const { config } = parseDSL(content);
   expect(config?.grid_step).toBe(interval);
@@ -421,8 +407,7 @@ Then('the preview should show grid lines at {int}mm intervals', async function (
 // Attachment validation
 Then('the kitchen should be attached to {string}', async function (attachTo: string) {
   await this.page.getByTestId('tab-dsl').click();
-  const jsonTextarea = this.page.getByTestId('dsl-textarea');
-  const content = await jsonTextarea.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
   const kitchen = json?.rooms?.find((r: any) => r.id === 'kitchen');
@@ -457,9 +442,8 @@ When('I enter the following JSON:', async function (jsonString: string) {
     const { fillDSLFromJSON } = await import('../support/dsl-helper');
     await fillDSLFromJSON(this, json);
   } catch (e) {
-    // If JSON parsing fails, just fill the DSL textarea with the string
-    const dslTextarea = this.page.getByTestId('dsl-textarea');
-    await dslTextarea.fill(jsonString);
+    // If JSON parsing fails, just fill the DSL editor with the string
+    await fillCodeMirror(this.page, jsonString);
     await this.page.waitForTimeout(600);
   }
 });
@@ -511,8 +495,7 @@ When('I set the room depth to {string}', async function (depth: string) {
 Then('the JSON editor should contain a room with name {string}', async function (name: string) {
   await this.page.getByTestId('tab-dsl').click();
   await this.page.waitForTimeout(300);
-  const dslTextarea = this.page.getByTestId('dsl-textarea');
-  const content = await dslTextarea.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
   const room = json?.rooms?.find((r: any) => r.name === name);
   expect(room).toBeDefined();
@@ -520,8 +503,7 @@ Then('the JSON editor should contain a room with name {string}', async function 
 
 Then('the JSON editor should contain {int} window', async function (count: number) {
   await this.page.getByTestId('tab-dsl').click();
-  const dslTextarea = this.page.getByTestId('dsl-textarea');
-  const content = await dslTextarea.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
   const windows = json?.windows || [];
   expect(windows.length).toBe(count);
@@ -529,8 +511,7 @@ Then('the JSON editor should contain {int} window', async function (count: numbe
 
 Then('the JSON editor should contain {int} door', async function (count: number) {
   await this.page.getByTestId('tab-dsl').click();
-  const dslTextarea = this.page.getByTestId('dsl-textarea');
-  const content = await dslTextarea.inputValue();
+  const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
   const doors = json?.doors || [];
   expect(doors.length).toBe(count);
