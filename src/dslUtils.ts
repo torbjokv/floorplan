@@ -168,19 +168,25 @@ function formatRoom(room: Room, doors?: Door[], windows?: Window[]): string {
 
   // Parse attachTo
   const attachInfo = parseAttachTo(room.attachTo);
-  roomLine += ` at ${attachInfo.target}`;
+  const hasOffset = room.offset && (room.offset[0] !== 0 || room.offset[1] !== 0);
 
-  // Only add anchor for non-zeropoint targets (zeropoint is a point, not a room with corners)
-  if (
-    attachInfo.target !== 'zeropoint' &&
-    attachInfo.anchor &&
-    attachInfo.anchor !== 'bottom-right'
-  ) {
-    roomLine += `:${attachInfo.anchor}`;
-  }
+  if (attachInfo.target === 'zeropoint') {
+    // For zeropoint: use simplified "at (x, y)" syntax, or omit entirely if no offset
+    if (hasOffset) {
+      roomLine += ` at (${Math.round(room.offset![0])}, ${Math.round(room.offset![1])})`;
+    }
+    // If no offset, omit the "at" clause entirely (defaults to zeropoint)
+  } else {
+    // For other targets: use full "at Target:anchor (offset)" syntax
+    roomLine += ` at ${capitalizeId(attachInfo.target)}`;
 
-  if (room.offset && (room.offset[0] !== 0 || room.offset[1] !== 0)) {
-    roomLine += ` (${Math.round(room.offset[0])}, ${Math.round(room.offset[1])})`;
+    if (attachInfo.anchor && attachInfo.anchor !== 'bottom-right') {
+      roomLine += `:${attachInfo.anchor}`;
+    }
+
+    if (hasOffset) {
+      roomLine += ` (${Math.round(room.offset![0])}, ${Math.round(room.offset![1])})`;
+    }
   }
 
   lines.push(roomLine);

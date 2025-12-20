@@ -137,7 +137,7 @@ The DSL (Domain-Specific Language) provides a concise way to define floor plans.
 ```
 grid STEP
 
-room RoomId [LABEL] WxD [SELF_ANCHOR] at TargetId [TARGET_ANCHOR] [(OFFSET_X, OFFSET_Y)]
+room RoomId [LABEL] WxD [SELF_ANCHOR] [at TargetId [TARGET_ANCHOR]] [(OFFSET_X, OFFSET_Y)]
     part PartId [LABEL] WxD [SELF_ANCHOR] at Target [TARGET_ANCHOR] [(OFFSET_X, OFFSET_Y)]
         window W at WALL [(OFFSET)]
         door W [SWING] at WALL [(OFFSET)]
@@ -176,13 +176,14 @@ room RoomId [LABEL] WxD [SELF_ANCHOR] at TargetId [TARGET_ANCHOR] [(OFFSET_X, OF
 - Parts can contain windows, doors, and objects
 - Room IDs are converted to lowercase automatically
 - For circles, use `width` for diameter (not radius)
+- Simplified zeropoint syntax: use `at (x, y)` without target to attach to zeropoint with offset, or omit `at` clause entirely for zeropoint at origin
 
 **Example DSL:**
 
 ```dsl
 grid 1000
 
-room LivingRoom "Living Room" 5000x4000 at zeropoint
+room LivingRoom "Living Room" 5000x4000
     window 1200 at top (300)
     door 900 inwards-right at right (1000)
     object square "Coffee Table" 800x800 #33d17a at bottom-left (1000, 2000)
@@ -192,7 +193,7 @@ room Kitchen 4000x3000 at LivingRoom:bottom-right (100, 100)
     window 1000 at left (500)
     door 800 opening at bottom (300)
 
-room Bedroom 5000x4000 top-left at zeropoint:top-right
+room Bedroom 5000x4000 at (5000, 0)
     part Closet 2000x1500 at parent:bottom-left
         door 800 inwards-left at right (400)
         object square "Shelf" 500x1200 #9141ac at top-left (100, 100)
