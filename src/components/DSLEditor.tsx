@@ -13,6 +13,9 @@ interface DSLEditorProps {
 export function DSLEditor({ value, onChange, readOnly }: DSLEditorProps) {
   return (
     <div className="dsl-editor-container" data-testid="dsl-editor">
+      <div className="dsl-editor-header" data-testid="dsl-editor-header">
+        DSL Editor
+      </div>
       <div className="dsl-code-mirror-wrapper">
         <CodeMirror
           value={value}

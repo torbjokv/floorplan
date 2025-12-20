@@ -1,5 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { RoomObject, ResolvedRoom } from '../../types';
+import type { RoomObject, ResolvedRoom, Anchor } from '../../types';
+import { ObjectResizeHandles } from './ObjectResizeHandles';
+
+const DEFAULT_OBJECT_SIZE = 1000; // mm
+const HANDLE_HITBOX_SIZE_PX = 50; // pixels - must match ObjectResizeHandles
 
 interface FreestandingObjectsRendererProps {
   objects: RoomObject[];
@@ -12,6 +16,16 @@ interface FreestandingObjectsRendererProps {
     newX: number,
     newY: number
   ) => void;
+  hoveredObjectIndex?: number | null;
+  onObjectMouseEnter?: (objectIndex: number) => void;
+  onObjectMouseLeave?: () => void;
+  onObjectResizeStart?: (objectIndex: number, corner: Anchor) => void;
+  onObjectResizeNumeric?: (
+    objectIndex: number,
+    corner: Anchor,
+    currentWidth: number,
+    currentHeight?: number
+  ) => void;
 }
 
 export function FreestandingObjectsRenderer({
@@ -20,6 +34,11 @@ export function FreestandingObjectsRenderer({
   mm,
   onObjectClick,
   onObjectDragUpdate,
+  hoveredObjectIndex,
+  onObjectMouseEnter,
+  onObjectMouseLeave,
+  onObjectResizeStart,
+  onObjectResizeNumeric,
 }: FreestandingObjectsRendererProps) {
   return (
     <g className="freestanding-objects">
@@ -32,6 +51,11 @@ export function FreestandingObjectsRenderer({
           mm={mm}
           onObjectClick={onObjectClick}
           onObjectDragUpdate={onObjectDragUpdate}
+          isHovered={hoveredObjectIndex === idx}
+          onObjectMouseEnter={onObjectMouseEnter}
+          onObjectMouseLeave={onObjectMouseLeave}
+          onObjectResizeStart={onObjectResizeStart}
+          onObjectResizeNumeric={onObjectResizeNumeric}
         />
       ))}
     </g>
@@ -50,6 +74,16 @@ interface FreestandingObjectProps {
     newX: number,
     newY: number
   ) => void;
+  isHovered: boolean;
+  onObjectMouseEnter?: (objectIndex: number) => void;
+  onObjectMouseLeave?: () => void;
+  onObjectResizeStart?: (objectIndex: number, corner: Anchor) => void;
+  onObjectResizeNumeric?: (
+    objectIndex: number,
+    corner: Anchor,
+    currentWidth: number,
+    currentHeight?: number
+  ) => void;
 }
 
 function FreestandingObject({
@@ -59,14 +93,20 @@ function FreestandingObject({
   mm,
   onObjectClick,
   onObjectDragUpdate,
+  isHovered,
+  onObjectMouseEnter,
+  onObjectMouseLeave,
+  onObjectResizeStart,
+  onObjectResizeNumeric,
 }: FreestandingObjectProps) {
   const [isObjectDragging, setIsObjectDragging] = useState(false);
   const [currentObjX, setCurrentObjX] = useState(obj.x);
   const [currentObjY, setCurrentObjY] = useState(obj.y);
   const [targetRoomId, setTargetRoomId] = useState<string>('freestanding');
 
-  const width = obj.type === 'circle' ? obj.width : obj.width;
-  const height = obj.type === 'circle' ? obj.width : obj.height || obj.width;
+  const width = obj.width || DEFAULT_OBJECT_SIZE;
+  const height = obj.type === 'circle' ? width : obj.height || width;
+  const anchor = obj.anchor || 'top-left';
 
   // Handle mouse down - start dragging
   const handleMouseDown = useCallback(
@@ -196,47 +236,101 @@ function FreestandingObject({
     const radius = diameter / 2;
     const centerX = mm(displayX + radius);
     const centerY = mm(displayY + radius);
+
+    // Calculate absolute position for resize handles (top-left corner of VISUAL bounding box)
+    const absolutePosition = {
+      x: displayX,
+      y: displayY,
+    };
+
+    // Calculate expanded bounding box for hover area (includes handle hitboxes)
+    const hoverPadding = HANDLE_HITBOX_SIZE_PX / 2;
+    const boundingBoxX = mm(displayX) - hoverPadding;
+    const boundingBoxY = mm(displayY) - hoverPadding;
+    const boundingBoxWidth = mm(diameter) + HANDLE_HITBOX_SIZE_PX;
+    const boundingBoxHeight = mm(diameter) + HANDLE_HITBOX_SIZE_PX;
+
+    // Create a virtual room for resize handles (freestanding objects use zeropoint)
+    const virtualRoom = { id: 'freestanding', x: 0, y: 0, width: 0, depth: 0, attachTo: '' };
+
     return (
-      <g
-        className="freestanding-object"
-        data-object-index={idx}
-        onClick={handleClick}
-        onMouseDown={handleMouseDown}
-        style={{ cursor: onObjectDragUpdate ? 'move' : 'pointer' }}
-      >
-        <circle
-          cx={centerX}
-          cy={centerY}
-          r={mm(radius)}
-          fill={obj.color || '#33d17a'}
-          stroke="#333"
-          strokeWidth="1"
-        />
-        {obj.text && (
+      <>
+        <g
+          className="freestanding-object"
+          data-testid={`freestanding-object-${idx}`}
+          data-object-index={idx}
+          onMouseEnter={() => onObjectMouseEnter?.(idx)}
+          onMouseLeave={onObjectMouseLeave}
+        >
+          {/* Invisible expanded hover area - includes handle space */}
+          <rect
+            x={boundingBoxX}
+            y={boundingBoxY}
+            width={boundingBoxWidth}
+            height={boundingBoxHeight}
+            fill="transparent"
+            pointerEvents="visiblePainted"
+          />
+          {/* Visible circle */}
+          <circle
+            cx={centerX}
+            cy={centerY}
+            r={mm(radius)}
+            fill={obj.color || '#33d17a'}
+            stroke="#333"
+            strokeWidth="1"
+            onClick={handleClick}
+            onMouseDown={handleMouseDown}
+            style={{
+              cursor: isObjectDragging ? 'grabbing' : onObjectDragUpdate ? 'grab' : 'pointer',
+            }}
+          />
+          {obj.text && (
+            <text
+              x={centerX}
+              y={centerY - 10}
+              fontSize="12"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="#000"
+              style={{ pointerEvents: 'none' }}
+            >
+              {obj.text}
+            </text>
+          )}
           <text
+            data-testid={`freestanding-object-${idx}-dimensions`}
             x={centerX}
-            y={centerY - 10}
-            fontSize="12"
+            y={obj.text ? centerY + 12 : centerY}
+            fontSize="10"
             textAnchor="middle"
             dominantBaseline="middle"
-            fill="#000"
-            style={{ pointerEvents: 'none' }}
+            fill="#888"
+            style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+            onDoubleClick={e => {
+              e.stopPropagation();
+              onObjectResizeNumeric?.(idx, anchor, diameter, undefined);
+            }}
           >
-            {obj.text}
+            ⌀{diameter}
           </text>
+        </g>
+        {isHovered && onObjectResizeStart && (
+          <ObjectResizeHandles
+            room={virtualRoom}
+            objectIndex={idx}
+            object={obj}
+            absolutePosition={absolutePosition}
+            mm={mm}
+            onResizeStart={(_roomId, objIdx, corner) => onObjectResizeStart(objIdx, corner)}
+            onResizeNumeric={(_roomId, objIdx, corner, w, h) =>
+              onObjectResizeNumeric?.(objIdx, corner, w, h)
+            }
+            onMouseEnter={() => onObjectMouseEnter?.(idx)}
+            visible={isHovered}
+          />
         )}
-        <text
-          x={centerX}
-          y={obj.text ? centerY + 12 : centerY}
-          fontSize="10"
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fill="#888"
-          style={{ pointerEvents: 'none' }}
-        >
-          ⌀{diameter}
-        </text>
-      </g>
+      </>
     );
   } else {
     const rectX = mm(displayX);
@@ -245,48 +339,86 @@ function FreestandingObject({
     const h = mm(height);
     const centerX = rectX + w / 2;
     const centerY = rectY + h / 2;
+
+    // Calculate absolute position for resize handles (top-left corner)
+    const absolutePosition = {
+      x: displayX,
+      y: displayY,
+    };
+
+    // Create a virtual room for resize handles (freestanding objects use zeropoint)
+    const virtualRoom = { id: 'freestanding', x: 0, y: 0, width: 0, depth: 0, attachTo: '' };
+
     return (
-      <g
-        className="freestanding-object"
-        data-object-index={idx}
-        onClick={handleClick}
-        onMouseDown={handleMouseDown}
-        style={{ cursor: onObjectDragUpdate ? 'move' : 'pointer' }}
-      >
-        <rect
-          x={rectX}
-          y={rectY}
-          width={w}
-          height={h}
-          fill={obj.color || '#33d17a'}
-          stroke="#333"
-          strokeWidth="1"
-        />
-        {obj.text && (
+      <>
+        <g
+          className="freestanding-object"
+          data-testid={`freestanding-object-${idx}`}
+          data-object-index={idx}
+        >
+          {/* Visible rect with hover detection */}
+          <rect
+            x={rectX}
+            y={rectY}
+            width={w}
+            height={h}
+            fill={obj.color || '#33d17a'}
+            stroke="#333"
+            strokeWidth="1"
+            onClick={handleClick}
+            onMouseDown={handleMouseDown}
+            onMouseEnter={() => onObjectMouseEnter?.(idx)}
+            onMouseLeave={onObjectMouseLeave}
+            style={{
+              cursor: isObjectDragging ? 'grabbing' : onObjectDragUpdate ? 'grab' : 'pointer',
+            }}
+          />
+          {obj.text && (
+            <text
+              x={centerX}
+              y={centerY - 10}
+              fontSize="12"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="#000"
+              style={{ pointerEvents: 'none' }}
+            >
+              {obj.text}
+            </text>
+          )}
           <text
+            data-testid={`freestanding-object-${idx}-dimensions`}
             x={centerX}
-            y={centerY - 10}
-            fontSize="12"
+            y={obj.text ? centerY + 12 : centerY}
+            fontSize="10"
             textAnchor="middle"
             dominantBaseline="middle"
-            fill="#000"
-            style={{ pointerEvents: 'none' }}
+            fill="#888"
+            style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+            onDoubleClick={e => {
+              e.stopPropagation();
+              onObjectResizeNumeric?.(idx, anchor, width, height);
+            }}
           >
-            {obj.text}
+            {width}×{height}
           </text>
+        </g>
+        {isHovered && onObjectResizeStart && (
+          <ObjectResizeHandles
+            room={virtualRoom}
+            objectIndex={idx}
+            object={obj}
+            absolutePosition={absolutePosition}
+            mm={mm}
+            onResizeStart={(_roomId, objIdx, corner) => onObjectResizeStart(objIdx, corner)}
+            onResizeNumeric={(_roomId, objIdx, corner, w, h) =>
+              onObjectResizeNumeric?.(objIdx, corner, w, h)
+            }
+            onMouseEnter={() => onObjectMouseEnter?.(idx)}
+            visible={isHovered}
+          />
         )}
-        <text
-          x={centerX}
-          y={obj.text ? centerY + 12 : centerY}
-          fontSize="10"
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fill="#888"
-          style={{ pointerEvents: 'none' }}
-        >
-          {width}×{height}
-        </text>
-      </g>
+      </>
     );
   }
 }
