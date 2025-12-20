@@ -255,10 +255,11 @@ RoomList
       return extractList(head, tail);
     }
 
-// Room "at" clause - can be "at Target (offset)" or "at (offset)" for implicit zeropoint
+// Room "at" clause - can be "at Target (offset)", "at (offset)", or just "(offset)" for implicit zeropoint
 RoomAtClause
   = "at"i _ attach:AttachTo __ offset:Offset? { return { attach, offset }; }
   / "at"i _ offset:Offset { return { attach: { target: 'zeropoint', anchor: 'top-left' }, offset }; }
+  / offset:Offset { return { attach: { target: 'zeropoint', anchor: 'top-left' }, offset }; }
 
 // Room definition
 RoomDefinition
