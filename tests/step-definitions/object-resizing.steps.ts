@@ -299,9 +299,10 @@ When(
     const currentDiameter = result!.object.width;
     const deltaSize = targetDiameter - currentDiameter;
 
-    // Circle resize uses diagonal: sqrt(deltaX² + deltaY²)
-    // To get exact deltaSize, we need to drag by deltaSize/sqrt(2) in each direction
-    const dragDistance = deltaSize / Math.sqrt(2);
+    // Circle resize for bottom-right uses: (deltaX + deltaY) / 2
+    // To get exact deltaSize when dragging diagonally (deltaX = deltaY = d):
+    // deltaSize = (d + d) / 2 = d, so dragDistance = deltaSize
+    const dragDistance = deltaSize;
 
     // Drag bottom-right corner to increase diameter - manually call the step logic
     expect(this.currentObject).toBeDefined();
