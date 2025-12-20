@@ -178,7 +178,7 @@ Then('a new empty project should be created', async function (this: FloorplanWor
   // Wait for content to update (debounced auto-update is 500ms)
   await this.page.waitForTimeout(600);
   // Switch to DSL tab to check content
-  
+
   await this.page.waitForTimeout(300);
   // Check the DSL editor content using CodeMirror helper
   const dslEditor = this.page.getByTestId('dsl-editor');
@@ -302,7 +302,7 @@ Then('the floorplan should match the uploaded data', async function (this: Floor
   await expect(svg).toBeVisible();
 
   // Verify the DSL editor contains the uploaded room data
-  
+
   await this.page.waitForTimeout(300);
   const dslContent = await getCodeMirrorValue(this.page);
   expect(dslContent).toContain('Test Room');

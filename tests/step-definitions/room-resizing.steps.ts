@@ -364,7 +364,6 @@ Then(
 );
 
 Then('the DSL should reflect the updated width', async function (this: FloorplanWorld) {
-  
   const dslContent = await getCodeMirrorValue(this.page);
 
   // Check that DSL has been updated with new dimensions
@@ -373,7 +372,6 @@ Then('the DSL should reflect the updated width', async function (this: Floorplan
 });
 
 Then('the DSL should reflect the updated depth', async function (this: FloorplanWorld) {
-  
   const dslContent = await getCodeMirrorValue(this.page);
 
   // Check that DSL has been updated
@@ -393,7 +391,6 @@ Then(
 Then(
   'the DSL should reflect the updated dimensions and position',
   async function (this: FloorplanWorld) {
-    
     const dslContent = await getCodeMirrorValue(this.page);
 
     expect(dslContent).toBeTruthy();
@@ -563,7 +560,7 @@ Then(
   '{string} should remain attached to {string}',
   async function (this: FloorplanWorld, roomId: string, attachTo: string) {
     // Check DSL to verify attachTo is preserved
-    
+
     const dslContent = await getCodeMirrorValue(this.page);
 
     expect(dslContent).toContain(roomId);
@@ -580,9 +577,7 @@ Then(
   }
 );
 
-Given('I am viewing the DSL editor', async function (this: FloorplanWorld) {
-  
-});
+Given('I am viewing the DSL editor', async function (this: FloorplanWorld) {});
 
 When('I switch to the preview tab', async function (this: FloorplanWorld) {
   // Preview is always visible (not a separate tab), nothing to do
@@ -590,7 +585,6 @@ When('I switch to the preview tab', async function (this: FloorplanWorld) {
 });
 
 When('I switch to the DSL editor tab', async function (this: FloorplanWorld) {
-  
   await this.page.waitForTimeout(100);
 });
 
