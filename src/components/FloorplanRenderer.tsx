@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState, useRef, useCallback, memo } from 'react';
 import type { FloorplanData, ResolvedRoom, Anchor, WallPosition } from '../types';
-import { mm, resolveRoomPositions, resolveCompositeRoom, getCorner } from '../utils';
+import {
+  mm,
+  resolveRoomPositions,
+  resolveCompositeRoom,
+  getCorner,
+  getAnchorAdjustment,
+} from '../utils';
 import { calculateResize } from '../utils/resizeCalculator';
 import { GridRenderer } from './floorplan/GridRenderer';
 import { RoomRenderer } from './floorplan/RoomRenderer';
@@ -201,8 +207,30 @@ const FloorplanRendererComponent = ({
   }, [freestandingObjectResizeState]);
 
   // Memoize room resolution to avoid recalculating on every render
-  const { roomMap, errors, partIds, partToParent } = useMemo(() => {
+  const { roomMap, errors, partIds, partToParent, normalizationOffset } = useMemo(() => {
     const result = resolveRoomPositions(data.rooms);
+
+    // Calculate the normalization offset by finding the first room's un-normalized position
+    // This is needed to correctly position rooms when dragging them to zeropoint
+    let normOffset = { x: 0, y: 0 };
+    if (data.rooms.length > 0) {
+      const firstRoom = data.rooms[0];
+      // If the first room has an offset from zeropoint, that's the normalization offset
+      if (
+        firstRoom.attachTo?.startsWith('zeropoint:') ||
+        !firstRoom.attachTo ||
+        !data.rooms.some(r => r.id === firstRoom.attachTo?.split(':')[0])
+      ) {
+        const offset = firstRoom.offset || [0, 0];
+        const anchor = firstRoom.anchor || 'top-left';
+        // Calculate the anchor adjustment
+        const anchorAdj = getAnchorAdjustment(anchor, firstRoom.width, firstRoom.depth);
+        normOffset = {
+          x: offset[0] + anchorAdj.x,
+          y: offset[1] + anchorAdj.y,
+        };
+      }
+    }
 
     // Add virtual zeropoint "room" for freestanding elements
     result.roomMap['zeropoint'] = {
@@ -214,7 +242,7 @@ const FloorplanRendererComponent = ({
       attachTo: 'zeropoint:top-left',
     };
 
-    return result;
+    return { ...result, normalizationOffset: normOffset };
   }, [data.rooms]);
 
   // Notify parent component of positioning errors
@@ -1239,8 +1267,9 @@ const FloorplanRendererComponent = ({
       // Moved significantly but no snap target - attach to zeropoint with offset
       if (resolvedRoom && dragOffset) {
         const cornerPos = getCorner(resolvedRoom, dragState.anchor);
-        const newCornerX = cornerPos.x + dragOffset.x;
-        const newCornerY = cornerPos.y + dragOffset.y;
+        // Add normalization offset to get the correct absolute position
+        const newCornerX = cornerPos.x + dragOffset.x + normalizationOffset.x;
+        const newCornerY = cornerPos.y + dragOffset.y + normalizationOffset.y;
         updatedRoom.attachTo = 'zeropoint:top-left';
         updatedRoom.anchor = dragState.anchor;
         updatedRoom.offset = [newCornerX, newCornerY];
@@ -1252,14 +1281,16 @@ const FloorplanRendererComponent = ({
         if (room.attachTo.startsWith('zeropoint:')) {
           // Already attached to zeropoint, adjust the offset
           const cornerPos = getCorner(resolvedRoom, dragState.anchor);
-          const newCornerX = cornerPos.x + dragOffset.x;
-          const newCornerY = cornerPos.y + dragOffset.y;
+          // Add normalization offset to get the correct absolute position
+          const newCornerX = cornerPos.x + dragOffset.x + normalizationOffset.x;
+          const newCornerY = cornerPos.y + dragOffset.y + normalizationOffset.y;
           updatedRoom.offset = [newCornerX, newCornerY];
         } else {
           // Attached to another room - convert to zeropoint with current position
           const cornerPos = getCorner(resolvedRoom, dragState.anchor);
-          const newCornerX = cornerPos.x + dragOffset.x;
-          const newCornerY = cornerPos.y + dragOffset.y;
+          // Add normalization offset to get the correct absolute position
+          const newCornerX = cornerPos.x + dragOffset.x + normalizationOffset.x;
+          const newCornerY = cornerPos.y + dragOffset.y + normalizationOffset.y;
           updatedRoom.attachTo = 'zeropoint:top-left';
           updatedRoom.anchor = dragState.anchor;
           updatedRoom.offset = [newCornerX, newCornerY];
@@ -1268,8 +1299,9 @@ const FloorplanRendererComponent = ({
     } else if (dragState.dragType === 'center' && hasMoved) {
       // Center drag with significant movement - attach to zeropoint with offset
       if (resolvedRoom && dragOffset) {
-        const newX = resolvedRoom.x + dragOffset.x;
-        const newY = resolvedRoom.y + dragOffset.y;
+        // Add normalization offset to get the correct absolute position
+        const newX = resolvedRoom.x + dragOffset.x + normalizationOffset.x;
+        const newY = resolvedRoom.y + dragOffset.y + normalizationOffset.y;
         updatedRoom.attachTo = 'zeropoint:top-left';
         updatedRoom.anchor = 'top-left';
         updatedRoom.offset = [newX, newY];
@@ -1279,13 +1311,15 @@ const FloorplanRendererComponent = ({
       if (resolvedRoom && dragOffset) {
         if (room.attachTo?.startsWith('zeropoint:')) {
           // Already at zeropoint, adjust offset
-          const newX = resolvedRoom.x + dragOffset.x;
-          const newY = resolvedRoom.y + dragOffset.y;
+          // Add normalization offset to get the correct absolute position
+          const newX = resolvedRoom.x + dragOffset.x + normalizationOffset.x;
+          const newY = resolvedRoom.y + dragOffset.y + normalizationOffset.y;
           updatedRoom.offset = [newX, newY];
         } else {
           // Attached to another room - convert to zeropoint
-          const newX = resolvedRoom.x + dragOffset.x;
-          const newY = resolvedRoom.y + dragOffset.y;
+          // Add normalization offset to get the correct absolute position
+          const newX = resolvedRoom.x + dragOffset.x + normalizationOffset.x;
+          const newY = resolvedRoom.y + dragOffset.y + normalizationOffset.y;
           updatedRoom.attachTo = 'zeropoint:top-left';
           updatedRoom.anchor = 'top-left';
           updatedRoom.offset = [newX, newY];
@@ -1312,7 +1346,7 @@ const FloorplanRendererComponent = ({
 
     // Trigger update after clearing drag state
     onRoomUpdate({ ...data, rooms: updatedRooms });
-  }, [dragState, dragOffset, snapTarget, data, onRoomUpdate, roomMap]);
+  }, [dragState, dragOffset, snapTarget, data, onRoomUpdate, roomMap, normalizationOffset]);
 
   // Add global mouse up listener
   useEffect(() => {
