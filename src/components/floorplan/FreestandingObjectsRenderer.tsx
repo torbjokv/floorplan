@@ -192,7 +192,8 @@ function FreestandingObject({
   );
 
   if (obj.type === 'circle') {
-    const radius = width / 2;
+    const diameter = width;
+    const radius = diameter / 2;
     const centerX = mm(displayX + radius);
     const centerY = mm(displayY + radius);
     return (
@@ -214,7 +215,7 @@ function FreestandingObject({
         {obj.text && (
           <text
             x={centerX}
-            y={centerY}
+            y={centerY - 10}
             fontSize="12"
             textAnchor="middle"
             dominantBaseline="middle"
@@ -224,6 +225,17 @@ function FreestandingObject({
             {obj.text}
           </text>
         )}
+        <text
+          x={centerX}
+          y={obj.text ? centerY + 12 : centerY}
+          fontSize="10"
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill="#888"
+          style={{ pointerEvents: 'none' }}
+        >
+          ⌀{diameter}
+        </text>
       </g>
     );
   } else {
@@ -253,7 +265,7 @@ function FreestandingObject({
         {obj.text && (
           <text
             x={centerX}
-            y={centerY}
+            y={centerY - 10}
             fontSize="12"
             textAnchor="middle"
             dominantBaseline="middle"
@@ -263,6 +275,17 @@ function FreestandingObject({
             {obj.text}
           </text>
         )}
+        <text
+          x={centerX}
+          y={obj.text ? centerY + 12 : centerY}
+          fontSize="10"
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill="#888"
+          style={{ pointerEvents: 'none' }}
+        >
+          {width}×{height}
+        </text>
       </g>
     );
   }

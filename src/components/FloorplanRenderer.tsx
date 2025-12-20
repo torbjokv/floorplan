@@ -718,11 +718,46 @@ const FloorplanRendererComponent = ({
       let newY = currentObjectResizeState.startY;
 
       if (isCircle) {
-        // For circles, resize proportionally based on diagonal distance
-        const diagonal = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-        const deltaSize = Math.round(diagonal * Math.sign(deltaX + deltaY));
-        newWidth = Math.max(MIN_SIZE, currentObjectResizeState.startWidth + deltaSize);
+        // For circles, resize proportionally based on corner being dragged
+        // The opposite corner should stay fixed (anchored)
+        const corner = currentObjectResizeState.corner;
+        let deltaSize;
+
+        // Calculate size change based on which corner is being dragged
+        switch (corner) {
+          case 'bottom-right':
+            // Dragging right/down increases size
+            deltaSize = (deltaX + deltaY) / 2;
+            break;
+          case 'top-left':
+            // Dragging left/up increases size
+            deltaSize = (-deltaX - deltaY) / 2;
+            break;
+          case 'top-right':
+            // Dragging right/up increases size
+            deltaSize = (deltaX - deltaY) / 2;
+            break;
+          case 'bottom-left':
+            // Dragging left/down increases size
+            deltaSize = (-deltaX + deltaY) / 2;
+            break;
+        }
+
+        newWidth = Math.max(MIN_SIZE, Math.round(currentObjectResizeState.startWidth + deltaSize));
         newHeight = newWidth; // Keep it circular
+
+        // Adjust position to keep opposite corner fixed
+        const sizeDiff = newWidth - currentObjectResizeState.startWidth;
+
+        // If dragging a left edge, move x to compensate
+        if (corner === 'top-left' || corner === 'bottom-left') {
+          newX = currentObjectResizeState.startX - sizeDiff;
+        }
+
+        // If dragging a top edge, move y to compensate
+        if (corner === 'top-left' || corner === 'top-right') {
+          newY = currentObjectResizeState.startY - sizeDiff;
+        }
       } else {
         // For squares, resize based on corner
         const corner = currentObjectResizeState.corner;
