@@ -258,7 +258,9 @@ Feature: DSL Editor
     Then the error panel should be visible
     And the error panel should contain "syntax error"
 
+  @skip
   Scenario: Convert GUI changes to DSL
+    # GUI editor removed - DSL is the only editing interface
     When I switch to the GUI editor
     And I add a new room with id "livingroom"
     And I set the room width to "5000"
@@ -267,7 +269,9 @@ Feature: DSL Editor
     And I switch to the DSL editor
     Then the DSL editor should contain "5000x4000"
 
+  @skip
   Scenario: DSL changes sync to GUI editor
+    # GUI editor removed - DSL is the only editing interface
     When I switch to the DSL editor
     And I enter the following DSL:
       """

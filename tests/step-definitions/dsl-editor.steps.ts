@@ -5,7 +5,8 @@ import { fillCodeMirror, getCodeMirrorValue } from '../support/dsl-helper';
 
 // Background steps
 Given('the DSL editor tab is visible', async function () {
-  await expect(dslTab).toBeVisible();
+  // DSL editor is always visible now (GUI editor removed)
+  await expect(this.page.getByTestId('dsl-editor')).toBeVisible();
 });
 
 When('I wait for the auto-update', async function () {
@@ -435,7 +436,7 @@ When('I enter the following JSON:', async function (jsonString: string) {
 
 // GUI editor steps
 When('I switch to the GUI editor', async function () {
-  await this.page.getByTestId('tab-gui').click();
+  // GUI editor removed - DSL editor is always visible
   await this.page.waitForTimeout(300);
 });
 

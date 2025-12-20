@@ -3,7 +3,6 @@ import { expect } from '@playwright/test';
 
 // Helper to fill CodeMirror editor (matching working pattern from object-resizing)
 async function fillDSLEditor(page: any, dsl: string) {
-  const dslTab = page.locator('[data-testid="tab-dsl"]');
   await page.waitForTimeout(100);
 
   const editorSelector = '.cm-content[contenteditable="true"]';

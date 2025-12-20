@@ -394,8 +394,7 @@ Then('errors should be listed with clear descriptions', async function (this: Fl
 });
 
 When('I switch between JSON and GUI tabs', async function (this: FloorplanWorld) {
-  await this.page.waitForTimeout(200);
-  await this.page.getByTestId('tab-gui').click();
+  // GUI editor removed - just wait
   await this.page.waitForTimeout(200);
 });
 
@@ -1135,7 +1134,7 @@ Given('I have an error in the JSON editor', async function (this: FloorplanWorld
 });
 
 When('I switch to the GUI editor tab', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-gui').click();
+  // GUI editor removed - just wait
   await this.page.waitForTimeout(200);
 });
 

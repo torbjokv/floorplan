@@ -106,7 +106,9 @@ Feature: SVG Editor Interface
     Then the object should be removed
     And the DSL should not contain the object
 
+  @skip
   Scenario: Grid step configuration via button
+    # GUI editor removed - grid is configured via DSL
     When I click the grid settings button in the SVG view
     And I change the grid step to 500
     And I wait for 600ms
