@@ -7,7 +7,6 @@ A browser-based SVG floorplan designer for creating architectural floor plans th
 ![React](https://img.shields.io/badge/React-19.1-blue.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)
 ![Vite](https://img.shields.io/badge/Vite-7.1-646CFF.svg)
-![Tests](https://img.shields.io/badge/tests-145%20passing-success.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 ## ✨ Features
@@ -15,7 +14,6 @@ A browser-based SVG floorplan designer for creating architectural floor plans th
 ### Core Functionality
 
 - **📝 DSL Editor** - Concise domain-specific language with syntax highlighting
-- **🎨 GUI Editor** - Visual form-based editor as alternative to DSL
 - **🔄 Real-Time Preview** - See changes instantly with automatic rendering (500ms debounce)
 - **🏛️ Zero Point System** - Unified positioning with virtual anchor point at (0,0)
 - **🎯 Room ID System** - Stable references with unique IDs and optional display names
@@ -29,7 +27,7 @@ A browser-based SVG floorplan designer for creating architectural floor plans th
 
 ### Interactive Features
 
-- **🖱️ Click-to-Edit** - Click rooms in SVG to jump to their configuration in GUI editor
+- **🖱️ Click-to-Select** - Click rooms in SVG to select them for editing
 - **✨ Hover Effects** - Visual feedback on all elements (rooms, doors, windows, objects)
 - **🔗 Composite Highlighting** - Hover highlights all parts of composite rooms together
 - **↩️ Undo/Redo** - Full history tracking with keyboard shortcuts (Ctrl+Z/Ctrl+Shift+Z)
@@ -165,17 +163,6 @@ room RoomId [LABEL] WxD [SELF_ANCHOR] at TargetId [TARGET_ANCHOR] [(OFFSET_X, OF
 - `OFFSET`, `OFFSET_X`, `OFFSET_Y`: Values in mm (default: 0)
 - `ANCHOR`: Corner point for objects
 
-### GUI Editor (Alternative Interface)
-
-The visual form-based editor provides:
-
-- **Grid Settings** - Configure grid step size
-- **Room Management** - Add, edit, delete rooms with visual anchor selectors
-- **Automatic IDs** - Auto-generates unique room IDs
-- **Object Editor** - Add decorative objects with color picker
-- **Door/Window Editors** - Configure architectural elements
-- **DSL Sync** - Changes automatically convert to DSL
-
 ### Zero Point System
 
 All floor plans anchor to a virtual Zero Point at (0,0):
@@ -255,7 +242,6 @@ src/
 │   ├── FloorplanRenderer.tsx  # Interactive SVG rendering engine
 │   ├── DSLEditor.tsx           # CodeMirror 6 DSL editor
 │   ├── dsl-language.ts         # Custom CodeMirror language mode
-│   ├── GUIEditor.tsx           # Visual form-based editor
 │   └── floorplan/              # Rendering components
 ├── positioning/                # Positioning system modules
 │   ├── PartRegistry.ts         # Part tracking
@@ -276,7 +262,6 @@ src/
 
 - **DSL Editor** (CodeMirror 6): Professional code editor with VSCode Dark theme, tab indentation, search, syntax highlighting
 - **FloorplanRenderer**: Interactive SVG with click handlers, hover effects, composite highlighting, drag-and-drop
-- **GUIEditor**: Visual form editor with dropdowns, anchor selectors, object editor
 - **PEG Parser**: Grammar-based DSL parser (generated from floorplan.peggy)
 - **Positioning System**: Zero Point-based positioning with dependency resolution
 - **Project Management**: localStorage with auto-save, sharing, URL-based persistence, `.floorplan` file format
@@ -372,9 +357,8 @@ npm test
 npm run test:headed
 
 # Run specific feature tests
-npm run test:project-menu      # Project management (11 scenarios)
-npm run test:dsl-editor         # DSL editor (33 scenarios) ✅ 100%
-npm run test:gui-editor         # GUI editor
+npm run test:project-menu      # Project management
+npm run test:dsl-editor         # DSL editor
 npm run test:room-positioning   # Room positioning
 npm run test:architectural      # Doors & windows
 npm run test:svg-rendering      # SVG rendering
@@ -383,10 +367,7 @@ npm run test:error-handling     # Error handling
 
 ### Test Statistics
 
-- **Total Scenarios:** 145 scenarios ✅ 100% passing
-- **Total Steps:** 959 steps passing
-- **Full Suite Time:** ~5 minutes
-- **Individual Features:** 20-90 seconds each
+- **Feature Files:** 6 files
 - **No Warnings:** Clean test output with suppressed Node.js warnings
 
 ### Test Coverage
@@ -395,11 +376,10 @@ The test suite covers:
 
 1. **Project Menu** ✅ - Project management, save/load, sharing, URL persistence
 2. **DSL Editor** ✅ - Text editing, syntax highlighting, parsing, error display, undo/redo, parts support
-3. **GUI Editor** ✅ - Form controls, room/door/window management, DSL sync
-4. **Room Positioning** ✅ - Zero Point system, relative positioning, offsets
-5. **Architectural Elements** ✅ - Doors, windows, wall positioning, parts support
-6. **SVG Rendering** ✅ - ViewBox, grid, hover effects, click handlers
-7. **Error Handling** ✅ - DSL syntax errors, positioning errors, validation
+3. **Room Positioning** ✅ - Zero Point system, relative positioning, offsets
+4. **Architectural Elements** ✅ - Doors, windows, wall positioning, parts support
+5. **SVG Rendering** ✅ - ViewBox, grid, hover effects, click handlers
+6. **Error Handling** ✅ - DSL syntax errors, positioning errors, validation
 
 See [TESTING.md](TESTING.md) for comprehensive testing guide.
 

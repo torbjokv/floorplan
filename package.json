@@ -17,7 +17,6 @@
     "test:ci": "CI=true node scripts/run-cucumber.js",
     "test:coverage": "vitest run --coverage",
     "test:project-menu": "node scripts/run-cucumber.js tests/features/project-menu.feature",
-    "test:gui-editor": "node scripts/run-cucumber.js tests/features/gui-editor.feature",
     "test:json-editor": "node scripts/run-cucumber.js tests/features/json-editor.feature",
     "test:room-positioning": "node scripts/run-cucumber.js tests/features/room-positioning.feature",
     "test:architectural": "node scripts/run-cucumber.js tests/features/architectural-elements.feature",

@@ -5,8 +5,8 @@ import { fillCodeMirror, getCodeMirrorValue } from '../support/dsl-helper';
 
 // Background steps
 Given('the DSL editor tab is visible', async function () {
-  const dslTab = this.page.getByTestId('tab-dsl');
-  await expect(dslTab).toBeVisible();
+  // DSL editor is always visible now (GUI editor removed)
+  await expect(this.page.getByTestId('dsl-editor')).toBeVisible();
 });
 
 When('I wait for the auto-update', async function () {
@@ -16,13 +16,10 @@ When('I wait for the auto-update', async function () {
 
 // Navigation steps
 When('I switch to the DSL editor', async function () {
-  await this.page.getByTestId('tab-dsl').click();
   await expect(this.page.getByTestId('dsl-editor')).toBeVisible();
 });
 
-When('I click on the DSL editor tab', async function () {
-  await this.page.getByTestId('tab-dsl').click();
-});
+When('I click on the DSL editor tab', async function () {});
 
 // Editor visibility steps
 Then('the DSL editor should be visible', async function () {
@@ -49,7 +46,6 @@ When('I enter the following DSL:', async function (dslContent: string) {
 
 // JSON validation steps
 Then('the JSON editor should contain a room with id {string}', async function (roomId: string) {
-  await this.page.getByTestId('tab-dsl').click();
   const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
@@ -85,7 +81,6 @@ Then('the room should have offset {string}', async function (offset: string) {
 
 // Window validation steps
 Then('the JSON editor should contain a window', async function () {
-  await this.page.getByTestId('tab-dsl').click();
   const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
@@ -108,7 +103,6 @@ Then('the window should have offset {string}', async function (offset: string) {
 
 // Door validation steps
 Then('the JSON editor should contain a door', async function () {
-  await this.page.getByTestId('tab-dsl').click();
   const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
@@ -139,7 +133,6 @@ Then('the door should have offset {string}', async function (offset: string) {
 
 // Object validation steps
 Then('the JSON editor should contain a room object', async function () {
-  await this.page.getByTestId('tab-dsl').click();
   const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
@@ -203,7 +196,6 @@ Then('the part should be attached to {string}', async function (attachTo: string
 });
 
 Then('the JSON editor should contain a window in part {string}', async function (partId: string) {
-  await this.page.getByTestId('tab-dsl').click();
   const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
@@ -232,7 +224,6 @@ Then('the part should contain an object with text {string}', async function (tex
 });
 
 Then('the JSON editor should contain a door in part {string}', async function (partId: string) {
-  await this.page.getByTestId('tab-dsl').click();
   const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
@@ -258,7 +249,7 @@ Then('the part should have {int} objects', async function (count: number) {
   // Get current part from the most recent room/part context
   if (!this.currentPart) {
     // Find the part from parsed DSL
-    await this.page.getByTestId('tab-dsl').click();
+
     const content = await getCodeMirrorValue(this.page);
     const { config: json } = parseDSL(content);
 
@@ -277,7 +268,6 @@ Then('the part should have {int} objects', async function (count: number) {
 
 // Count validation steps
 Then('the JSON editor should contain {int} rooms', async function (count: number) {
-  await this.page.getByTestId('tab-dsl').click();
   const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
@@ -285,7 +275,6 @@ Then('the JSON editor should contain {int} rooms', async function (count: number
 });
 
 Then('the JSON editor should contain {int} windows', async function (count: number) {
-  await this.page.getByTestId('tab-dsl').click();
   const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
@@ -293,7 +282,6 @@ Then('the JSON editor should contain {int} windows', async function (count: numb
 });
 
 Then('the JSON editor should contain {int} doors', async function (count: number) {
-  await this.page.getByTestId('tab-dsl').click();
   const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
@@ -386,7 +374,6 @@ Then('the DSL editor should be read-only', async function () {
 
 // Grid step validation
 Then('the JSON editor should have grid_step {string}', async function (gridStep: string) {
-  await this.page.getByTestId('tab-dsl').click();
   const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
@@ -406,7 +393,6 @@ Then('the preview should show grid lines at {int}mm intervals', async function (
 
 // Attachment validation
 Then('the kitchen should be attached to {string}', async function (attachTo: string) {
-  await this.page.getByTestId('tab-dsl').click();
   const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
 
@@ -431,7 +417,7 @@ Then('the error panel should contain {string}', async function (errorText: strin
 // JSON editor steps (for legacy tests)
 When('I switch to the JSON editor', async function () {
   // JSON editor no longer exists - switch to DSL instead
-  await this.page.getByTestId('tab-dsl').click();
+
   await this.page.waitForTimeout(300);
 });
 
@@ -450,7 +436,7 @@ When('I enter the following JSON:', async function (jsonString: string) {
 
 // GUI editor steps
 When('I switch to the GUI editor', async function () {
-  await this.page.getByTestId('tab-gui').click();
+  // GUI editor removed - DSL editor is always visible
   await this.page.waitForTimeout(300);
 });
 
@@ -493,7 +479,6 @@ When('I set the room depth to {string}', async function (depth: string) {
 });
 
 Then('the JSON editor should contain a room with name {string}', async function (name: string) {
-  await this.page.getByTestId('tab-dsl').click();
   await this.page.waitForTimeout(300);
   const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
@@ -502,7 +487,6 @@ Then('the JSON editor should contain a room with name {string}', async function 
 });
 
 Then('the JSON editor should contain {int} window', async function (count: number) {
-  await this.page.getByTestId('tab-dsl').click();
   const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
   const windows = json?.windows || [];
@@ -510,7 +494,6 @@ Then('the JSON editor should contain {int} window', async function (count: numbe
 });
 
 Then('the JSON editor should contain {int} door', async function (count: number) {
-  await this.page.getByTestId('tab-dsl').click();
   const content = await getCodeMirrorValue(this.page);
   const { config: json } = parseDSL(content);
   const doors = json?.doors || [];

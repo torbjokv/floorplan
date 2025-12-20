@@ -23,8 +23,6 @@ Given(
 room testroom "Test Room" ${width}x${depth} at zeropoint`;
 
     // Switch to DSL editor tab (matching working pattern from object-resizing)
-    const dslTab = this.page.locator('[data-testid="tab-dsl"]');
-    await dslTab.click();
     await this.page.waitForTimeout(100);
 
     // Enter DSL using fill() - fast and preserves newlines
@@ -51,8 +49,6 @@ Given(
 room ${roomId} "${roomId}" ${width}x${depth} at zeropoint`;
 
     // Switch to DSL editor tab (matching working pattern from object-resizing)
-    const dslTab = this.page.locator('[data-testid="tab-dsl"]');
-    await dslTab.click();
     await this.page.waitForTimeout(100);
 
     // Enter DSL using fill()
@@ -368,7 +364,6 @@ Then(
 );
 
 Then('the DSL should reflect the updated width', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-dsl').click();
   const dslContent = await getCodeMirrorValue(this.page);
 
   // Check that DSL has been updated with new dimensions
@@ -377,7 +372,6 @@ Then('the DSL should reflect the updated width', async function (this: Floorplan
 });
 
 Then('the DSL should reflect the updated depth', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-dsl').click();
   const dslContent = await getCodeMirrorValue(this.page);
 
   // Check that DSL has been updated
@@ -397,7 +391,6 @@ Then(
 Then(
   'the DSL should reflect the updated dimensions and position',
   async function (this: FloorplanWorld) {
-    await this.page.getByTestId('tab-dsl').click();
     const dslContent = await getCodeMirrorValue(this.page);
 
     expect(dslContent).toBeTruthy();
@@ -567,7 +560,7 @@ Then(
   '{string} should remain attached to {string}',
   async function (this: FloorplanWorld, roomId: string, attachTo: string) {
     // Check DSL to verify attachTo is preserved
-    await this.page.getByTestId('tab-dsl').click();
+
     const dslContent = await getCodeMirrorValue(this.page);
 
     expect(dslContent).toContain(roomId);
@@ -584,9 +577,7 @@ Then(
   }
 );
 
-Given('I am viewing the DSL editor', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-dsl').click();
-});
+Given('I am viewing the DSL editor', async function (this: FloorplanWorld) {});
 
 When('I switch to the preview tab', async function (this: FloorplanWorld) {
   // Preview is always visible (not a separate tab), nothing to do
@@ -594,7 +585,6 @@ When('I switch to the preview tab', async function (this: FloorplanWorld) {
 });
 
 When('I switch to the DSL editor tab', async function (this: FloorplanWorld) {
-  await this.page.getByTestId('tab-dsl').click();
   await this.page.waitForTimeout(100);
 });
 

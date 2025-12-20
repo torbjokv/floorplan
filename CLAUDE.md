@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a browser-based SVG floorplan designer built with React, TypeScript, and Vite. The application uses a **DSL-first approach** where users define floor plans using a custom Domain-Specific Language (DSL), with optional GUI editor and internal JSON representation for data storage.
+This is a browser-based SVG floorplan designer built with React, TypeScript, and Vite. The application uses a **DSL-first approach** where users define floor plans using a custom Domain-Specific Language (DSL), with internal JSON representation for data storage.
 
 ## Development Commands
 
@@ -45,7 +45,7 @@ This system is implemented in [src/utils.ts](src/utils.ts):
 
 ### Component Architecture
 
-- **[App.tsx](src/App.tsx)**: Main application component with tabbed interface (DSL/GUI editors), project management, and preview. Features:
+- **[App.tsx](src/App.tsx)**: Main application component with DSL editor, project management, and preview. Features:
   - DSL is the primary data format (stored in undo/redo history)
   - 500ms debounced auto-update when DSL text, project ID, or project name changes
   - URL-based persistence (project ID + project name + DSL encoded in hash)
@@ -65,18 +65,6 @@ This system is implemented in [src/utils.ts](src/utils.ts):
   - Real-time parsing and error detection
   - Custom language mode: [dsl-language.ts](src/components/dsl-language.ts)
 
-- **[GUIEditor.tsx](src/components/GUIEditor.tsx)**: Visual form-based editor (alternative to DSL) with:
-  - Grid settings configuration
-  - Room management with visual anchor selectors (Zero Point + other rooms)
-  - Automatic room ID generation (e.g., "livingroom1", "kitchen1")
-  - Dropdown-based room attachment with corner icons (hidden for Zero Point)
-  - Room objects editor with dual anchor points (object anchor + room anchor)
-  - Door configuration with type selection (normal with swing arc, or opening without)
-  - Window configuration with dropdowns
-  - Dark theme UI
-  - data-room-id attributes for scroll targeting
-  - Changes convert to DSL for storage
-
 - **[FloorplanRenderer.tsx](src/components/FloorplanRenderer.tsx)**: Interactive SVG rendering engine that:
   - Parses DSL to JSON internally for rendering
   - Calculates dynamic viewBox based on content bounds (includes objects)
@@ -85,7 +73,7 @@ This system is implemented in [src/utils.ts](src/utils.ts):
   - Composite rooms highlight all parts together on hover
   - Renders doors (with or without swing arc based on type) and windows
   - Renders room objects (squares and circles) on top of all rooms
-  - Click handlers on rooms to scroll to their configuration in GUI editor
+  - Click handlers on rooms for selection
   - Hover effects on all elements (rooms, doors, windows, objects)
   - Drag-and-drop room repositioning (when onRoomUpdate callback provided)
 
@@ -286,9 +274,8 @@ npm test
 npm run test:headed
 
 # Run specific feature tests (faster)
-npm run test:project-menu      # Project management (11 scenarios)
-npm run test:dsl-editor         # DSL editor (33 scenarios) ✅ 100% passing
-npm run test:gui-editor         # GUI editor
+npm run test:project-menu      # Project management
+npm run test:dsl-editor         # DSL editor
 npm run test:room-positioning   # Room positioning
 npm run test:architectural      # Doors & windows
 npm run test:svg-rendering      # SVG rendering
@@ -297,11 +284,8 @@ npm run test:error-handling     # Error handling
 
 ### Test Suite Status
 
-- **Total Scenarios:** 145 scenarios
-- **Current Pass Rate:** 145 passing (100%) ✅
-- **Total Steps:** 959 steps passing
-- **Feature Files:** 7 files in `tests/features/`
-- **Step Definitions:** 7 files in `tests/step-definitions/`
+- **Feature Files:** 6 files in `tests/features/`
+- **Step Definitions:** 6 files in `tests/step-definitions/`
 - **Test IDs:** Comprehensive `data-testid` attributes throughout components
 
 ### Test Coverage
@@ -310,11 +294,10 @@ The test suite covers:
 
 1. **Project Menu** ✅ - Project management, save/load, sharing, URL persistence
 2. **DSL Editor** ✅ - Text editing, syntax highlighting, parsing, error display, undo/redo
-3. **GUI Editor** ✅ - Form controls, room/door/window management, DSL sync
-4. **Room Positioning** ✅ - Zero Point system, relative positioning, offsets
-5. **Architectural Elements** ✅ - Doors, windows, wall positioning, parts support
-6. **SVG Rendering** ✅ - ViewBox, grid, hover effects, click handlers
-7. **Error Handling** ✅ - DSL syntax errors, positioning errors, validation
+3. **Room Positioning** ✅ - Zero Point system, relative positioning, offsets
+4. **Architectural Elements** ✅ - Doors, windows, wall positioning, parts support
+5. **SVG Rendering** ✅ - ViewBox, grid, hover effects, click handlers
+6. **Error Handling** ✅ - DSL syntax errors, positioning errors, validation
 
 ### Writing Tests - Best Practices
 
@@ -330,8 +313,7 @@ The test suite covers:
 
 - **DSL Editor is Primary**: DSL is now the source of truth, stored in undo/redo history
 - **JSON Editor Removed**: JSON is now an internal format only, not user-facing
-- **GUI Editor Updates**: GUI changes convert to DSL before storage
-- **All Tests Passing**: 145/145 scenarios passing (100% pass rate) ✅
+- **GUI Editor Removed**: DSL is the only interface for editing floor plans
 - **Warnings Fixed**: All ESLint and Prettier warnings resolved
 - **Test Warnings Suppressed**: Node.js experimental loader warnings hidden with `--no-warnings`
 
@@ -345,7 +327,6 @@ The test suite covers:
 - **Selection Highlighting**: Find matching text in document
 - **Error Display**: Line and column information for syntax errors
 - **Undo/Redo**: Full history tracking with Ctrl+Z / Ctrl+Shift+Z
-- **Bidirectional Sync**: DSL ↔ GUI editor synchronization
 - **Parts Support**: Windows, doors, and objects can be added to room parts
 - **Flexible Indentation**: Any amount of whitespace for nesting
 
@@ -359,11 +340,12 @@ The test suite covers:
 - **Door Types**: Normal (with swing arc) or opening (without arc)
 - **Error Panel**: Always-visible error display at bottom of preview
 - **Project Management**: localStorage-based with URL persistence and sharing
-- **Interactive SVG**: Click-to-navigate, hover effects, drag-and-drop positioning
+- **Interactive SVG**: Click-to-select, hover effects, drag-and-drop positioning
 
 ### Breaking Changes
 
 - Removed JSON editor (DSL is now primary interface)
+- Removed GUI editor (DSL is the only interface)
 - All rooms require `id` and `attachTo` fields
 - No support for absolute `x`, `y` coordinates
 - `addition` renamed to `parts`
@@ -375,5 +357,4 @@ The test suite covers:
 - **ESLint**: Zero warnings or errors
 - **Prettier**: All files formatted consistently
 - **TypeScript**: Strict type checking enabled
-- **Tests**: 100% scenario pass rate (145/145)
 - **Build**: Clean build with no warnings

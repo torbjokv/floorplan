@@ -26,7 +26,6 @@ npm run test:headed
 
 ```bash
 npm run test:project-menu
-npm run test:gui-editor
 npm run test:json-editor
 npm run test:room-positioning
 npm run test:architectural
@@ -103,19 +102,7 @@ Human-readable test scenarios written in Gherkin syntax.
    - Duplicating projects
    - Project sorting and management
 
-2. **gui-editor.feature**
-   - GUI editor visibility
-   - Grid settings configuration
-   - Room management (add, edit, delete)
-   - Auto-generated room IDs
-   - Anchor selectors
-   - Door configuration
-   - Window configuration
-   - Room objects
-   - Real-time synchronization with DSL
-   - Click-to-scroll functionality
-
-3. **room-positioning.feature**
+2. **room-positioning.feature**
    - Zero Point positioning system
    - Relative positioning
    - Anchor points
@@ -124,7 +111,7 @@ Human-readable test scenarios written in Gherkin syntax.
    - Circular dependency detection
    - Missing reference errors
 
-4. **architectural-elements.feature**
+3. **architectural-elements.feature**
    - Adding doors to room walls
    - Door swing directions (inwards/outwards, left/right)
    - Door types (normal with arc, opening without arc)
@@ -132,7 +119,7 @@ Human-readable test scenarios written in Gherkin syntax.
    - Wall positioning (top, bottom, left, right)
    - Multiple elements per room
 
-5. **svg-rendering.feature**
+4. **svg-rendering.feature**
    - Dynamic viewBox calculation
    - Grid overlay rendering
    - Room labels (editable on double-click)
@@ -143,7 +130,7 @@ Human-readable test scenarios written in Gherkin syntax.
    - Click interactions
    - Performance with 50+ rooms
 
-6. **error-handling.feature**
+5. **error-handling.feature**
    - DSL syntax errors
    - Positioning errors
    - Circular dependencies
@@ -160,21 +147,12 @@ Human-readable test scenarios written in Gherkin syntax.
 
 ## Test IDs
 
-To enable robust testing, the following `data-testid` attributes were added:
+To enable robust testing, the following `data-testid` attributes are used:
 
-### GUI Editor Components
+### DSL Editor Components
 
-- Grid Settings: `grid-settings`, `grid-step-input`
-- Room Editor: `room-editor`, `add-room-button`, `room-card-{id}`, `room-name-input-{id}`, `room-width-{id}`, `room-depth-{id}`, `delete-room-button-{id}`, `room-attach-to-{id}`, `add-object-button-{id}`, `object-card-{id}-{index}`, `object-type-{id}-{index}`, `delete-object-button-{id}-{index}`
-- Door Editor: `door-editor`, `add-door-button`, `door-card-{index}`, `delete-door-button-{index}`, `door-type-{index}`, `door-swing-{index}`
-- Window Editor: `window-editor`, `add-window-button`, `window-card-{index}`, `delete-window-button-{index}`
-
-### JSON Editor Components
-
-- Container: `json-editor`
-- Textarea: `json-textarea`
-- Line Numbers: `line-numbers`
-- Errors: `json-error`, `json-warnings`
+- Container: `dsl-editor`
+- Textarea: `dsl-textarea`
 
 ### SVG Components
 

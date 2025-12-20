@@ -3,8 +3,6 @@ import { expect } from '@playwright/test';
 
 // Helper to fill CodeMirror editor (matching working pattern from object-resizing)
 async function fillDSLEditor(page: any, dsl: string) {
-  const dslTab = page.locator('[data-testid="tab-dsl"]');
-  await dslTab.click();
   await page.waitForTimeout(100);
 
   const editorSelector = '.cm-content[contenteditable="true"]';
@@ -556,8 +554,6 @@ Then('the window should be on the second room', async function () {
 
 Then('the DSL should reflect the new window room', async function () {
   // Check that DSL still contains a window definition
-  const dslTab = this.page.locator('[data-testid="tab-dsl"]');
-  await dslTab.click();
   await this.page.waitForTimeout(100);
   const editor = this.page.locator('.cm-content');
   const text = await editor.textContent();
@@ -602,8 +598,6 @@ Then('the door should be on the second room', async function () {
 
 Then('the DSL should reflect the new door room', async function () {
   // Check that DSL still contains a door definition
-  const dslTab = this.page.locator('[data-testid="tab-dsl"]');
-  await dslTab.click();
   await this.page.waitForTimeout(100);
   const editor = this.page.locator('.cm-content');
   const text = await editor.textContent();
@@ -612,8 +606,6 @@ Then('the DSL should reflect the new door room', async function () {
 
 Then('the DSL should reflect the new door wall', async function () {
   // Check that DSL still contains a door definition
-  const dslTab = this.page.locator('[data-testid="tab-dsl"]');
-  await dslTab.click();
   await this.page.waitForTimeout(100);
   const editor = this.page.locator('.cm-content');
   const text = await editor.textContent();
@@ -622,8 +614,6 @@ Then('the DSL should reflect the new door wall', async function () {
 
 Then('the DSL should reflect the new window wall', async function () {
   // Check that DSL still contains a window definition
-  const dslTab = this.page.locator('[data-testid="tab-dsl"]');
-  await dslTab.click();
   const editor = this.page.locator('.cm-content');
   await editor.waitFor({ state: 'visible' });
   const text = await editor.textContent();

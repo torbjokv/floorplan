@@ -39,8 +39,7 @@ export async function getCodeMirrorValue(page: Page): Promise<string> {
  */
 export async function fillDSLFromJSON(world: FloorplanWorld, jsonData: any) {
   const dsl = jsonToDSL(jsonData);
-  await world.page.getByTestId('tab-dsl').click();
-  await world.page.waitForTimeout(300); // Wait for tab to activate
+  // DSL editor is always visible now (GUI editor removed), no tab switching needed
 
   await fillCodeMirror(world.page, dsl);
 

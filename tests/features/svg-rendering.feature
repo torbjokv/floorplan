@@ -65,11 +65,10 @@ Feature: SVG Rendering and Visualization
     Then all parts should highlight together
     And the entire composite room should indicate it's one unit
 
-  Scenario: Interactive room click scrolls to GUI editor
+  Scenario: Interactive room click selects room
     Given I am viewing the floorplan preview
     When I click on a room in the SVG
-    Then the GUI editor should scroll to that room's configuration
-    And the room's fields should be visible
+    Then the room should be selected for editing
 
   Scenario: Update animation indicator
     When I modify the JSON
