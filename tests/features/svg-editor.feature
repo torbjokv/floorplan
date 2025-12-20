@@ -106,15 +106,6 @@ Feature: SVG Editor Interface
     Then the object should be removed
     And the DSL should not contain the object
 
-  @skip
-  Scenario: Grid step configuration via button
-    # GUI editor removed - grid is configured via DSL
-    When I click the grid settings button in the SVG view
-    And I change the grid step to 500
-    And I wait for 600ms
-    Then the grid step should be updated to 500
-    And the preview grid should reflect the new spacing
-
   Scenario: Dragging a door from one wall to another wall
     Given I have a room with a door on the bottom wall
     When I drag the door to the left wall

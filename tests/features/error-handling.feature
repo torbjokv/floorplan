@@ -118,15 +118,6 @@ Feature: Error Handling and Validation
     And positioning warnings should display with ⚠️ icon
     And the visual distinction should be clear
 
-  @skip
-  Scenario: Error persistence across tab switches
-    # Tab switching removed - DSL editor is always visible
-    Given I have an error in the JSON editor
-    When I switch to the GUI editor tab
-    And I switch back to the JSON editor tab
-    Then the error should still be displayed
-    And the error message should be preserved
-
   Scenario: Schema validation for door properties
     When I create a door missing the "room" property
     And I wait for 600ms

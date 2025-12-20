@@ -258,31 +258,6 @@ Feature: DSL Editor
     Then the error panel should be visible
     And the error panel should contain "syntax error"
 
-  @skip
-  Scenario: Convert GUI changes to DSL
-    # GUI editor removed - DSL is the only editing interface
-    When I switch to the GUI editor
-    And I add a new room with id "livingroom"
-    And I set the room width to "5000"
-    And I set the room depth to "4000"
-    And I wait for the auto-update
-    And I switch to the DSL editor
-    Then the DSL editor should contain "5000x4000"
-
-  @skip
-  Scenario: DSL changes sync to GUI editor
-    # GUI editor removed - DSL is the only editing interface
-    When I switch to the DSL editor
-    And I enter the following DSL:
-      """
-      room LivingRoom 5000x4000 at zeropoint
-          window 1200 at top (300)
-      """
-    And I wait for the auto-update
-    And I switch to the GUI editor
-    Then the GUI editor should show a room with id "livingroom"
-    And the room should have 1 window
-
   Scenario: DSL preserves formatting on roundtrip
     When I switch to the DSL editor
     And I enter the following DSL:
