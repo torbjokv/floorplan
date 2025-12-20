@@ -33,6 +33,9 @@ export class RoomPositionResolver {
     this.resolveTopLevelRooms(rooms);
     this.resolveAllParts();
 
+    // Normalize positions so top-left room's top-left corner is at (0,0)
+    this.normalizePositions();
+
     return {
       roomMap: this.roomMap,
       errors: this.errors,
@@ -213,6 +216,33 @@ export class RoomPositionResolver {
       this.errors.push(
         `Room "${displayName}" could not be positioned. Referenced room "${refRoomId}" not found or circular dependency detected.`
       );
+    });
+  }
+
+  /**
+   * Normalize all positions so the top-left-most point is at (0,0)
+   * This makes "zeropoint" transparent - the origin is always the top-left object
+   */
+  private normalizePositions(): void {
+    const rooms = Object.values(this.roomMap);
+    if (rooms.length === 0) return;
+
+    // Find minimum x and y across all rooms (including parts)
+    let minX = Infinity;
+    let minY = Infinity;
+
+    rooms.forEach(room => {
+      minX = Math.min(minX, room.x);
+      minY = Math.min(minY, room.y);
+    });
+
+    // If already normalized (top-left at 0,0), nothing to do
+    if (minX === 0 && minY === 0) return;
+
+    // Shift all room positions
+    rooms.forEach(room => {
+      room.x -= minX;
+      room.y -= minY;
     });
   }
 }

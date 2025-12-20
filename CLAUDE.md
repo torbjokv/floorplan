@@ -23,25 +23,28 @@ This is a browser-based SVG floorplan designer built with React, TypeScript, and
 - Be very pessimistic when testing, test the smallest part possible, like a single test, or one single suite. Then when everything works, then do the full test.
 - When testing, do not grep. Prefer to get the full output but if too large, pass to file and look at that.
 - adding timeout to tests is never a good solution. always find out why it times out. the error is most likely a test step issue.
+- Do not commit changes to package-lock.json unless package.json was also modified.
 
 ## Architecture
 
 ### Core Positioning System
 
-The application uses a **Zero Point positioning system** where all rooms use the same positioning logic:
+The application uses a **relative positioning system** where rooms attach to each other:
 
-1. **Zero Point**: Virtual anchor point at (0,0) - `"attachTo": "zeropoint:top-left"`
-2. **Room-based positioning**: Attach to other rooms - `"attachTo": "roomId:top-right"`
-3. **Offset adjustment**: Fine-tune position with `offset: [x, y]`
+1. **First room as anchor**: The first room (without explicit `at` clause) becomes the anchor at origin
+2. **Room-based positioning**: Other rooms attach to existing rooms - `at RoomId:corner`
+3. **Offset adjustment**: Fine-tune position with `(x, y)` offset
+4. **Position normalization**: All positions are normalized so the top-left-most object is at (0,0)
 
-**Key Feature**: No special "first room" logic - all rooms treated equally. **All rooms must have `attachTo` property**. At least one room must connect to Zero Point to anchor the floorplan (enforced with error).
+**Key Feature**: The origin is always the top-left corner of the top-left-most room. Rooms without an `at` clause are placed at the origin. Other rooms attach to existing rooms using corner references.
 
-This system is implemented in [src/utils.ts](src/utils.ts):
+This system is implemented in [src/positioning/](src/positioning/):
 
-- `resolveRoomPositions()`: Iteratively resolves room positions, handles Zero Point reference
+- `RoomPositionResolver`: Iteratively resolves room positions with automatic normalization
+- `PositionCalculator`: Calculate corner positions and anchor offsets
 - `resolveCompositeRoom()`: Resolves positions for room parts that can reference parent or other parts
-- `getCorner()` and `getAnchorAdjustment()`: Calculate precise corner positions and anchor offsets
-- Zero Point validation: Error if no room connects to Zero Point
+
+**Backward compatibility**: The `zeropoint` keyword is still accepted in DSL but not required - rooms without `at` clause default to origin placement.
 
 ### Component Architecture
 
@@ -94,7 +97,7 @@ Rooms can have `parts` arrays for complex shapes. Parts use the same positioning
 
 All core types are defined in [src/types.ts](src/types.ts):
 
-- `Room`: Requires `id` field (e.g., "livingroom1") and `attachTo` field. `name` is optional display name. Must be positioned via Zero Point or other rooms using `attachTo`. No absolute x/y coordinates supported. Supports optional `parts[]` and `objects[]`. Has `width` (x-axis) and `depth` (y-axis) dimensions.
+- `Room`: Requires `id` field (e.g., "livingroom1"). `name` is optional display name. First room is placed at origin; other rooms use `attachTo` to attach to existing rooms. No absolute x/y coordinates supported. Supports optional `parts[]` and `objects[]`. Has `width` (x-axis) and `depth` (y-axis) dimensions.
 - `RoomPart`: Nested room parts that can attach to parent or other parts. Requires `id` field, `name` is optional. Can contain windows, doors, and objects.
 - `RoomObject`: Decorative objects inside rooms with dual anchor system:
   - `type`: `'square'` or `'circle'`
@@ -118,12 +121,11 @@ All measurements are in **millimeters**. The `mm()` function in [src/utils.ts](s
 
 ### Error Handling
 
-The positioning system in [src/utils.ts](src/utils.ts) returns a `PositioningResult` object containing both the resolved room map and any positioning errors. DSL parsing errors are shown in the ErrorPanel component. Errors are displayed at the bottom of the preview window:
+The positioning system returns a `PositioningResult` object containing both the resolved room map and any positioning errors. DSL parsing errors are shown in the ErrorPanel component. Errors are displayed at the bottom of the preview window:
 
 - DSL syntax errors (with line and column information)
 - Referenced room doesn't exist in `attachTo`
 - Circular dependencies detected in room positioning
-- No room connected to Zero Point (error - enforced)
 - Error panel shows "Syntax Error:" for both DSL and positioning errors
 
 ## Deployment
@@ -156,7 +158,7 @@ room RoomId [LABEL] WxD [SELF_ANCHOR] [at TargetId [TARGET_ANCHOR]] [(OFFSET_X, 
 - `W`: Width/diameter in millimeters (e.g., `1200`)
 - `SELF_ANCHOR`: `top-left` | `top-right` | `bottom-left` | `bottom-right` (default: `top-left`)
 - `TARGET_ANCHOR`: Same as SELF_ANCHOR (default: `bottom-right` for rooms, `parent` for parts)
-- `Target`: `zeropoint`, `parent` (for parts), or another room/part ID
+- `Target`: Another room/part ID, or `parent` (for parts). Note: `zeropoint` still works for backward compatibility but is not needed - just omit the `at` clause
 - `WALL`: `top` | `bottom` | `left` | `right`
 - `SWING`: `inwards-left` | `inwards-right` | `outwards-left` | `outwards-right` | `opening` (default: `inwards-left`)
 - `TYPE`: `square` | `circle`
@@ -176,7 +178,7 @@ room RoomId [LABEL] WxD [SELF_ANCHOR] [at TargetId [TARGET_ANCHOR]] [(OFFSET_X, 
 - Parts can contain windows, doors, and objects
 - Room IDs are converted to lowercase automatically
 - For circles, use `width` for diameter (not radius)
-- Simplified zeropoint syntax: use `at (x, y)` without target to attach to zeropoint with offset, or omit `at` clause entirely for zeropoint at origin
+- First room without `at` clause is placed at origin; use `at (x, y)` for offset from origin, or `at RoomId:corner` to attach to another room
 
 **Example DSL:**
 
@@ -295,7 +297,7 @@ The test suite covers:
 
 1. **Project Menu** ✅ - Project management, save/load, sharing, URL persistence
 2. **DSL Editor** ✅ - Text editing, syntax highlighting, parsing, error display, undo/redo
-3. **Room Positioning** ✅ - Zero Point system, relative positioning, offsets
+3. **Room Positioning** ✅ - Relative positioning, offsets, first room as anchor
 4. **Architectural Elements** ✅ - Doors, windows, wall positioning, parts support
 5. **SVG Rendering** ✅ - ViewBox, grid, hover effects, click handlers
 6. **Error Handling** ✅ - DSL syntax errors, positioning errors, validation
@@ -333,7 +335,8 @@ The test suite covers:
 
 ### Core Features
 
-- **Zero Point System**: Virtual anchor at (0,0) for unified positioning
+- **First Room as Anchor**: First room is placed at origin; other rooms attach to it
+- **Position Normalization**: Origin is always the top-left-most object
 - **No Absolute Coordinates**: All rooms use relative positioning via `attachTo`
 - **Room ID System**: Unique IDs required, names are optional display labels
 - **Composite Rooms**: Complex shapes via `parts[]` with parent/sibling references
@@ -347,11 +350,12 @@ The test suite covers:
 
 - Removed JSON editor (DSL is now primary interface)
 - Removed GUI editor (DSL is the only interface)
-- All rooms require `id` and `attachTo` fields
+- All rooms require `id` field; first room is anchor, others use `attachTo`
 - No support for absolute `x`, `y` coordinates
 - `addition` renamed to `parts`
 - `height` renamed to `depth` for room dimensions
 - Room IDs converted to lowercase automatically
+- Position normalization: top-left object is always at origin (0,0)
 
 ## Code Quality
 
