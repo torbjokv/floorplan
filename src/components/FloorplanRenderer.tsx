@@ -168,6 +168,22 @@ const FloorplanRendererComponent = ({
     partId?: string;
   } | null>(null);
 
+  // Freestanding object state
+  const [hoveredFreestandingObjectIndex, setHoveredFreestandingObjectIndex] = useState<
+    number | null
+  >(null);
+  const [freestandingObjectResizeState, setFreestandingObjectResizeState] = useState<{
+    objectIndex: number;
+    corner: Anchor;
+    startMouseX: number;
+    startMouseY: number;
+    startWidth: number;
+    startHeight: number;
+    startX: number;
+    startY: number;
+  } | null>(null);
+  const freestandingObjectResizeStateRef = useRef(freestandingObjectResizeState);
+
   // Use ref to track animation frame for drag updates
   const dragAnimationFrame = useRef<number | null>(null);
 
@@ -179,6 +195,10 @@ const FloorplanRendererComponent = ({
   useEffect(() => {
     objectResizeStateRef.current = objectResizeState;
   }, [objectResizeState]);
+
+  useEffect(() => {
+    freestandingObjectResizeStateRef.current = freestandingObjectResizeState;
+  }, [freestandingObjectResizeState]);
 
   // Memoize room resolution to avoid recalculating on every render
   const { roomMap, errors, partIds, partToParent } = useMemo(() => {
@@ -955,6 +975,166 @@ const FloorplanRendererComponent = ({
     [data, roomMap, onRoomUpdate]
   );
 
+  // Freestanding object resize handlers
+  const handleFreestandingObjectResizeEnd = useCallback(() => {
+    setFreestandingObjectResizeState(null);
+  }, []);
+
+  const handleFreestandingObjectResizeMove = useCallback(
+    (x: number, y: number) => {
+      const currentState = freestandingObjectResizeStateRef.current;
+      if (!currentState) return;
+
+      // Initialize start position on first move
+      if (currentState.startMouseX === 0 && currentState.startMouseY === 0) {
+        setFreestandingObjectResizeState({
+          ...currentState,
+          startMouseX: x,
+          startMouseY: y,
+        });
+        return;
+      }
+
+      // Calculate delta from start position
+      const deltaX = x - currentState.startMouseX;
+      const deltaY = y - currentState.startMouseY;
+
+      // Find the object
+      if (!data.objects || !data.objects[currentState.objectIndex]) return;
+
+      const obj = data.objects[currentState.objectIndex];
+
+      // Use unified resize calculation for all object types
+      const resizeResult = calculateResize({
+        corner: currentState.corner,
+        deltaX,
+        deltaY,
+        startWidth: currentState.startWidth,
+        startHeight: currentState.startHeight,
+        startX: currentState.startX,
+        startY: currentState.startY,
+        objectType: obj.type,
+        anchor: obj.anchor || 'top-left',
+      });
+
+      // Update the object
+      if (onRoomUpdate) {
+        const updatedObjects = [...(data.objects || [])];
+        updatedObjects[currentState.objectIndex] = {
+          ...updatedObjects[currentState.objectIndex],
+          x: resizeResult.x,
+          y: resizeResult.y,
+          width: resizeResult.width,
+          height: resizeResult.height,
+        };
+        onRoomUpdate({ ...data, objects: updatedObjects });
+      }
+    },
+    [data, onRoomUpdate]
+  );
+
+  const handleFreestandingObjectResizeStart = useCallback(
+    (objectIndex: number, corner: Anchor) => {
+      if (!data.objects || !data.objects[objectIndex]) return;
+
+      const obj = data.objects[objectIndex];
+      const objWidth = obj.width || DEFAULT_OBJECT_SIZE;
+      const objHeight = obj.type === 'circle' ? objWidth : obj.height || objWidth;
+
+      const handleMouseMove = (e: MouseEvent) => {
+        const { x, y } = screenToMM(e.clientX, e.clientY);
+        handleFreestandingObjectResizeMove(x, y);
+      };
+
+      const handleMouseUp = () => {
+        handleFreestandingObjectResizeEnd();
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+
+      setFreestandingObjectResizeState({
+        objectIndex,
+        corner,
+        startMouseX: 0,
+        startMouseY: 0,
+        startWidth: objWidth,
+        startHeight: objHeight,
+        startX: obj.x,
+        startY: obj.y,
+      });
+    },
+    [
+      data.objects,
+      handleFreestandingObjectResizeMove,
+      handleFreestandingObjectResizeEnd,
+      screenToMM,
+    ]
+  );
+
+  const handleFreestandingObjectResizeNumeric = useCallback(
+    (objectIndex: number, _corner: Anchor, currentWidth: number, currentHeight?: number) => {
+      if (!onRoomUpdate) return;
+
+      if (!data.objects || !data.objects[objectIndex]) return;
+
+      const obj = data.objects[objectIndex];
+      const isCircle = obj.type === 'circle';
+
+      let input: string | null;
+      if (isCircle) {
+        const promptMessage = `Enter new diameter in mm (current: ${currentWidth}mm):`;
+        input = window.prompt(promptMessage, currentWidth.toString());
+
+        if (input === null) return; // User cancelled
+
+        const newDiameter = parseInt(input, 10);
+        if (isNaN(newDiameter) || newDiameter < 100) {
+          alert('Please enter a valid number (minimum 100mm)');
+          return;
+        }
+
+        const updatedObjects = [...data.objects];
+        updatedObjects[objectIndex] = {
+          ...updatedObjects[objectIndex],
+          width: newDiameter,
+        };
+        onRoomUpdate({ ...data, objects: updatedObjects });
+      } else {
+        // Square - prompt for width x height
+        const promptMessage = `Enter new dimensions in mm (format: WxH, current: ${currentWidth}x${currentHeight}):`;
+        input = window.prompt(promptMessage, `${currentWidth}x${currentHeight}`);
+
+        if (input === null) return; // User cancelled
+
+        const match = input.match(/^(\d+)\s*[x×]\s*(\d+)$/i);
+        if (!match) {
+          alert('Please enter dimensions in format: WxH (e.g., 1000x800)');
+          return;
+        }
+
+        const newWidth = parseInt(match[1], 10);
+        const newHeight = parseInt(match[2], 10);
+
+        if (isNaN(newWidth) || isNaN(newHeight) || newWidth < 100 || newHeight < 100) {
+          alert('Please enter valid numbers (minimum 100mm each)');
+          return;
+        }
+
+        const updatedObjects = [...data.objects];
+        updatedObjects[objectIndex] = {
+          ...updatedObjects[objectIndex],
+          width: newWidth,
+          height: newHeight,
+        };
+        onRoomUpdate({ ...data, objects: updatedObjects });
+      }
+    },
+    [data, onRoomUpdate]
+  );
+
   // Handle drag movement with requestAnimationFrame for smooth performance
   const handleDragMove = useCallback(
     (x: number, y: number) => {
@@ -1302,6 +1482,11 @@ const FloorplanRendererComponent = ({
             mm={mm}
             onObjectClick={objectIndex => onObjectClick?.('freestanding', objectIndex)}
             onObjectDragUpdate={onFreestandingObjectDragUpdate}
+            hoveredObjectIndex={hoveredFreestandingObjectIndex}
+            onObjectMouseEnter={setHoveredFreestandingObjectIndex}
+            onObjectMouseLeave={() => setHoveredFreestandingObjectIndex(null)}
+            onObjectResizeStart={handleFreestandingObjectResizeStart}
+            onObjectResizeNumeric={handleFreestandingObjectResizeNumeric}
           />
         )}
 
