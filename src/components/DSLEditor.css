@@ -6,15 +6,19 @@
   font-size: 14px;
   line-height: 1.5;
   overflow: hidden;
+  border-radius: 12px 12px 0 0;
 }
 
 /* CodeMirror wrapper styling */
 .dsl-codemirror {
   height: 100%;
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
 }
 
 .dsl-codemirror .cm-editor {
   height: 100%;
+  border-radius: 12px 12px 0 0;
 }
 
 .dsl-editor-wrapper {
