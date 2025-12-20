@@ -255,18 +255,23 @@ RoomList
       return extractList(head, tail);
     }
 
+// Room "at" clause - can be "at Target (offset)" or "at (offset)" for implicit zeropoint
+RoomAtClause
+  = "at"i _ attach:AttachTo __ offset:Offset? { return { attach, offset }; }
+  / "at"i _ offset:Offset { return { attach: { target: 'zeropoint', anchor: 'top-left' }, offset }; }
+
 // Room definition
 RoomDefinition
-  = "room"i _ id:Identifier _ label:Label? _ dims:Dimensions positioning:(__ anchor:Anchor? __ atClause:("at"i _ attach:AttachTo)? __ offset:Offset? { return { anchor, atClause, offset }; })? children:RoomChildren? {
+  = "room"i _ id:Identifier _ label:Label? _ dims:Dimensions positioning:(__ anchor:Anchor? __ atClause:RoomAtClause? { return { anchor, atClause }; })? children:RoomChildren? {
       const roomId = id.toLowerCase();
 
       // Extract positioning info or use defaults
       const anchor = positioning?.anchor || null;
       const atClause = positioning?.atClause || null;
-      const offset = positioning?.offset || null;
 
       // Default to zeropoint if no at clause provided
-      const attach = atClause ? atClause[2] : { target: 'zeropoint', anchor: 'top-left' };
+      const attach = atClause ? atClause.attach : { target: 'zeropoint', anchor: 'top-left' };
+      const offset = atClause?.offset || null;
 
       const room = buildRoom(id, label, dims, anchor, attach, offset, children?.children || []);
 
