@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useRef, useCallback, memo } from 'react';
 import type { FloorplanData, ResolvedRoom, Anchor, WallPosition } from '../types';
 import { mm, resolveRoomPositions, resolveCompositeRoom, getCorner } from '../utils';
+import { calculateResize } from '../utils/resizeCalculator';
 import { GridRenderer } from './floorplan/GridRenderer';
 import { RoomRenderer } from './floorplan/RoomRenderer';
 import { DoorRenderer } from './floorplan/DoorRenderer';
@@ -694,9 +695,6 @@ const FloorplanRendererComponent = ({
       const deltaX = x - currentObjectResizeState.startMouseX;
       const deltaY = y - currentObjectResizeState.startMouseY;
 
-      // Minimum object size
-      const MIN_SIZE = 100; // mm
-
       // Find the object (either in room or in part)
       let objects = room.objects;
 
@@ -710,145 +708,24 @@ const FloorplanRendererComponent = ({
       if (!objects || !objects[currentObjectResizeState.objectIndex]) return;
 
       const obj = objects[currentObjectResizeState.objectIndex];
-      const isCircle = obj.type === 'circle';
 
-      let newWidth = currentObjectResizeState.startWidth;
-      let newHeight = currentObjectResizeState.startHeight;
-      let newX = currentObjectResizeState.startX;
-      let newY = currentObjectResizeState.startY;
+      // Use unified resize calculation for all object types
+      const resizeResult = calculateResize({
+        corner: currentObjectResizeState.corner,
+        deltaX,
+        deltaY,
+        startWidth: currentObjectResizeState.startWidth,
+        startHeight: currentObjectResizeState.startHeight,
+        startX: currentObjectResizeState.startX,
+        startY: currentObjectResizeState.startY,
+        objectType: obj.type,
+        anchor: obj.anchor || 'top-left',
+      });
 
-      if (isCircle) {
-        // For circles, resize proportionally based on corner being dragged
-        // The opposite corner should stay fixed (anchored)
-        const corner = currentObjectResizeState.corner;
-        let deltaSize;
-
-        // Calculate size change based on which corner is being dragged
-        switch (corner) {
-          case 'bottom-right':
-            // Dragging right/down increases size
-            deltaSize = (deltaX + deltaY) / 2;
-            break;
-          case 'top-left':
-            // Dragging left/up increases size
-            deltaSize = (-deltaX - deltaY) / 2;
-            break;
-          case 'top-right':
-            // Dragging right/up increases size
-            deltaSize = (deltaX - deltaY) / 2;
-            break;
-          case 'bottom-left':
-            // Dragging left/down increases size
-            deltaSize = (-deltaX + deltaY) / 2;
-            break;
-        }
-
-        newWidth = Math.max(MIN_SIZE, Math.round(currentObjectResizeState.startWidth + deltaSize));
-        newHeight = newWidth; // Keep it circular
-
-        // Adjust position to keep opposite corner fixed
-        const sizeDiff = newWidth - currentObjectResizeState.startWidth;
-
-        // If dragging a left edge, move x to compensate
-        if (corner === 'top-left' || corner === 'bottom-left') {
-          newX = currentObjectResizeState.startX - sizeDiff;
-        }
-
-        // If dragging a top edge, move y to compensate
-        if (corner === 'top-left' || corner === 'top-right') {
-          newY = currentObjectResizeState.startY - sizeDiff;
-        }
-      } else {
-        // For squares, resize based on corner
-        const corner = currentObjectResizeState.corner;
-        const anchor = obj.anchor || 'top-left';
-
-        // Helper to check if corner affects anchor's edges
-        const affectsLeftEdge = (c: Anchor) => c === 'top-left' || c === 'bottom-left';
-        const affectsRightEdge = (c: Anchor) => c === 'top-right' || c === 'bottom-right';
-        const affectsTopEdge = (c: Anchor) => c === 'top-left' || c === 'top-right';
-        const affectsBottomEdge = (c: Anchor) => c === 'bottom-left' || c === 'bottom-right';
-
-        const anchorOnLeft = affectsLeftEdge(anchor);
-        const anchorOnRight = affectsRightEdge(anchor);
-        const anchorOnTop = affectsTopEdge(anchor);
-        const anchorOnBottom = affectsBottomEdge(anchor);
-
-        switch (corner) {
-          case 'bottom-right':
-            newWidth = Math.max(MIN_SIZE, Math.round(currentObjectResizeState.startWidth + deltaX));
-            newHeight = Math.max(
-              MIN_SIZE,
-              Math.round(currentObjectResizeState.startHeight + deltaY)
-            );
-            // Adjust X if anchor is on the right edge
-            if (anchorOnRight) {
-              newX =
-                currentObjectResizeState.startX + (newWidth - currentObjectResizeState.startWidth);
-            }
-            // Adjust Y if anchor is on the bottom edge
-            if (anchorOnBottom) {
-              newY =
-                currentObjectResizeState.startY +
-                (newHeight - currentObjectResizeState.startHeight);
-            }
-            break;
-          case 'bottom-left':
-            newWidth = Math.max(MIN_SIZE, Math.round(currentObjectResizeState.startWidth - deltaX));
-            newHeight = Math.max(
-              MIN_SIZE,
-              Math.round(currentObjectResizeState.startHeight + deltaY)
-            );
-            // Adjust X if anchor is on the left edge
-            if (anchorOnLeft) {
-              newX =
-                currentObjectResizeState.startX - (newWidth - currentObjectResizeState.startWidth);
-            }
-            // Adjust Y if anchor is on the bottom edge
-            if (anchorOnBottom) {
-              newY =
-                currentObjectResizeState.startY +
-                (newHeight - currentObjectResizeState.startHeight);
-            }
-            break;
-          case 'top-right':
-            newWidth = Math.max(MIN_SIZE, Math.round(currentObjectResizeState.startWidth + deltaX));
-            newHeight = Math.max(
-              MIN_SIZE,
-              Math.round(currentObjectResizeState.startHeight - deltaY)
-            );
-            // Adjust X if anchor is on the right edge
-            if (anchorOnRight) {
-              newX =
-                currentObjectResizeState.startX + (newWidth - currentObjectResizeState.startWidth);
-            }
-            // Adjust Y if anchor is on the top edge
-            if (anchorOnTop) {
-              newY =
-                currentObjectResizeState.startY -
-                (newHeight - currentObjectResizeState.startHeight);
-            }
-            break;
-          case 'top-left':
-            newWidth = Math.max(MIN_SIZE, Math.round(currentObjectResizeState.startWidth - deltaX));
-            newHeight = Math.max(
-              MIN_SIZE,
-              Math.round(currentObjectResizeState.startHeight - deltaY)
-            );
-            // Adjust X if anchor is on the left edge
-            if (anchorOnLeft) {
-              newX =
-                currentObjectResizeState.startX - (newWidth - currentObjectResizeState.startWidth);
-            }
-            // Adjust Y if anchor is on the top edge
-            if (anchorOnTop) {
-              newY =
-                currentObjectResizeState.startY -
-                (newHeight - currentObjectResizeState.startHeight);
-            }
-            break;
-        }
-      }
+      const newWidth = resizeResult.width;
+      const newHeight = resizeResult.height;
+      const newX = resizeResult.x;
+      const newY = resizeResult.y;
 
       // Update the object
       if (onRoomUpdate) {
@@ -869,7 +746,7 @@ const FloorplanRendererComponent = ({
                 x: newX,
                 y: newY,
                 width: newWidth,
-                height: isCircle ? undefined : newHeight,
+                height: newHeight,
               };
               updatedPart.objects = updatedObjects;
               updatedParts[partIdx] = updatedPart;
@@ -882,7 +759,7 @@ const FloorplanRendererComponent = ({
               x: newX,
               y: newY,
               width: newWidth,
-              height: isCircle ? undefined : newHeight,
+              height: newHeight,
             };
             updatedRoom.objects = updatedObjects;
           }
