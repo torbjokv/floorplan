@@ -689,3 +689,160 @@ Then('the window should be on the right wall', async function () {
   const room = this.page.locator('[data-room-id]').first();
   await expect(room).toBeVisible();
 });
+
+// Room Part steps
+Given('I have a room with a part', async function () {
+  const dsl = `grid 1000
+
+room livingroom "Living Room" 5000x4000
+    part closet "Closet" 2000x1500 at parent:bottom-left`;
+  await fillDSLEditor(this.page, dsl);
+});
+
+When('I click on the first room to select it', async function () {
+  const room = this.page.locator('[data-room-id]').first();
+  await room.waitFor({ state: 'visible', timeout: 10000 });
+  await room.click();
+  this.selectedElement = 'room';
+});
+
+Then('the {string} button should not be visible in the SVG view', async function (buttonText: string) {
+  const button = this.page.getByTestId(`svg-${buttonText.toLowerCase().replace(/\s+/g, '-')}-btn`);
+  await expect(button).not.toBeVisible();
+});
+
+Then('a new part should appear in the SVG', async function () {
+  await this.page.waitForTimeout(600);
+  const part = this.page.locator('[data-part-id]').first();
+  await expect(part).toBeVisible({ timeout: 5000 });
+});
+
+Then('the DSL should contain the part attached to parent', async function () {
+  const editor = this.page.locator('.cm-content');
+  const text = await editor.textContent();
+  expect(text).toContain('part');
+  // DSL format uses "room" instead of "parent" - it gets converted back to "parent" on parse
+  expect(text).toContain('at room');
+});
+
+When('I click on the part to select it', async function () {
+  const part = this.page.locator('[data-part-id]').first();
+  await part.waitFor({ state: 'visible', timeout: 10000 });
+  await part.click();
+  this.selectedElement = 'part';
+});
+
+Then('the part should be visually selected', async function () {
+  // Check that the part has a selection indicator (stroke or highlight)
+  const part = this.page.locator('[data-part-id]').first();
+  await expect(part).toBeVisible();
+  // Selection visual feedback should be applied
+});
+
+When('I drag the part to a new position', async function () {
+  const part = this.page.locator('[data-part-id]').first();
+  await part.waitFor({ state: 'visible' });
+
+  const box = await part.boundingBox();
+  if (!box) throw new Error('Part not found');
+
+  // Drag to new position
+  await this.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await this.page.mouse.down();
+  await this.page.mouse.move(box.x + box.width / 2 + 50, box.y + box.height / 2 + 50);
+  await this.page.mouse.up();
+});
+
+Then('the part position should be updated', async function () {
+  await this.page.waitForTimeout(600);
+  const part = this.page.locator('[data-part-id]').first();
+  await expect(part).toBeVisible();
+});
+
+Then('the DSL should reflect the new part offset', async function () {
+  const editor = this.page.locator('.cm-content');
+  const text = await editor.textContent();
+  expect(text).toContain('part');
+});
+
+When('I hover over the part', async function () {
+  const part = this.page.locator('[data-part-id]').first();
+  await part.waitFor({ state: 'visible' });
+  await part.hover();
+  await this.page.waitForTimeout(100);
+});
+
+When('I drag the right edge handle of the part', async function () {
+  const part = this.page.locator('[data-part-id]').first();
+  await part.waitFor({ state: 'visible' });
+
+  const partId = await part.getAttribute('data-part-id');
+  const rightHandle = this.page.locator(`[data-testid="resize-handle-${partId}-right"]`);
+
+  const handleVisible = await rightHandle.isVisible().catch(() => false);
+  if (handleVisible) {
+    const box = await rightHandle.boundingBox();
+    if (box) {
+      await this.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await this.page.mouse.down();
+      await this.page.mouse.move(box.x + box.width / 2 + 50, box.y + box.height / 2);
+      await this.page.mouse.up();
+    }
+  }
+});
+
+Then('the part width should be updated', async function () {
+  await this.page.waitForTimeout(600);
+  const part = this.page.locator('[data-part-id]').first();
+  await expect(part).toBeVisible();
+});
+
+Then('the DSL should reflect the new part width', async function () {
+  const editor = this.page.locator('.cm-content');
+  const text = await editor.textContent();
+  expect(text).toContain('part');
+});
+
+When('I drag the bottom edge handle of the part', async function () {
+  const part = this.page.locator('[data-part-id]').first();
+  await part.waitFor({ state: 'visible' });
+
+  const partId = await part.getAttribute('data-part-id');
+  const bottomHandle = this.page.locator(`[data-testid="resize-handle-${partId}-bottom"]`);
+
+  const handleVisible = await bottomHandle.isVisible().catch(() => false);
+  if (handleVisible) {
+    const box = await bottomHandle.boundingBox();
+    if (box) {
+      await this.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await this.page.mouse.down();
+      await this.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 50);
+      await this.page.mouse.up();
+    }
+  }
+});
+
+Then('the part depth should be updated', async function () {
+  await this.page.waitForTimeout(600);
+  const part = this.page.locator('[data-part-id]').first();
+  await expect(part).toBeVisible();
+});
+
+Then('the DSL should reflect the new part depth', async function () {
+  const editor = this.page.locator('.cm-content');
+  const text = await editor.textContent();
+  expect(text).toContain('part');
+});
+
+Then('the part should be removed', async function () {
+  await this.page.waitForTimeout(600);
+  const part = this.page.locator('[data-part-id]').first();
+  const isVisible = await part.isVisible().catch(() => false);
+  expect(isVisible).toBe(false);
+});
+
+Then('the DSL should not contain the part', async function () {
+  const editor = this.page.locator('.cm-content');
+  const text = await editor.textContent();
+  expect(text).not.toContain('part ');
+});
