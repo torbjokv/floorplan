@@ -26,7 +26,8 @@ export function GridRenderer({
         y1={mm(gridMinY)}
         x2={mm(i)}
         y2={mm(gridMaxY)}
-        stroke="#eee"
+        stroke="#ccc"
+        strokeWidth={0.5}
         data-grid-step={String(gridStep)}
       />
     );
@@ -41,7 +42,8 @@ export function GridRenderer({
         y1={mm(i)}
         x2={mm(gridMaxX)}
         y2={mm(i)}
-        stroke="#eee"
+        stroke="#ccc"
+        strokeWidth={0.5}
         data-grid-step={String(gridStep)}
       />
     );

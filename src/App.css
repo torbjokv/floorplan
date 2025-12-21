@@ -230,7 +230,7 @@
 
 .floorplan-svg {
   border: none;
-  background: transparent;
+  background: white;
   width: 100%;
   height: 100%;
   flex: 1;
