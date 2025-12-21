@@ -18,6 +18,7 @@ import { FreestandingDoorsRenderer } from './floorplan/FreestandingDoorsRenderer
 import { FreestandingWindowsRenderer } from './floorplan/FreestandingWindowsRenderer';
 import { CornerHighlights } from './floorplan/CornerHighlights';
 import { ResizeHandles, type ResizeEdge } from './floorplan/ResizeHandles';
+import { OffsetArrows, type OffsetDirection } from './floorplan/OffsetArrows';
 
 // Constants
 const BOUNDS_PADDING_PERCENTAGE = 0.1; // 10% padding on each side
@@ -196,6 +197,16 @@ const FloorplanRendererComponent = ({
   } | null>(null);
   const freestandingObjectResizeStateRef = useRef(freestandingObjectResizeState);
 
+  // Offset drag state
+  const [offsetDragState, setOffsetDragState] = useState<{
+    roomId: string;
+    direction: OffsetDirection;
+    startMouseX: number;
+    startMouseY: number;
+    startOffset: [number, number];
+  } | null>(null);
+  const offsetDragStateRef = useRef(offsetDragState);
+
   // Use ref to track animation frame for drag updates
   const dragAnimationFrame = useRef<number | null>(null);
 
@@ -211,6 +222,10 @@ const FloorplanRendererComponent = ({
   useEffect(() => {
     freestandingObjectResizeStateRef.current = freestandingObjectResizeState;
   }, [freestandingObjectResizeState]);
+
+  useEffect(() => {
+    offsetDragStateRef.current = offsetDragState;
+  }, [offsetDragState]);
 
   // Memoize room resolution to avoid recalculating on every render
   const { roomMap, errors, partIds, partToParent, normalizationOffset } = useMemo(() => {
@@ -1169,6 +1184,93 @@ const FloorplanRendererComponent = ({
     [data, onRoomUpdate]
   );
 
+  // Offset drag handlers
+  const handleOffsetDragEnd = useCallback(() => {
+    setOffsetDragState(null);
+  }, []);
+
+  const handleOffsetDragMove = useCallback(
+    (x: number, y: number) => {
+      const currentOffsetDragState = offsetDragStateRef.current;
+      if (!currentOffsetDragState) return;
+      if (!onRoomUpdate) return;
+
+      const room = data.rooms.find(r => r.id === currentOffsetDragState.roomId);
+      if (!room) return;
+
+      // Initialize start position on first move
+      if (currentOffsetDragState.startMouseX === 0 && currentOffsetDragState.startMouseY === 0) {
+        setOffsetDragState({
+          ...currentOffsetDragState,
+          startMouseX: x,
+          startMouseY: y,
+        });
+        return;
+      }
+
+      // Calculate delta from start position
+      const deltaX = x - currentOffsetDragState.startMouseX;
+      const deltaY = y - currentOffsetDragState.startMouseY;
+
+      // Determine which axis to adjust based on direction
+      let newOffsetX = currentOffsetDragState.startOffset[0];
+      let newOffsetY = currentOffsetDragState.startOffset[1];
+
+      switch (currentOffsetDragState.direction) {
+        case 'left':
+        case 'right':
+          // Horizontal arrows adjust X offset
+          newOffsetX = Math.round(currentOffsetDragState.startOffset[0] + deltaX);
+          break;
+        case 'top':
+        case 'bottom':
+          // Vertical arrows adjust Y offset
+          newOffsetY = Math.round(currentOffsetDragState.startOffset[1] + deltaY);
+          break;
+      }
+
+      // Update the room offset
+      const updatedRoom = { ...room, offset: [newOffsetX, newOffsetY] as [number, number] };
+      const updatedRooms = data.rooms.map(r =>
+        r.id === currentOffsetDragState.roomId ? updatedRoom : r
+      );
+      onRoomUpdate({ ...data, rooms: updatedRooms });
+    },
+    [data, onRoomUpdate]
+  );
+
+  const handleOffsetDragStart = useCallback(
+    (roomId: string, direction: OffsetDirection) => {
+      const room = data.rooms.find(r => r.id === roomId);
+      if (!room) return;
+
+      const handleMouseMove = (e: MouseEvent) => {
+        const { x, y } = screenToMM(e.clientX, e.clientY);
+        handleOffsetDragMove(x, y);
+      };
+
+      const handleMouseUp = () => {
+        handleOffsetDragEnd();
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+
+      // Set initial offset drag state
+      const currentOffset = room.offset || [0, 0];
+      setOffsetDragState({
+        roomId,
+        direction,
+        startMouseX: 0, // Will be set on first move
+        startMouseY: 0, // Will be set on first move
+        startOffset: [currentOffset[0], currentOffset[1]],
+      });
+    },
+    [data, handleOffsetDragMove, handleOffsetDragEnd]
+  );
+
   // Handle drag movement with requestAnimationFrame for smooth performance
   const handleDragMove = useCallback(
     (x: number, y: number) => {
@@ -1548,6 +1650,27 @@ const FloorplanRendererComponent = ({
               visible={true}
             />
           )}
+
+        {/* Offset arrows - rendered on top when hovering */}
+        {hoveredRoomId &&
+          !dragState &&
+          !resizeState &&
+          !offsetDragState &&
+          roomMap[hoveredRoomId] &&
+          !partIds.has(hoveredRoomId) &&
+          (() => {
+            const originalRoom = data.rooms.find(r => r.id === hoveredRoomId);
+            return originalRoom ? (
+              <OffsetArrows
+                room={roomMap[hoveredRoomId]}
+                originalRoom={originalRoom}
+                mm={mm}
+                onOffsetDragStart={handleOffsetDragStart}
+                onMouseEnter={() => setHoveredRoomId(hoveredRoomId)}
+                visible={true}
+              />
+            ) : null;
+          })()}
 
         {/* Corner highlights - rendered on top */}
         <CornerHighlights
