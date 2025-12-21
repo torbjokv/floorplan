@@ -64,13 +64,13 @@ export function DoorRenderer({
 
   // Resize state
   const [isResizing, setIsResizing] = useState(false);
-  const [resizeEnd, setResizeEnd] = useState<ResizeEnd | null>(null);
   const resizeStateRef = useRef<{
     startMouseX: number;
     startMouseY: number;
     startWidth: number;
     startOffset: number;
     wall: WallPosition;
+    end: ResizeEnd;
   } | null>(null);
 
   // Convert SVG screen coordinates to mm
@@ -253,7 +253,6 @@ export function DoorRenderer({
       if (!room) return;
 
       setIsResizing(true);
-      setResizeEnd(end);
 
       // Get initial mouse position
       const svgElement = document.querySelector('.floorplan-svg') as SVGSVGElement;
@@ -265,6 +264,7 @@ export function DoorRenderer({
         startWidth: door.width,
         startOffset: door.offset ?? 0,
         wall: wallStr as WallPosition,
+        end,
       };
 
       const handleMouseMove = (e: MouseEvent) => {
@@ -284,7 +284,7 @@ export function DoorRenderer({
           return;
         }
 
-        const wall = resizeStateRef.current.wall;
+        const { wall, end: resizeEnd } = resizeStateRef.current;
         const isHorizontalWall = wall === 'top' || wall === 'bottom';
 
         // Calculate delta along the wall direction
@@ -295,7 +295,7 @@ export function DoorRenderer({
         let newWidth = resizeStateRef.current.startWidth;
         let newOffset = resizeStateRef.current.startOffset;
 
-        if (end === 'start') {
+        if (resizeEnd === 'start') {
           // Dragging start handle - adjust both offset and width
           newOffset = resizeStateRef.current.startOffset + delta;
           newWidth = resizeStateRef.current.startWidth - delta;
@@ -306,7 +306,7 @@ export function DoorRenderer({
 
         // Enforce minimum width
         if (newWidth < MIN_DOOR_WIDTH) {
-          if (end === 'start') {
+          if (resizeEnd === 'start') {
             newOffset =
               resizeStateRef.current.startOffset +
               resizeStateRef.current.startWidth -
@@ -324,7 +324,7 @@ export function DoorRenderer({
         // Enforce wall bounds
         const maxOffset = isHorizontalWall ? room.width : room.depth;
         if (newOffset + newWidth > maxOffset) {
-          if (end === 'end') {
+          if (resizeEnd === 'end') {
             newWidth = maxOffset - newOffset;
           } else {
             newOffset = maxOffset - newWidth;
@@ -340,7 +340,6 @@ export function DoorRenderer({
 
       const handleMouseUp = () => {
         setIsResizing(false);
-        setResizeEnd(null);
         resizeStateRef.current = null;
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);

@@ -46,7 +46,7 @@ export function WindowRenderer({
   } | null>(null);
 
   // Resize state
-  const [isResizing, setIsResizing] = useState(false);
+  const [_isResizing, setIsResizing] = useState(false);
   const resizeStateRef = useRef<{
     startMouseX: number;
     startMouseY: number;
