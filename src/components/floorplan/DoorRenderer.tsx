@@ -613,8 +613,10 @@ export function DoorRenderer({
         <DoorWindowResizeHandles
           x={x + doorRect.x}
           y={y + doorRect.y}
-          width={doorRect.width}
-          thickness={doorRect.height}
+          width={activeWall === 'left' || activeWall === 'right' ? doorRect.height : doorRect.width}
+          thickness={
+            activeWall === 'left' || activeWall === 'right' ? doorRect.width : doorRect.height
+          }
           wall={activeWall}
           onResizeStart={handleResizeStart}
           onResizeNumeric={handleResizeNumeric}

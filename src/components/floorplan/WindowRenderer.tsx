@@ -440,7 +440,7 @@ export function WindowRenderer({
           y={rectY}
           width={w}
           thickness={d}
-          wall={activeWall}
+          wall={activeWall === 'left' || activeWall === 'right' ? 'top' : activeWall}
           rotation={rotation}
           onResizeStart={handleResizeStart}
           onResizeNumeric={handleResizeNumeric}
