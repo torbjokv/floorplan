@@ -631,6 +631,32 @@ function App() {
     [dslText, updateDslText]
   );
 
+  const handleDoorResizeUpdate = useCallback(
+    (doorIndex: number, newWidth: number, newOffset: number) => {
+      const { config } = parseDSL(dslText);
+      if (!config || !config.doors) return;
+
+      const updatedDoors = config.doors.map((door, idx) => {
+        if (idx !== doorIndex) return door;
+        return {
+          ...door,
+          width: newWidth,
+          offset: newOffset,
+        };
+      });
+
+      const updatedData = { ...config, doors: updatedDoors };
+
+      // Immediate optimistic update to avoid jump
+      setFloorplanData(updatedData);
+
+      // Update DSL (will re-parse after debounce)
+      const dsl = jsonToDSL(updatedData);
+      updateDslText(dsl);
+    },
+    [dslText, updateDslText]
+  );
+
   const handleWindowDragUpdate = useCallback(
     (
       windowIndex: number,
@@ -664,6 +690,32 @@ function App() {
             rotation: 0,
           };
         }
+      });
+
+      const updatedData = { ...config, windows: updatedWindows };
+
+      // Immediate optimistic update to avoid jump
+      setFloorplanData(updatedData);
+
+      // Update DSL (will re-parse after debounce)
+      const dsl = jsonToDSL(updatedData);
+      updateDslText(dsl);
+    },
+    [dslText, updateDslText]
+  );
+
+  const handleWindowResizeUpdate = useCallback(
+    (windowIndex: number, newWidth: number, newOffset: number) => {
+      const { config } = parseDSL(dslText);
+      if (!config || !config.windows) return;
+
+      const updatedWindows = config.windows.map((window, idx) => {
+        if (idx !== windowIndex) return window;
+        return {
+          ...window,
+          width: newWidth,
+          offset: newOffset,
+        };
       });
 
       const updatedData = { ...config, windows: updatedWindows };
@@ -1376,6 +1428,8 @@ function App() {
           onFreestandingDoorDragUpdate={handleFreestandingDoorDragUpdate}
           onFreestandingWindowDragUpdate={handleFreestandingWindowDragUpdate}
           onDoorSwingUpdate={handleDoorSwingUpdate}
+          onDoorResizeUpdate={handleDoorResizeUpdate}
+          onWindowResizeUpdate={handleWindowResizeUpdate}
         />
         <button
           className="download-svg-button"

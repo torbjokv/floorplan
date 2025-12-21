@@ -1,8 +1,10 @@
 import type { Door, WallPosition, ResolvedRoom, SwingDirection } from '../../types';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { DoorWindowResizeHandles, type ResizeEnd } from './DoorWindowResizeHandles';
 
 const DOOR_THICKNESS = 100; // mm
 const SNAP_DISTANCE = 300; // mm - distance to snap to walls
+const MIN_DOOR_WIDTH = 400; // mm - minimum door width
 
 // Cycle through swing directions (excluding 'opening')
 const SWING_CYCLE: SwingDirection[] = [
@@ -34,6 +36,7 @@ interface DoorRendererProps {
     y: number
   ) => void;
   onSwingUpdate?: (doorIndex: number, newSwing: SwingDirection) => void;
+  onResizeUpdate?: (doorIndex: number, newWidth: number, newOffset: number) => void;
 }
 
 export function DoorRenderer({
@@ -44,6 +47,7 @@ export function DoorRenderer({
   onClick,
   onDragUpdate,
   onSwingUpdate,
+  onResizeUpdate,
 }: DoorRendererProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -56,6 +60,17 @@ export function DoorRenderer({
     roomId: string;
     wall: WallPosition;
     offset: number;
+  } | null>(null);
+
+  // Resize state
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeStateRef = useRef<{
+    startMouseX: number;
+    startMouseY: number;
+    startWidth: number;
+    startOffset: number;
+    wall: WallPosition;
+    end: ResizeEnd;
   } | null>(null);
 
   // Convert SVG screen coordinates to mm
@@ -227,6 +242,132 @@ export function DoorRenderer({
     },
     [onSwingUpdate, door.swing, door.type, index]
   );
+
+  // Handle resize start
+  const handleResizeStart = useCallback(
+    (end: ResizeEnd) => {
+      if (!onResizeUpdate || !door.room) return;
+
+      const [roomId, wallStr = 'left'] = door.room.split(':') as [string, WallPosition];
+      const room = roomMap[roomId];
+      if (!room) return;
+
+      setIsResizing(true);
+
+      // Get initial mouse position
+      const svgElement = document.querySelector('.floorplan-svg') as SVGSVGElement;
+      if (!svgElement) return;
+
+      resizeStateRef.current = {
+        startMouseX: 0, // Will be set on first move
+        startMouseY: 0,
+        startWidth: door.width,
+        startOffset: door.offset ?? 0,
+        wall: wallStr as WallPosition,
+        end,
+      };
+
+      const handleMouseMove = (e: MouseEvent) => {
+        if (!resizeStateRef.current) return;
+
+        const pt = svgElement.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        const svgPt = pt.matrixTransform(svgElement.getScreenCTM()?.inverse());
+        const mouseX = svgPt.x * 10; // Convert to mm
+        const mouseY = svgPt.y * 10;
+
+        // Initialize start position on first move
+        if (resizeStateRef.current.startMouseX === 0 && resizeStateRef.current.startMouseY === 0) {
+          resizeStateRef.current.startMouseX = mouseX;
+          resizeStateRef.current.startMouseY = mouseY;
+          return;
+        }
+
+        const { wall, end: resizeEnd } = resizeStateRef.current;
+        const isHorizontalWall = wall === 'top' || wall === 'bottom';
+
+        // Calculate delta along the wall direction
+        const delta = isHorizontalWall
+          ? mouseX - resizeStateRef.current.startMouseX
+          : mouseY - resizeStateRef.current.startMouseY;
+
+        let newWidth = resizeStateRef.current.startWidth;
+        let newOffset = resizeStateRef.current.startOffset;
+
+        if (resizeEnd === 'start') {
+          // Dragging start handle - adjust both offset and width
+          newOffset = resizeStateRef.current.startOffset + delta;
+          newWidth = resizeStateRef.current.startWidth - delta;
+        } else {
+          // Dragging end handle - only adjust width
+          newWidth = resizeStateRef.current.startWidth + delta;
+        }
+
+        // Enforce minimum width
+        if (newWidth < MIN_DOOR_WIDTH) {
+          if (resizeEnd === 'start') {
+            newOffset =
+              resizeStateRef.current.startOffset +
+              resizeStateRef.current.startWidth -
+              MIN_DOOR_WIDTH;
+          }
+          newWidth = MIN_DOOR_WIDTH;
+        }
+
+        // Enforce offset >= 0
+        if (newOffset < 0) {
+          newWidth = resizeStateRef.current.startWidth + resizeStateRef.current.startOffset;
+          newOffset = 0;
+        }
+
+        // Enforce wall bounds
+        const maxOffset = isHorizontalWall ? room.width : room.depth;
+        if (newOffset + newWidth > maxOffset) {
+          if (resizeEnd === 'end') {
+            newWidth = maxOffset - newOffset;
+          } else {
+            newOffset = maxOffset - newWidth;
+          }
+        }
+
+        // Round to reasonable precision
+        newWidth = Math.round(newWidth);
+        newOffset = Math.round(newOffset);
+
+        onResizeUpdate(index, newWidth, newOffset);
+      };
+
+      const handleMouseUp = () => {
+        setIsResizing(false);
+        resizeStateRef.current = null;
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    },
+    [door, index, roomMap, onResizeUpdate]
+  );
+
+  // Handle numeric resize (double-click)
+  const handleResizeNumeric = useCallback(() => {
+    if (!onResizeUpdate || !door.room) return;
+
+    const promptMessage = `Enter new door width in mm (current: ${door.width}mm):`;
+    const input = window.prompt(promptMessage, door.width.toString());
+
+    if (input === null) return; // User cancelled
+
+    const newWidth = parseInt(input, 10);
+    if (isNaN(newWidth) || newWidth < MIN_DOOR_WIDTH) {
+      alert(`Please enter a valid number (minimum ${MIN_DOOR_WIDTH}mm)`);
+      return;
+    }
+
+    onResizeUpdate(index, newWidth, door.offset ?? 0);
+  }, [door, index, onResizeUpdate]);
 
   // Only render wall-attached doors in this component
   // Freestanding doors are handled by FreestandingDoorsRenderer
@@ -428,7 +569,7 @@ export function DoorRenderer({
         />
       )}
       {/* Toggle orientation button (shown on hover, not for openings or when dragging) */}
-      {isHovered && !isDragging && !isOpening && onSwingUpdate && (
+      {isHovered && !isDragging && !isResizing && !isOpening && onSwingUpdate && (
         <g
           data-testid="door-toggle-orientation"
           onClick={handleToggleClick}
@@ -466,6 +607,20 @@ export function DoorRenderer({
             strokeLinejoin="round"
           />
         </g>
+      )}
+      {/* Resize handles (shown on hover, not when dragging) */}
+      {isHovered && !isDragging && onResizeUpdate && (
+        <DoorWindowResizeHandles
+          x={x + doorRect.x}
+          y={y + doorRect.y}
+          width={doorRect.width}
+          thickness={doorRect.height}
+          wall={activeWall}
+          onResizeStart={handleResizeStart}
+          onResizeNumeric={handleResizeNumeric}
+          onMouseEnter={() => setIsHovered(true)}
+          visible={true}
+        />
       )}
     </g>
   );
