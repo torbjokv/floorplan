@@ -118,6 +118,9 @@ function App() {
   // Object type menu state
   const [showObjectMenu, setShowObjectMenu] = useState(false);
 
+  // Grid settings menu state
+  const [showGridMenu, setShowGridMenu] = useState(false);
+
   // Close object menu when clicking outside
   useEffect(() => {
     if (!showObjectMenu) return;
@@ -132,6 +135,21 @@ function App() {
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, [showObjectMenu]);
+
+  // Close grid menu when clicking outside
+  useEffect(() => {
+    if (!showGridMenu) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.grid-settings-container')) {
+        setShowGridMenu(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showGridMenu]);
 
   // ============================================================================
   // Floorplan Data State (derived from DSL)
@@ -286,6 +304,17 @@ function App() {
     // Select the window for potential deletion
     setSelectedElement({ type: 'window', index: windowIndex });
   }, []);
+
+  const handleGridStepChange = (newStep: number) => {
+    const updatedData = {
+      ...floorplanData,
+      grid_step: newStep,
+    };
+
+    const dsl = jsonToDSL(updatedData);
+    updateDslText(dsl);
+    setShowGridMenu(false);
+  };
 
   const handleAddRoom = () => {
     const DEFAULT_ROOM_SIZE = 3000; // mm
@@ -1355,6 +1384,29 @@ function App() {
         >
           📥 Download SVG
         </button>
+        <div className="grid-settings-container">
+          <button
+            className="grid-settings-button"
+            onClick={() => setShowGridMenu(!showGridMenu)}
+            data-testid="grid-settings-btn"
+          >
+            Grid: {floorplanData.grid_step || 1000}mm
+          </button>
+          {showGridMenu && (
+            <div className="grid-step-menu" data-testid="grid-step-menu">
+              {[100, 250, 500, 1000, 2000, 5000].map(step => (
+                <button
+                  key={step}
+                  className={`grid-step-option ${floorplanData.grid_step === step ? 'active' : ''}`}
+                  onClick={() => handleGridStepChange(step)}
+                  data-testid={`grid-step-${step}`}
+                >
+                  {step}mm
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <div className="svg-control-buttons">
           <button
             className="add-room-button"
