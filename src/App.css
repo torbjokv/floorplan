@@ -7,7 +7,7 @@
   padding-top: 0;
   height: 100vh;
   box-sizing: border-box;
-  background-color: #e8e8e8;
+  background-color: white;
 }
 
 /* Editor Section */
@@ -208,6 +208,7 @@
   padding-top: 80px;
   margin-top: 20px;
   border-radius: 12px;
+  background-color: white;
 }
 
 .preview-container {
