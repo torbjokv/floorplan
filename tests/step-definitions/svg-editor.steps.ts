@@ -706,10 +706,15 @@ When('I click on the first room to select it', async function () {
   this.selectedElement = 'room';
 });
 
-Then('the {string} button should not be visible in the SVG view', async function (buttonText: string) {
-  const button = this.page.getByTestId(`svg-${buttonText.toLowerCase().replace(/\s+/g, '-')}-btn`);
-  await expect(button).not.toBeVisible();
-});
+Then(
+  'the {string} button should not be visible in the SVG view',
+  async function (buttonText: string) {
+    const button = this.page.getByTestId(
+      `svg-${buttonText.toLowerCase().replace(/\s+/g, '-')}-btn`
+    );
+    await expect(button).not.toBeVisible();
+  }
+);
 
 Then('a new part should appear in the SVG', async function () {
   await this.page.waitForTimeout(600);
