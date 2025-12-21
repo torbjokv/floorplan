@@ -2,6 +2,7 @@ import type { ResolvedRoom, RoomObject, Anchor } from '../../types';
 
 interface ObjectResizeHandlesProps {
   room: ResolvedRoom;
+  parentRoomId?: string; // Parent room ID for test IDs when room is a part
   objectIndex: number;
   object: RoomObject;
   absolutePosition: { x: number; y: number }; // Object's absolute position in mm
@@ -25,6 +26,7 @@ const HANDLE_COLOR = '#4a90e2';
 
 export function ObjectResizeHandles({
   room,
+  parentRoomId,
   objectIndex,
   object,
   absolutePosition,
@@ -40,10 +42,13 @@ export function ObjectResizeHandles({
   const objWidth = object.width;
   const objHeight = object.type === 'circle' ? object.width : object.height || object.width;
 
+  // Use parentRoomId for test IDs when this is a part object
+  const roomIdForTestId = parentRoomId || room.id;
+
   // Generate test ID base
   const testIdBase = partId
-    ? `${room.id}-part-${partId}-${objectIndex}`
-    : `${room.id}-${objectIndex}`;
+    ? `${roomIdForTestId}-part-${partId}-${objectIndex}`
+    : `${roomIdForTestId}-${objectIndex}`;
 
   // Calculate corner positions for handles (in screen pixels)
   const corners: Array<{
@@ -108,12 +113,12 @@ export function ObjectResizeHandles({
             onMouseEnter={onMouseEnter}
             onMouseDown={e => {
               e.stopPropagation();
-              onResizeStart?.(room.id, objectIndex, corner.anchor);
+              onResizeStart?.(roomIdForTestId, objectIndex, corner.anchor);
             }}
             onDoubleClick={e => {
               e.stopPropagation();
               onResizeNumeric?.(
-                room.id,
+                roomIdForTestId,
                 objectIndex,
                 corner.anchor,
                 object.width,
