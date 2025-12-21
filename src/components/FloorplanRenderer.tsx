@@ -354,11 +354,15 @@ const FloorplanRendererComponent = ({
     };
   }, [roomMap, compositeRoomPartsMap]);
 
-  // Calculate grid bounds based on actual content
-  const gridMinX = Math.floor(bounds.x / gridStep) * gridStep;
-  const gridMinY = Math.floor(bounds.y / gridStep) * gridStep;
-  const gridMaxX = Math.ceil((bounds.x + bounds.width) / gridStep) * gridStep;
-  const gridMaxY = Math.ceil((bounds.y + bounds.depth) / gridStep) * gridStep;
+  // Calculate grid bounds to cover beyond the viewBox for seamless appearance
+  // Add extra grid steps beyond the viewBox to ensure grid covers the entire visible area
+  const extraGridSteps = 5;
+  const gridMinX = Math.floor(bounds.x / gridStep) * gridStep - gridStep * extraGridSteps;
+  const gridMinY = Math.floor(bounds.y / gridStep) * gridStep - gridStep * extraGridSteps;
+  const gridMaxX =
+    Math.ceil((bounds.x + bounds.width) / gridStep) * gridStep + gridStep * extraGridSteps;
+  const gridMaxY =
+    Math.ceil((bounds.y + bounds.depth) / gridStep) * gridStep + gridStep * extraGridSteps;
 
   // Convert SVG screen coordinates to mm coordinates
   const screenToMM = (screenX: number, screenY: number): { x: number; y: number } => {
