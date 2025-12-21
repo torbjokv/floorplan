@@ -82,6 +82,8 @@ interface FloorplanRendererProps {
     y: number
   ) => void;
   onDoorSwingUpdate?: (doorIndex: number, newSwing: SwingDirection) => void;
+  onDoorResizeUpdate?: (doorIndex: number, newWidth: number, newOffset: number) => void;
+  onWindowResizeUpdate?: (windowIndex: number, newWidth: number, newOffset: number) => void;
 }
 
 interface DragState {
@@ -135,6 +137,8 @@ const FloorplanRendererComponent = ({
   onFreestandingDoorDragUpdate,
   onFreestandingWindowDragUpdate,
   onDoorSwingUpdate,
+  onDoorResizeUpdate,
+  onWindowResizeUpdate,
 }: FloorplanRendererProps) => {
   const gridStep = data.grid_step || 1000;
   const svgRef = useRef<SVGSVGElement>(null);
@@ -1446,6 +1450,7 @@ const FloorplanRendererComponent = ({
                 onClick={onDoorClick}
                 onDragUpdate={onDoorDragUpdate}
                 onSwingUpdate={onDoorSwingUpdate}
+                onResizeUpdate={onDoorResizeUpdate}
               />
             </g>
           );
@@ -1473,6 +1478,7 @@ const FloorplanRendererComponent = ({
                 mm={mm}
                 onClick={onWindowClick}
                 onDragUpdate={onWindowDragUpdate}
+                onResizeUpdate={onWindowResizeUpdate}
               />
             </g>
           );
