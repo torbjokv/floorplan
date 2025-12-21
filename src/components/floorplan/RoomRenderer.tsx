@@ -240,19 +240,27 @@ function EditableRoomDimensions({ room, x, y, onDimensionsUpdate }: EditableRoom
   );
 }
 
+interface ResolvedPart {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  depth: number;
+}
+
 interface RoomRendererProps {
   room: ResolvedRoom;
   dragState: DragState | null;
   dragOffset: { x: number; y: number } | null;
   hoveredCorner: { roomId: string; corner: Anchor } | null;
   isConnected: boolean;
+  selectedPartId?: string | null;
   mm: (val: number) => number;
-  resolveCompositeRoom: (
-    room: ResolvedRoom
-  ) => Array<{ x: number; y: number; width: number; depth: number }>;
+  resolveCompositeRoom: (room: ResolvedRoom) => Array<ResolvedPart>;
   getCorner: (room: ResolvedRoom, corner: Anchor) => { x: number; y: number };
   onMouseDown: (e: React.MouseEvent<SVGElement>, roomId: string) => void;
   onClick?: (roomId: string) => void;
+  onPartClick?: (roomId: string, partId: string) => void;
   onNameUpdate?: (roomId: string, newName: string) => void;
   onDimensionsUpdate?: (roomId: string, width: number, depth: number) => void;
   onMouseEnter?: (roomId: string) => void;
@@ -264,10 +272,12 @@ export function RoomRenderer({
   dragState,
   dragOffset,
   isConnected,
+  selectedPartId,
   mm,
   resolveCompositeRoom,
   onMouseDown,
   onClick,
+  onPartClick,
   onNameUpdate,
   onDimensionsUpdate,
   onMouseEnter,
@@ -377,21 +387,29 @@ export function RoomRenderer({
           onMouseDown={e => onMouseDown(e, room.id)}
           style={{ cursor: dragState?.roomId === room.id ? 'grabbing' : 'grab' }}
         />
-        {parts.map((part, idx) => (
-          <rect
-            className="room-rect composite-part"
-            key={`border-${idx}`}
-            x={mm(part.x)}
-            y={mm(part.y)}
-            width={mm(part.width)}
-            height={mm(part.depth)}
-            fill="#e0ebe8"
-            stroke={isConnected ? '#646cff' : 'black'}
-            strokeWidth={isConnected ? '3' : '2'}
-            opacity={isConnected ? 0.7 : 1}
-            onClick={() => onClick?.(room.id)}
-          />
-        ))}
+        {parts.map((part, idx) => {
+          const isPartSelected = selectedPartId === part.id;
+          return (
+            <rect
+              className="room-rect composite-part"
+              key={`border-${idx}`}
+              data-part-id={part.id}
+              x={mm(part.x)}
+              y={mm(part.y)}
+              width={mm(part.width)}
+              height={mm(part.depth)}
+              fill="#e0ebe8"
+              stroke={isPartSelected ? '#646cff' : isConnected ? '#646cff' : 'black'}
+              strokeWidth={isPartSelected ? '4' : isConnected ? '3' : '2'}
+              opacity={isConnected ? 0.7 : 1}
+              onClick={e => {
+                e.stopPropagation();
+                onPartClick?.(room.id, part.id);
+              }}
+              style={{ cursor: 'pointer' }}
+            />
+          );
+        })}
 
         {/* Layer 2: Cover only the shared edges */}
         {sharedEdges.map((edge, idx) => (

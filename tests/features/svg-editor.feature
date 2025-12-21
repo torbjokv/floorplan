@@ -161,3 +161,57 @@ Feature: SVG Editor Interface
     And I wait for 600ms
     Then the object size should be updated
     And the DSL should reflect the new object size
+
+  # Room Part functionality
+  Scenario: Add Part button is visible when room is selected
+    Given I have a room in the floorplan
+    When I click on the first room to select it
+    Then the "Add Part" button should be visible in the SVG view
+
+  Scenario: Add Part button is not visible when no room is selected
+    Given I have a room in the floorplan
+    Then the "Add Part" button should not be visible in the SVG view
+
+  Scenario: Adding a new part via Add Part button
+    Given I have a room in the floorplan
+    When I click on the first room to select it
+    And I click the "Add Part" button in the SVG view
+    And I wait for 600ms
+    Then a new part should appear in the SVG
+    And the DSL should contain the part attached to parent
+
+  Scenario: Selecting a room part by clicking on it
+    Given I have a room with a part
+    When I click on the part to select it
+    Then the part should be visually selected
+
+  Scenario: Dragging a part to reposition it
+    Given I have a room with a part
+    When I drag the part to a new position
+    And I wait for 600ms
+    Then the part position should be updated
+    And the DSL should reflect the new part offset
+
+  Scenario: Resizing a part by dragging width handle
+    Given I have a room with a part
+    When I hover over the part
+    And I drag the right edge handle of the part
+    And I wait for 600ms
+    Then the part width should be updated
+    And the DSL should reflect the new part width
+
+  Scenario: Resizing a part by dragging depth handle
+    Given I have a room with a part
+    When I hover over the part
+    And I drag the bottom edge handle of the part
+    And I wait for 600ms
+    Then the part depth should be updated
+    And the DSL should reflect the new part depth
+
+  Scenario: Delete part by selecting and pressing Delete key
+    Given I have a room with a part
+    When I click on the part to select it
+    And I press the Delete key
+    And I wait for 600ms
+    Then the part should be removed
+    And the DSL should not contain the part

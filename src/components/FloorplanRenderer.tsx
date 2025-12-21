@@ -29,6 +29,8 @@ interface FloorplanRendererProps {
   data: FloorplanData;
   onPositioningErrors?: (errors: string[]) => void;
   onRoomClick?: (roomId: string) => void;
+  onPartClick?: (roomId: string, partId: string) => void;
+  selectedPartId?: string | null;
   onDoorClick?: (doorIndex: number) => void;
   onWindowClick?: (windowIndex: number) => void;
   onRoomUpdate?: (updatedData: FloorplanData) => void;
@@ -119,6 +121,8 @@ const FloorplanRendererComponent = ({
   data,
   onPositioningErrors,
   onRoomClick,
+  onPartClick,
+  selectedPartId,
   onDoorClick,
   onWindowClick,
   onRoomUpdate,
@@ -1405,11 +1409,13 @@ const FloorplanRendererComponent = ({
               dragOffset={dragOffset}
               hoveredCorner={hoveredCorner}
               isConnected={connectedRooms.has(room.id)}
+              selectedPartId={selectedPartId}
               mm={mm}
               resolveCompositeRoom={resolveCompositeRoom}
               getCorner={getCorner}
               onMouseDown={handleMouseDown}
               onClick={onRoomClick}
+              onPartClick={onPartClick}
               onNameUpdate={onRoomNameUpdate}
               onDimensionsUpdate={handleRoomDimensionsUpdate}
               onMouseEnter={setHoveredRoomId}

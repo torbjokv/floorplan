@@ -14,6 +14,7 @@ import type { SavedProject } from './components/ui/ProjectMenu/ProjectMenu';
 import type {
   FloorplanData,
   Room,
+  RoomPart,
   Door,
   Window as FloorplanWindow,
   RoomObject,
@@ -108,9 +109,10 @@ function App() {
 
   // Selection state for SVG editor (for delete functionality)
   const [selectedElement, setSelectedElement] = useState<{
-    type: 'room' | 'door' | 'window' | 'object';
+    type: 'room' | 'door' | 'window' | 'object' | 'part';
     index?: number;
     roomId?: string;
+    partId?: string;
   } | null>(null);
 
   // Object type menu state
@@ -437,6 +439,60 @@ function App() {
     const dsl = jsonToDSL(updatedData);
     updateDslText(dsl);
   };
+
+  const handleAddPart = () => {
+    // Only allow adding parts when a room is selected
+    if (!selectedElement || selectedElement.type !== 'room' || !selectedElement.roomId) {
+      return;
+    }
+
+    const targetRoomId = selectedElement.roomId;
+    const targetRoom = floorplanData.rooms.find(r => r.id === targetRoomId);
+    if (!targetRoom) return;
+
+    const DEFAULT_PART_SIZE = 1500; // mm
+
+    // Generate unique part ID
+    const existingPartIds = new Set(
+      floorplanData.rooms.flatMap(r => (r.parts || []).map(p => p.id))
+    );
+    let partCounter = 1;
+    let partId = `part${partCounter}`;
+    while (existingPartIds.has(partId)) {
+      partCounter++;
+      partId = `part${partCounter}`;
+    }
+
+    const newPart: RoomPart = {
+      id: partId,
+      name: `Part ${partCounter}`,
+      width: DEFAULT_PART_SIZE,
+      depth: DEFAULT_PART_SIZE,
+      attachTo: 'parent:bottom-left',
+    };
+
+    const updatedRooms = floorplanData.rooms.map(room => {
+      if (room.id === targetRoomId) {
+        return {
+          ...room,
+          parts: [...(room.parts || []), newPart],
+        };
+      }
+      return room;
+    });
+
+    const updatedData = {
+      ...floorplanData,
+      rooms: updatedRooms,
+    };
+
+    const dsl = jsonToDSL(updatedData);
+    updateDslText(dsl);
+  };
+
+  const handlePartClick = useCallback((roomId: string, partId: string) => {
+    setSelectedElement({ type: 'part', roomId, partId });
+  }, []);
 
   const handleRoomUpdate = useCallback(
     (data: FloorplanData) => {
@@ -939,6 +995,20 @@ function App() {
               updatedData.rooms = config.rooms.filter(r => r.id !== selectedElement.roomId);
             }
             break;
+
+          case 'part':
+            if (selectedElement.roomId && selectedElement.partId) {
+              updatedData.rooms = config.rooms.map(room => {
+                if (room.id === selectedElement.roomId) {
+                  return {
+                    ...room,
+                    parts: (room.parts || []).filter(p => p.id !== selectedElement.partId),
+                  };
+                }
+                return room;
+              });
+            }
+            break;
         }
 
         const dsl = jsonToDSL(updatedData);
@@ -1263,6 +1333,8 @@ function App() {
           data={floorplanData}
           onPositioningErrors={handlePositioningErrors}
           onRoomClick={handleRoomClick}
+          onPartClick={handlePartClick}
+          selectedPartId={selectedElement?.type === 'part' ? selectedElement.partId : null}
           onDoorClick={handleDoorClick}
           onWindowClick={handleWindowClick}
           onRoomUpdate={handleRoomUpdate}
@@ -1291,6 +1363,15 @@ function App() {
           >
             + Room
           </button>
+          {selectedElement?.type === 'room' && selectedElement.roomId && (
+            <button
+              className="add-part-button"
+              onClick={handleAddPart}
+              data-testid="svg-add-part-btn"
+            >
+              + Part
+            </button>
+          )}
           <button
             className="add-door-button"
             onClick={handleAddDoor}
