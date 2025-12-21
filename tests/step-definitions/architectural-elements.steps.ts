@@ -462,6 +462,25 @@ When('I hover over a door', async function (this: FloorplanWorld) {
   await expect(svg).toBeVisible();
 });
 
+When('I hover over the door', async function (this: FloorplanWorld) {
+  // Wait for SVG to be visible first
+  const svg = this.page.locator('.floorplan-svg');
+  await expect(svg).toBeVisible({ timeout: 5000 });
+
+  // Find door element - look for the rect inside door-group
+  const doorRect = this.page.locator('.door-group rect').first();
+
+  // Get the bounding box and move mouse to center
+  const box = await doorRect.boundingBox();
+  if (box) {
+    // Move mouse to center of door rect
+    await this.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await this.page.waitForTimeout(300); // Wait for hover state to be applied
+  } else {
+    throw new Error('Could not get bounding box of door element');
+  }
+});
+
 Then('the door should highlight', async function (this: FloorplanWorld) {
   // CSS hover effects are applied via :hover pseudo-class
   expect(true).toBe(true);
@@ -1235,4 +1254,62 @@ Then('doors should be associated with the correct parts', async function (this: 
   const doors = this.page.locator('[data-testid^="door-"]');
   const count = await doors.count();
   expect(count).toBeGreaterThanOrEqual(1);
+});
+
+// Door orientation toggle scenarios
+Then('a toggle orientation button should be visible', async function (this: FloorplanWorld) {
+  // The toggle button should appear on hover
+  const toggleButton = this.page.locator('[data-testid="door-toggle-orientation"]').first();
+  await expect(toggleButton).toBeVisible({ timeout: 5000 });
+});
+
+When('I click the toggle orientation button', async function (this: FloorplanWorld) {
+  // Re-hover over door to ensure toggle button is visible
+  const doorRect = this.page.locator('.door-group rect').first();
+  const doorBox = await doorRect.boundingBox();
+  if (doorBox) {
+    await this.page.mouse.move(doorBox.x + doorBox.width / 2, doorBox.y + doorBox.height / 2);
+    await this.page.waitForTimeout(300);
+  }
+
+  // Get the toggle button and click it
+  const toggleButton = this.page.locator('[data-testid="door-toggle-orientation"]').first();
+  const box = await toggleButton.boundingBox();
+  if (box) {
+    await this.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await this.page.waitForTimeout(700); // Wait for debounce and re-render
+  } else {
+    throw new Error('Could not get bounding box of toggle button');
+  }
+});
+
+Then(
+  'the door swing should change to {string}',
+  async function (this: FloorplanWorld, expectedSwing: string) {
+    // Check the DSL content for the new swing direction
+    const editor = this.page.locator('.cm-content');
+    await editor.waitFor({ state: 'visible' });
+    const text = await editor.textContent();
+
+    // inwards-left is the default and may be omitted from DSL
+    if (expectedSwing === 'inwards-left') {
+      // Either the swing is explicitly stated or it's omitted (default)
+      const hasExplicitSwing = text?.includes('inwards-') || text?.includes('outwards-');
+      if (hasExplicitSwing) {
+        expect(text).toContain(expectedSwing);
+      }
+      // If no explicit swing, it means it's the default (inwards-left)
+    } else {
+      expect(text).toContain(expectedSwing);
+    }
+  }
+);
+
+Then('the DSL should reflect the new swing direction', async function (this: FloorplanWorld) {
+  // Verify the DSL has been updated (door with swing direction)
+  const editor = this.page.locator('.cm-content');
+  await editor.waitFor({ state: 'visible' });
+  const text = await editor.textContent();
+  // Should contain one of the valid swing directions
+  expect(text).toMatch(/inwards-left|inwards-right|outwards-left|outwards-right/);
 });

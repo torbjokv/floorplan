@@ -18,6 +18,7 @@ import type {
   Window as FloorplanWindow,
   RoomObject,
   Anchor,
+  SwingDirection,
 } from './types';
 
 // Utilities and Hooks
@@ -506,6 +507,31 @@ function App() {
             rotation: 0,
           };
         }
+      });
+
+      const updatedData = { ...config, doors: updatedDoors };
+
+      // Immediate optimistic update to avoid jump
+      setFloorplanData(updatedData);
+
+      // Update DSL (will re-parse after debounce)
+      const dsl = jsonToDSL(updatedData);
+      updateDslText(dsl);
+    },
+    [dslText, updateDslText]
+  );
+
+  const handleDoorSwingUpdate = useCallback(
+    (doorIndex: number, newSwing: SwingDirection) => {
+      const { config } = parseDSL(dslText);
+      if (!config || !config.doors) return;
+
+      const updatedDoors = config.doors.map((door, idx) => {
+        if (idx !== doorIndex) return door;
+        return {
+          ...door,
+          swing: newSwing,
+        };
       });
 
       const updatedData = { ...config, doors: updatedDoors };
@@ -1248,6 +1274,7 @@ function App() {
           onFreestandingObjectDragUpdate={handleFreestandingObjectDragUpdate}
           onFreestandingDoorDragUpdate={handleFreestandingDoorDragUpdate}
           onFreestandingWindowDragUpdate={handleFreestandingWindowDragUpdate}
+          onDoorSwingUpdate={handleDoorSwingUpdate}
         />
         <button
           className="download-svg-button"

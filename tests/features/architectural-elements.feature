@@ -139,3 +139,25 @@ Feature: Architectural Elements
     And I wait for 600ms
     Then an error should be displayed
     And the error should mention the invalid room reference
+
+  Scenario: Toggle door orientation on hover
+    When I add a door with swing "inwards-left"
+    And I wait for 600ms
+    And I hover over the door
+    Then a toggle orientation button should be visible
+    When I click the toggle orientation button
+    Then the door swing should change to "inwards-right"
+    And the DSL should reflect the new swing direction
+
+  Scenario: Toggle door orientation cycles through all directions
+    When I add a door with swing "inwards-left"
+    And I wait for 600ms
+    And I hover over the door
+    When I click the toggle orientation button
+    Then the door swing should change to "inwards-right"
+    When I click the toggle orientation button
+    Then the door swing should change to "outwards-right"
+    When I click the toggle orientation button
+    Then the door swing should change to "outwards-left"
+    When I click the toggle orientation button
+    Then the door swing should change to "inwards-left"
