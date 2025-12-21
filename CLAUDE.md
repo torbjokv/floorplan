@@ -21,6 +21,7 @@ This is a browser-based SVG floorplan designer built with React, TypeScript, and
 ## General claude behavoiur
 
 - Be very pessimistic when testing, test the smallest part possible, like a single test, or one single suite. Then when everything works, then do the full test.
+- **NEVER run the full test suite unless explicitly asked**. Always run single tests or specific feature tests.
 - When testing, do not grep. Prefer to get the full output but if too large, pass to file and look at that.
 - adding timeout to tests is never a good solution. always find out why it times out. the error is most likely a test step issue.
 - Do not commit changes to package-lock.json unless package.json was also modified.
@@ -275,6 +276,9 @@ npm test
 
 # Run tests in headed mode (see browser)
 npm run test:headed
+
+# Run a single test by line number
+npm run test tests/features/architectural-elements.feature:42
 
 # Run specific feature tests (faster)
 npm run test:project-menu      # Project management

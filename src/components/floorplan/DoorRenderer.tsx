@@ -1,8 +1,23 @@
-import type { Door, WallPosition, ResolvedRoom } from '../../types';
+import type { Door, WallPosition, ResolvedRoom, SwingDirection } from '../../types';
 import { useState, useCallback, useEffect } from 'react';
 
 const DOOR_THICKNESS = 100; // mm
 const SNAP_DISTANCE = 300; // mm - distance to snap to walls
+
+// Cycle through swing directions (excluding 'opening')
+const SWING_CYCLE: SwingDirection[] = [
+  'inwards-left',
+  'inwards-right',
+  'outwards-right',
+  'outwards-left',
+];
+
+function getNextSwing(current: SwingDirection | undefined): SwingDirection {
+  if (!current || current === 'opening') return 'inwards-left';
+  const currentIndex = SWING_CYCLE.indexOf(current);
+  if (currentIndex === -1) return 'inwards-left';
+  return SWING_CYCLE[(currentIndex + 1) % SWING_CYCLE.length];
+}
 
 interface DoorRendererProps {
   door: Door;
@@ -18,6 +33,7 @@ interface DoorRendererProps {
     x: number,
     y: number
   ) => void;
+  onSwingUpdate?: (doorIndex: number, newSwing: SwingDirection) => void;
 }
 
 export function DoorRenderer({
@@ -27,8 +43,10 @@ export function DoorRenderer({
   mm,
   onClick,
   onDragUpdate,
+  onSwingUpdate,
 }: DoorRendererProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [currentX, setCurrentX] = useState(0);
   const [currentY, setCurrentY] = useState(0);
   const [currentOffset, setCurrentOffset] = useState(door.offset ?? 0);
@@ -196,6 +214,20 @@ export function DoorRenderer({
     };
   }, [isDragging, findClosestWallToSnap, onDragUpdate, index, currentX, currentY, snappedWall]);
 
+  // Handle toggle button click (must be before early returns for hooks rules)
+  const handleToggleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      const swing = door.swing || 'inwards-right';
+      const isOpening = door.type === 'opening' || swing === 'opening';
+      if (onSwingUpdate && !isOpening) {
+        const newSwing = getNextSwing(door.swing);
+        onSwingUpdate(index, newSwing);
+      }
+    },
+    [onSwingUpdate, door.swing, door.type, index]
+  );
+
   // Only render wall-attached doors in this component
   // Freestanding doors are handled by FreestandingDoorsRenderer
   if (!door.room) return null;
@@ -358,6 +390,11 @@ export function DoorRenderer({
     }
   }
 
+  // Calculate toggle button position (centered on door)
+  const toggleButtonSize = 16;
+  const toggleButtonX = x + doorRect.x + doorRect.width / 2 - toggleButtonSize / 2;
+  const toggleButtonY = y + doorRect.y + doorRect.height / 2 - toggleButtonSize / 2;
+
   return (
     <g
       key={`door-${index}`}
@@ -365,6 +402,8 @@ export function DoorRenderer({
       data-door-index={index}
       onClick={() => !isDragging && onClick?.(index)}
       onMouseDown={handleMouseDown}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       style={{ cursor: isDragging ? 'grabbing' : onDragUpdate ? 'grab' : 'pointer' }}
     >
       {/* Door rectangle (always shown) */}
@@ -387,6 +426,46 @@ export function DoorRenderer({
           strokeWidth="1"
           strokeDasharray="4,2"
         />
+      )}
+      {/* Toggle orientation button (shown on hover, not for openings or when dragging) */}
+      {isHovered && !isDragging && !isOpening && onSwingUpdate && (
+        <g
+          data-testid="door-toggle-orientation"
+          onClick={handleToggleClick}
+          onMouseDown={e => e.stopPropagation()}
+          style={{ cursor: 'pointer' }}
+        >
+          {/* Button background */}
+          <circle
+            cx={toggleButtonX + toggleButtonSize / 2}
+            cy={toggleButtonY + toggleButtonSize / 2}
+            r={toggleButtonSize / 2 + 2}
+            fill="white"
+            stroke="#4caf50"
+            strokeWidth="2"
+          />
+          {/* Rotate icon (simple circular arrow) */}
+          <path
+            d={`M ${toggleButtonX + 4} ${toggleButtonY + toggleButtonSize / 2}
+                A ${toggleButtonSize / 2 - 4} ${toggleButtonSize / 2 - 4} 0 1 1
+                ${toggleButtonX + toggleButtonSize / 2} ${toggleButtonY + 4}`}
+            fill="none"
+            stroke="#4caf50"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          {/* Arrow head */}
+          <path
+            d={`M ${toggleButtonX + toggleButtonSize / 2 - 3} ${toggleButtonY + 2}
+                L ${toggleButtonX + toggleButtonSize / 2} ${toggleButtonY + 4}
+                L ${toggleButtonX + toggleButtonSize / 2 + 3} ${toggleButtonY + 2}`}
+            fill="none"
+            stroke="#4caf50"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
       )}
     </g>
   );

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useRef, useCallback, memo } from 'react';
-import type { FloorplanData, ResolvedRoom, Anchor, WallPosition } from '../types';
+import type { FloorplanData, ResolvedRoom, Anchor, WallPosition, SwingDirection } from '../types';
 import {
   mm,
   resolveRoomPositions,
@@ -79,6 +79,7 @@ interface FloorplanRendererProps {
     x: number,
     y: number
   ) => void;
+  onDoorSwingUpdate?: (doorIndex: number, newSwing: SwingDirection) => void;
 }
 
 interface DragState {
@@ -129,6 +130,7 @@ const FloorplanRendererComponent = ({
   onFreestandingObjectDragUpdate,
   onFreestandingDoorDragUpdate,
   onFreestandingWindowDragUpdate,
+  onDoorSwingUpdate,
 }: FloorplanRendererProps) => {
   const gridStep = data.grid_step || 1000;
   const svgRef = useRef<SVGSVGElement>(null);
@@ -1437,6 +1439,7 @@ const FloorplanRendererComponent = ({
                 mm={mm}
                 onClick={onDoorClick}
                 onDragUpdate={onDoorDragUpdate}
+                onSwingUpdate={onDoorSwingUpdate}
               />
             </g>
           );
