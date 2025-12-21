@@ -359,8 +359,10 @@ const FloorplanRendererComponent = ({
   const extraGridSteps = 5;
   const gridMinX = Math.floor(bounds.x / gridStep) * gridStep - gridStep * extraGridSteps;
   const gridMinY = Math.floor(bounds.y / gridStep) * gridStep - gridStep * extraGridSteps;
-  const gridMaxX = Math.ceil((bounds.x + bounds.width) / gridStep) * gridStep + gridStep * extraGridSteps;
-  const gridMaxY = Math.ceil((bounds.y + bounds.depth) / gridStep) * gridStep + gridStep * extraGridSteps;
+  const gridMaxX =
+    Math.ceil((bounds.x + bounds.width) / gridStep) * gridStep + gridStep * extraGridSteps;
+  const gridMaxY =
+    Math.ceil((bounds.y + bounds.depth) / gridStep) * gridStep + gridStep * extraGridSteps;
 
   // Convert SVG screen coordinates to mm coordinates
   const screenToMM = (screenX: number, screenY: number): { x: number; y: number } => {
