@@ -1,5 +1,9 @@
+import { forwardRef, useImperativeHandle, useRef, useCallback } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
-import { EditorView } from '@codemirror/view';
+import type { ReactCodeMirrorRef } from '@uiw/react-codemirror';
+import { EditorView, Decoration } from '@codemirror/view';
+import type { DecorationSet } from '@codemirror/view';
+import { StateEffect, StateField } from '@codemirror/state';
 import { vscodeDark } from '@uiw/codemirror-theme-vscode';
 import { dslLanguage } from './dsl-language';
 import './DSLEditor.css';
@@ -10,7 +14,86 @@ interface DSLEditorProps {
   readOnly?: boolean;
 }
 
-export function DSLEditor({ value, onChange, readOnly }: DSLEditorProps) {
+export interface DSLEditorRef {
+  highlightLine: (lineNumber: number) => void;
+}
+
+// StateEffect for adding/removing line highlights
+const addHighlight = StateEffect.define<{ from: number; to: number }>();
+const removeHighlight = StateEffect.define<void>();
+
+// Decoration for the highlight
+const highlightMark = Decoration.line({ class: 'cm-highlighted-line' });
+
+// StateField to manage the highlight decoration
+const highlightField = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none;
+  },
+  update(decorations, tr) {
+    for (const effect of tr.effects) {
+      if (effect.is(addHighlight)) {
+        // Create a line decoration at the specified position
+        return Decoration.set([highlightMark.range(effect.value.from)]);
+      }
+      if (effect.is(removeHighlight)) {
+        return Decoration.none;
+      }
+    }
+    return decorations.map(tr.changes);
+  },
+  provide: f => EditorView.decorations.from(f),
+});
+
+export const DSLEditor = forwardRef<DSLEditorRef, DSLEditorProps>(function DSLEditor(
+  { value, onChange, readOnly },
+  ref
+) {
+  const editorRef = useRef<ReactCodeMirrorRef>(null);
+  const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const highlightLine = useCallback((lineNumber: number) => {
+    const view = editorRef.current?.view;
+    if (!view) return;
+
+    // Clear any existing highlight timeout
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
+    }
+
+    // Get the line info
+    const doc = view.state.doc;
+    if (lineNumber < 1 || lineNumber > doc.lines) return;
+
+    const line = doc.line(lineNumber);
+
+    // Add the highlight
+    view.dispatch({
+      effects: addHighlight.of({ from: line.from, to: line.to }),
+    });
+
+    // Scroll the line into view
+    view.dispatch({
+      effects: EditorView.scrollIntoView(line.from, {
+        y: 'center',
+      }),
+    });
+
+    // Remove highlight after 2 seconds (CSS will handle the fade-out animation)
+    highlightTimeoutRef.current = setTimeout(() => {
+      if (editorRef.current?.view) {
+        editorRef.current.view.dispatch({
+          effects: removeHighlight.of(),
+        });
+      }
+    }, 2000);
+  }, []);
+
+  // Expose the highlightLine method via ref
+  useImperativeHandle(ref, () => ({
+    highlightLine,
+  }));
+
   return (
     <div className="dsl-editor-container" data-testid="dsl-editor">
       <div className="dsl-editor-header" data-testid="dsl-editor-header">
@@ -18,6 +101,7 @@ export function DSLEditor({ value, onChange, readOnly }: DSLEditorProps) {
       </div>
       <div className="dsl-code-mirror-wrapper">
         <CodeMirror
+          ref={editorRef}
           value={value}
           onChange={onChange}
           readOnly={readOnly}
@@ -45,6 +129,7 @@ export function DSLEditor({ value, onChange, readOnly }: DSLEditorProps) {
           }}
           extensions={[
             ...dslLanguage,
+            highlightField,
             EditorView.lineWrapping,
             // Overlay custom syntax highlighting colors for DSL-specific tokens
             EditorView.theme({
@@ -90,6 +175,11 @@ export function DSLEditor({ value, onChange, readOnly }: DSLEditorProps) {
                 color: '#ffffff',
                 fontWeight: '500',
               },
+              // Line highlight styles
+              '.cm-highlighted-line': {
+                backgroundColor: 'rgba(255, 213, 0, 0.3) !important',
+                animation: 'highlight-fade-out 2s ease-out forwards',
+              },
             }),
           ]}
           indentWithTab={true}
@@ -97,4 +187,4 @@ export function DSLEditor({ value, onChange, readOnly }: DSLEditorProps) {
       </div>
     </div>
   );
-}
+});

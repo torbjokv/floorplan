@@ -191,3 +191,22 @@
 .dsl-whitespace {
   /* No special styling for whitespace */
 }
+
+/* Highlight animation for clicked SVG elements */
+@keyframes highlight-fade-out {
+  0% {
+    background-color: rgba(255, 213, 0, 0.4);
+  }
+  70% {
+    background-color: rgba(255, 213, 0, 0.25);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.cm-highlighted-line {
+  background-color: rgba(255, 213, 0, 0.4) !important;
+  animation: highlight-fade-out 2s ease-out forwards;
+  border-radius: 2px;
+}
