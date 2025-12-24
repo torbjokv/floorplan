@@ -135,10 +135,6 @@ function RoomObject({
   partId?: string;
 }) {
   const [isObjectDragging, setIsObjectDragging] = useState(false);
-  const [dragStartX, setDragStartX] = useState(0);
-  const [dragStartY, setDragStartY] = useState(0);
-  const [dragStartObjX, setDragStartObjX] = useState(0);
-  const [dragStartObjY, setDragStartObjY] = useState(0);
   const [currentObjX, setCurrentObjX] = useState(obj.x);
   const [currentObjY, setCurrentObjY] = useState(obj.y);
   const [targetRoomId, setTargetRoomId] = useState(room.id);
@@ -148,33 +144,12 @@ function RoomObject({
   const currentObjYRef = useRef(obj.y);
   const targetRoomIdRef = useRef(room.id);
 
-  // Convert SVG screen coordinates to mm
-  const screenToMM = useCallback((e: React.MouseEvent): { x: number; y: number } => {
-    const svg = (e.target as SVGElement).ownerSVGElement;
-    if (!svg) return { x: 0, y: 0 };
-
-    const pt = svg.createSVGPoint();
-    pt.x = e.clientX;
-    pt.y = e.clientY;
-    const svgPt = pt.matrixTransform(svg.getScreenCTM()?.inverse());
-
-    return {
-      x: svgPt.x * 10,
-      y: svgPt.y * 10,
-    };
-  }, []);
-
   // Handle mouse down - start dragging
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       if (!onObjectDragUpdate) return;
       e.stopPropagation();
-      const { x, y } = screenToMM(e);
       setIsObjectDragging(true);
-      setDragStartX(x);
-      setDragStartY(y);
-      setDragStartObjX(obj.x);
-      setDragStartObjY(obj.y);
       setCurrentObjX(obj.x);
       setCurrentObjY(obj.y);
       // Initialize refs for mouseup handler
@@ -182,7 +157,7 @@ function RoomObject({
       currentObjYRef.current = obj.y;
       targetRoomIdRef.current = room.id;
     },
-    [onObjectDragUpdate, screenToMM, obj.x, obj.y, room.id]
+    [onObjectDragUpdate, obj.x, obj.y, room.id]
   );
 
   // Helper to find which room contains a point
