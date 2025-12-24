@@ -1,5 +1,11 @@
 export type Anchor = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
+// Source location from DSL parsing
+export interface SourceLocation {
+  line: number;
+  column: number;
+}
+
 export interface RoomPart {
   id: string;
   name?: string; // Display name (optional)
@@ -9,6 +15,7 @@ export interface RoomPart {
   attachTo: string; // Required. Format: "roomId:corner" or "parent:corner"
   offset?: [number, number];
   objects?: RoomObject[];
+  location?: SourceLocation; // DSL source location
 }
 
 export interface RoomObject {
@@ -21,6 +28,7 @@ export interface RoomObject {
   text?: string; // Optional text in center
   anchor?: Anchor; // Which object point to anchor
   roomAnchor?: Anchor; // Which room corner to attach to (defaults to top-left)
+  location?: SourceLocation; // DSL source location
 }
 
 export interface Room {
@@ -33,6 +41,7 @@ export interface Room {
   offset?: [number, number]; // Offset from the attachment point (defaults to [0, 0])
   parts?: RoomPart[];
   objects?: RoomObject[];
+  location?: SourceLocation; // DSL source location
 }
 
 export type WallPosition = 'top' | 'bottom' | 'left' | 'right';
@@ -52,6 +61,7 @@ export interface Door {
   x?: number; // Absolute x coordinate (for freestanding doors)
   y?: number; // Absolute y coordinate (for freestanding doors)
   rotation?: number; // Rotation in degrees (for freestanding doors)
+  location?: SourceLocation; // DSL source location
 }
 
 export interface Window {
@@ -61,6 +71,7 @@ export interface Window {
   x?: number; // Absolute x coordinate (for freestanding windows)
   y?: number; // Absolute y coordinate (for freestanding windows)
   rotation?: number; // Rotation in degrees (for freestanding windows)
+  location?: SourceLocation; // DSL source location
 }
 
 export interface FloorplanData {

@@ -4,12 +4,13 @@
     return [head, ...tail.map(t => t[1])];
   }
 
-  function buildRoom(id, label, dimensions, anchor, attachInfo, offset, children) {
+  function buildRoom(id, label, dimensions, anchor, attachInfo, offset, children, loc) {
     const room = {
       id: id.toLowerCase(),
       width: dimensions.width,
       depth: dimensions.depth,
-      attachTo: `${attachInfo.target}:${attachInfo.anchor}`
+      attachTo: `${attachInfo.target}:${attachInfo.anchor}`,
+      location: { line: loc.start.line, column: loc.start.column }
     };
 
     if (label) {
@@ -47,12 +48,13 @@
     return room;
   }
 
-  function buildPart(id, label, dimensions, anchor, attachInfo, offset, children) {
+  function buildPart(id, label, dimensions, anchor, attachInfo, offset, children, loc) {
     const part = {
       id: id.toLowerCase(),
       width: dimensions.width,
       depth: dimensions.depth,
-      attachTo: `${attachInfo.target}:${attachInfo.anchor}`
+      attachTo: `${attachInfo.target}:${attachInfo.anchor}`,
+      location: { line: loc.start.line, column: loc.start.column }
     };
 
     if (label) {
@@ -145,12 +147,14 @@ Item
 FreestandingDoor
   = "door"i _ width:Integer _ swing:Swing? _ "at"i _ coords:Offset {
       // Absolute positioning with (x, y)
+      const loc = location();
       const door = {
         width,
         swing: swing || 'inwards-left',
         x: coords[0],
         y: coords[1],
-        rotation: 0
+        rotation: 0,
+        location: { line: loc.start.line, column: loc.start.column }
       };
 
       if (swing === 'opening') {
@@ -167,10 +171,12 @@ FreestandingDoor
     }
   / "door"i _ width:Integer _ swing:Swing? _ "at"i _ target:FreestandingTarget ___ offset:Offset? {
       // Wall-attached positioning
+      const loc = location();
       const door = {
         room: target,
         width,
-        swing: swing || 'inwards-left'
+        swing: swing || 'inwards-left',
+        location: { line: loc.start.line, column: loc.start.column }
       };
 
       if (swing === 'opening') {
@@ -194,24 +200,28 @@ FreestandingDoor
 FreestandingWindow
   = "window"i _ width:Integer _ "at"i _ coords:Offset {
       // Absolute positioning with (x, y)
+      const loc = location();
       return {
         type: 'window',
         data: {
           width,
           x: coords[0],
           y: coords[1],
-          rotation: 0
+          rotation: 0,
+          location: { line: loc.start.line, column: loc.start.column }
         }
       };
     }
   / "window"i _ width:Integer _ "at"i _ target:FreestandingTarget ___ offset:Offset? {
       // Wall-attached positioning
+      const loc = location();
       return {
         type: 'window',
         data: {
           room: target,
           width,
-          offset: offset?.[0] || 0
+          offset: offset?.[0] || 0,
+          location: { line: loc.start.line, column: loc.start.column }
         }
       };
     }
@@ -219,6 +229,7 @@ FreestandingWindow
 // Freestanding object (no indent, positioned at absolute coordinates)
 FreestandingObject
   = "object"i _ objType:ObjectType _ label:Label? _ dims:ObjectDimensions ___ color:Color? ___ "at"i _ offset:Offset {
+      const loc = location();
       const obj = {
         type: objType,
         x: offset[0],
@@ -227,7 +238,8 @@ FreestandingObject
         height: objType === 'square' ? dims.height : undefined,
         anchor: 'top-left',
         roomAnchor: 'top-left',
-        color: color || '#33d17a'
+        color: color || '#33d17a',
+        location: { line: loc.start.line, column: loc.start.column }
       };
 
       if (label) {
@@ -265,6 +277,7 @@ RoomAtClause
 RoomDefinition
   = "room"i _ id:Identifier _ label:Label? _ dims:Dimensions positioning:(__ anchor:Anchor? __ atClause:RoomAtClause? { return { anchor, atClause }; })? children:RoomChildren? {
       const roomId = id.toLowerCase();
+      const loc = location();
 
       // Extract positioning info or use defaults
       const anchor = positioning?.anchor || null;
@@ -274,7 +287,7 @@ RoomDefinition
       const attach = atClause ? atClause.attach : { target: 'zeropoint', anchor: 'top-left' };
       const offset = atClause?.offset || null;
 
-      const room = buildRoom(id, label, dims, anchor, attach, offset, children?.children || []);
+      const room = buildRoom(id, label, dims, anchor, attach, offset, children?.children || [], loc);
 
       // Replace room ID placeholders in doors and windows
       const doors = (children?.doors || []).map(door => {
@@ -339,12 +352,13 @@ RoomChildItem
 PartDefinition
   = SingleIndent "part"i _ id:Identifier _ label:Label? _ dims:Dimensions _ anchor:Anchor? _ "at"i _ attach:PartAttachTo __ offset:Offset? children:PartChildren? {
       const partId = id.toLowerCase();
+      const loc = location();
       const target = attach.target === 'room' ? 'parent' : attach.target.toLowerCase();
       const attachInfo = { target, anchor: attach.anchor };
 
       // Convert children.objects array into proper format for buildPart
       const childrenForBuild = (children?.objects || []).map(obj => ({ type: 'object', data: obj }));
-      const part = buildPart(id, label, dims, anchor, attachInfo, offset, childrenForBuild);
+      const part = buildPart(id, label, dims, anchor, attachInfo, offset, childrenForBuild, loc);
 
       // Replace part ID placeholders in doors and windows
       const doors = (children?.doors || []).map(door => {
@@ -403,12 +417,14 @@ PartChildItem
 // Window definition for parts (double indent)
 PartWindowDefinition
   = DoubleIndent "window"i _ width:Integer _ "at"i _ wall:Wall __ offset:Offset? {
+      const loc = location();
       return {
         type: 'window',
         data: {
           room: `{ROOM_ID}:${wall}`,
           width,
-          offset: offset?.[0] || 0
+          offset: offset?.[0] || 0,
+          location: { line: loc.start.line, column: loc.start.column }
         }
       };
     }
@@ -416,10 +432,12 @@ PartWindowDefinition
 // Door definition for parts (double indent)
 PartDoorDefinition
   = DoubleIndent "door"i _ width:Integer _ swing:Swing? _ "at"i _ wall:Wall __ offset:Offset? {
+      const loc = location();
       const door = {
         room: `{ROOM_ID}:${wall}`,
         width,
-        swing: swing || 'inwards-left'
+        swing: swing || 'inwards-left',
+        location: { line: loc.start.line, column: loc.start.column }
       };
 
       if (swing === 'opening') {
@@ -442,13 +460,15 @@ PartDoorDefinition
 // Object definition for parts (double indent)
 PartObjectDefinition
   = DoubleIndent "object"i _ objType:ObjectType _ label:Label? _ dims:ObjectDimensions ___ color:Color? ___ atClause:ObjectAtClause? {
+      const loc = location();
       const anchor = atClause?.anchor || 'top-left';
       const offset = atClause?.offset;
 
       const obj = {
         type: objType,
         anchor: anchor,
-        roomAnchor: anchor
+        roomAnchor: anchor,
+        location: { line: loc.start.line, column: loc.start.column }
       };
 
       if (objType === 'square') {
@@ -483,12 +503,14 @@ PartObjectDefinition
 // Window definition (for rooms - single indent)
 WindowDefinition
   = SingleIndent "window"i _ width:Integer _ "at"i _ wall:Wall __ offset:Offset? {
+      const loc = location();
       return {
         type: 'window',
         data: {
           room: `{ROOM_ID}:${wall}`,
           width,
-          offset: offset?.[0] || 0
+          offset: offset?.[0] || 0,
+          location: { line: loc.start.line, column: loc.start.column }
         }
       };
     }
@@ -496,10 +518,12 @@ WindowDefinition
 // Door definition (for rooms - single indent)
 DoorDefinition
   = SingleIndent "door"i _ width:Integer _ swing:Swing? _ "at"i _ wall:Wall __ offset:Offset? {
+      const loc = location();
       const door = {
         room: `{ROOM_ID}:${wall}`,
         width,
-        swing: swing || 'inwards-left'
+        swing: swing || 'inwards-left',
+        location: { line: loc.start.line, column: loc.start.column }
       };
 
       if (swing === 'opening') {
@@ -522,13 +546,15 @@ DoorDefinition
 // Object definition (for rooms - single indent)
 ObjectDefinition
   = SingleIndent "object"i _ objType:ObjectType _ label:Label? _ dims:ObjectDimensions ___ color:Color? ___ atClause:ObjectAtClause? {
+      const loc = location();
       const anchor = atClause?.anchor || 'top-left';
       const offset = atClause?.offset;
 
       const obj = {
         type: objType,
         anchor: anchor,
-        roomAnchor: anchor
+        roomAnchor: anchor,
+        location: { line: loc.start.line, column: loc.start.column }
       };
 
       if (objType === 'square') {

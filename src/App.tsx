@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import './App.css';
 
 // Components
 import { DSLEditor } from './components/DSLEditor';
+import type { DSLEditorRef } from './components/DSLEditor';
 import { FloorplanRenderer } from './components/FloorplanRenderer';
 import { ProjectHeader } from './components/ui/ProjectHeader/ProjectHeader';
 import { UndoRedoControls } from './components/ui/UndoRedoControls/UndoRedoControls';
@@ -56,6 +57,7 @@ room Composite1 "Composite Room" 3000x2000 at Livingroom1:bottom-left
 
 function App() {
   const [urlError] = useState<string | null>(null);
+  const dslEditorRef = useRef<DSLEditorRef>(null);
 
   // ============================================================================
   // Undo/Redo State (DSL is now primary)
@@ -290,20 +292,47 @@ function App() {
     setPositioningErrors(errors);
   }, []);
 
-  const handleRoomClick = useCallback((roomId: string) => {
-    // Select the room for potential deletion
-    setSelectedElement({ type: 'room', roomId });
-  }, []);
+  const handleRoomClick = useCallback(
+    (roomId: string) => {
+      // Select the room for potential deletion
+      setSelectedElement({ type: 'room', roomId });
 
-  const handleDoorClick = useCallback((doorIndex: number) => {
-    // Select the door for potential deletion
-    setSelectedElement({ type: 'door', index: doorIndex });
-  }, []);
+      // Highlight the corresponding line in DSL editor
+      const room = floorplanData.rooms.find(r => r.id === roomId);
+      if (room?.location) {
+        dslEditorRef.current?.highlightLine(room.location.line);
+      }
+    },
+    [floorplanData.rooms]
+  );
 
-  const handleWindowClick = useCallback((windowIndex: number) => {
-    // Select the window for potential deletion
-    setSelectedElement({ type: 'window', index: windowIndex });
-  }, []);
+  const handleDoorClick = useCallback(
+    (doorIndex: number) => {
+      // Select the door for potential deletion
+      setSelectedElement({ type: 'door', index: doorIndex });
+
+      // Highlight the corresponding line in DSL editor
+      const door = floorplanData.doors?.[doorIndex];
+      if (door?.location) {
+        dslEditorRef.current?.highlightLine(door.location.line);
+      }
+    },
+    [floorplanData.doors]
+  );
+
+  const handleWindowClick = useCallback(
+    (windowIndex: number) => {
+      // Select the window for potential deletion
+      setSelectedElement({ type: 'window', index: windowIndex });
+
+      // Highlight the corresponding line in DSL editor
+      const window = floorplanData.windows?.[windowIndex];
+      if (window?.location) {
+        dslEditorRef.current?.highlightLine(window.location.line);
+      }
+    },
+    [floorplanData.windows]
+  );
 
   const handleGridStepChange = (newStep: number) => {
     const updatedData = {
@@ -519,9 +548,19 @@ function App() {
     updateDslText(dsl);
   };
 
-  const handlePartClick = useCallback((roomId: string, partId: string) => {
-    setSelectedElement({ type: 'part', roomId, partId });
-  }, []);
+  const handlePartClick = useCallback(
+    (roomId: string, partId: string) => {
+      setSelectedElement({ type: 'part', roomId, partId });
+
+      // Highlight the corresponding line in DSL editor
+      const room = floorplanData.rooms.find(r => r.id === roomId);
+      const part = room?.parts?.find(p => p.id === partId);
+      if (part?.location) {
+        dslEditorRef.current?.highlightLine(part.location.line);
+      }
+    },
+    [floorplanData.rooms]
+  );
 
   const handleRoomUpdate = useCallback(
     (data: FloorplanData) => {
@@ -550,10 +589,25 @@ function App() {
     [dslText, updateDslText]
   );
 
-  const handleObjectClick = useCallback((roomId: string, objectIndex: number) => {
-    // Select the object for potential deletion
-    setSelectedElement({ type: 'object', index: objectIndex, roomId });
-  }, []);
+  const handleObjectClick = useCallback(
+    (roomId: string, objectIndex: number) => {
+      // Select the object for potential deletion
+      setSelectedElement({ type: 'object', index: objectIndex, roomId });
+
+      // Highlight the corresponding line in DSL editor
+      let obj: RoomObject | undefined;
+      if (roomId === 'freestanding') {
+        obj = floorplanData.objects?.[objectIndex];
+      } else {
+        const room = floorplanData.rooms.find(r => r.id === roomId);
+        obj = room?.objects?.[objectIndex];
+      }
+      if (obj?.location) {
+        dslEditorRef.current?.highlightLine(obj.location.line);
+      }
+    },
+    [floorplanData.rooms, floorplanData.objects]
+  );
 
   // ============================================================================
   // Drag Handlers for Doors, Windows, and Objects
@@ -1371,7 +1425,12 @@ function App() {
               aria-hidden="true"
               tabIndex={-1}
             />
-            <DSLEditor value={dslText} onChange={updateDslText} readOnly={false} />
+            <DSLEditor
+              ref={dslEditorRef}
+              value={dslText}
+              onChange={updateDslText}
+              readOnly={false}
+            />
             <div className="button-row" data-testid="editor-button-row">
               <button
                 className="format-button"

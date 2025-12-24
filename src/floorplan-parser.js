@@ -9,12 +9,13 @@
     return [head, ...tail.map(t => t[1])];
   }
 
-  function buildRoom(id, label, dimensions, anchor, attachInfo, offset, children) {
+  function buildRoom(id, label, dimensions, anchor, attachInfo, offset, children, loc) {
     const room = {
       id: id.toLowerCase(),
       width: dimensions.width,
       depth: dimensions.depth,
-      attachTo: `${attachInfo.target}:${attachInfo.anchor}`
+      attachTo: `${attachInfo.target}:${attachInfo.anchor}`,
+      location: { line: loc.start.line, column: loc.start.column }
     };
 
     if (label) {
@@ -52,12 +53,13 @@
     return room;
   }
 
-  function buildPart(id, label, dimensions, anchor, attachInfo, offset, children) {
+  function buildPart(id, label, dimensions, anchor, attachInfo, offset, children, loc) {
     const part = {
       id: id.toLowerCase(),
       width: dimensions.width,
       depth: dimensions.depth,
-      attachTo: `${attachInfo.target}:${attachInfo.anchor}`
+      attachTo: `${attachInfo.target}:${attachInfo.anchor}`,
+      location: { line: loc.start.line, column: loc.start.column }
     };
 
     if (label) {
@@ -379,12 +381,14 @@ function peg$parse(input, options) {
   }
   function peg$f3(width, swing, coords) {
     // Absolute positioning with (x, y)
+    const loc = location();
     const door = {
       width,
       swing: swing || 'inwards-left',
       x: coords[0],
       y: coords[1],
-      rotation: 0
+      rotation: 0,
+      location: { line: loc.start.line, column: loc.start.column }
     };
 
     if (swing === 'opening') {
@@ -401,10 +405,12 @@ function peg$parse(input, options) {
   }
   function peg$f4(width, swing, target, offset) {
     // Wall-attached positioning
+    const loc = location();
     const door = {
       room: target,
       width,
-      swing: swing || 'inwards-left'
+      swing: swing || 'inwards-left',
+      location: { line: loc.start.line, column: loc.start.column }
     };
 
     if (swing === 'opening') {
@@ -425,28 +431,33 @@ function peg$parse(input, options) {
   }
   function peg$f5(width, coords) {
     // Absolute positioning with (x, y)
+    const loc = location();
     return {
       type: 'window',
       data: {
         width,
         x: coords[0],
         y: coords[1],
-        rotation: 0
+        rotation: 0,
+        location: { line: loc.start.line, column: loc.start.column }
       }
     };
   }
   function peg$f6(width, target, offset) {
     // Wall-attached positioning
+    const loc = location();
     return {
       type: 'window',
       data: {
         room: target,
         width,
-        offset: offset?.[0] || 0
+        offset: offset?.[0] || 0,
+        location: { line: loc.start.line, column: loc.start.column }
       }
     };
   }
   function peg$f7(objType, label, dims, color, offset) {
+    const loc = location();
     const obj = {
       type: objType,
       x: offset[0],
@@ -455,7 +466,8 @@ function peg$parse(input, options) {
       height: objType === 'square' ? dims.height : undefined,
       anchor: 'top-left',
       roomAnchor: 'top-left',
-      color: color || '#33d17a'
+      color: color || '#33d17a',
+      location: { line: loc.start.line, column: loc.start.column }
     };
 
     if (label) {
@@ -479,6 +491,7 @@ function peg$parse(input, options) {
   function peg$f13(id, label, dims, anchor, atClause) {    return { anchor, atClause };  }
   function peg$f14(id, label, dims, positioning, children) {
     const roomId = id.toLowerCase();
+    const loc = location();
 
     // Extract positioning info or use defaults
     const anchor = positioning?.anchor || null;
@@ -488,7 +501,7 @@ function peg$parse(input, options) {
     const attach = atClause ? atClause.attach : { target: 'zeropoint', anchor: 'top-left' };
     const offset = atClause?.offset || null;
 
-    const room = buildRoom(id, label, dims, anchor, attach, offset, children?.children || []);
+    const room = buildRoom(id, label, dims, anchor, attach, offset, children?.children || [], loc);
 
     // Replace room ID placeholders in doors and windows
     const doors = (children?.doors || []).map(door => {
@@ -541,12 +554,13 @@ function peg$parse(input, options) {
   }
   function peg$f16(id, label, dims, anchor, attach, offset, children) {
     const partId = id.toLowerCase();
+    const loc = location();
     const target = attach.target === 'room' ? 'parent' : attach.target.toLowerCase();
     const attachInfo = { target, anchor: attach.anchor };
 
     // Convert children.objects array into proper format for buildPart
     const childrenForBuild = (children?.objects || []).map(obj => ({ type: 'object', data: obj }));
-    const part = buildPart(id, label, dims, anchor, attachInfo, offset, childrenForBuild);
+    const part = buildPart(id, label, dims, anchor, attachInfo, offset, childrenForBuild, loc);
 
     // Replace part ID placeholders in doors and windows
     const doors = (children?.doors || []).map(door => {
@@ -594,20 +608,24 @@ function peg$parse(input, options) {
     return { objects, doors, windows };
   }
   function peg$f18(width, wall, offset) {
+    const loc = location();
     return {
       type: 'window',
       data: {
         room: `{ROOM_ID}:${wall}`,
         width,
-        offset: offset?.[0] || 0
+        offset: offset?.[0] || 0,
+        location: { line: loc.start.line, column: loc.start.column }
       }
     };
   }
   function peg$f19(width, swing, wall, offset) {
+    const loc = location();
     const door = {
       room: `{ROOM_ID}:${wall}`,
       width,
-      swing: swing || 'inwards-left'
+      swing: swing || 'inwards-left',
+      location: { line: loc.start.line, column: loc.start.column }
     };
 
     if (swing === 'opening') {
@@ -627,13 +645,15 @@ function peg$parse(input, options) {
     };
   }
   function peg$f20(objType, label, dims, color, atClause) {
+    const loc = location();
     const anchor = atClause?.anchor || 'top-left';
     const offset = atClause?.offset;
 
     const obj = {
       type: objType,
       anchor: anchor,
-      roomAnchor: anchor
+      roomAnchor: anchor,
+      location: { line: loc.start.line, column: loc.start.column }
     };
 
     if (objType === 'square') {
@@ -665,20 +685,24 @@ function peg$parse(input, options) {
     };
   }
   function peg$f21(width, wall, offset) {
+    const loc = location();
     return {
       type: 'window',
       data: {
         room: `{ROOM_ID}:${wall}`,
         width,
-        offset: offset?.[0] || 0
+        offset: offset?.[0] || 0,
+        location: { line: loc.start.line, column: loc.start.column }
       }
     };
   }
   function peg$f22(width, swing, wall, offset) {
+    const loc = location();
     const door = {
       room: `{ROOM_ID}:${wall}`,
       width,
-      swing: swing || 'inwards-left'
+      swing: swing || 'inwards-left',
+      location: { line: loc.start.line, column: loc.start.column }
     };
 
     if (swing === 'opening') {
@@ -698,13 +722,15 @@ function peg$parse(input, options) {
     };
   }
   function peg$f23(objType, label, dims, color, atClause) {
+    const loc = location();
     const anchor = atClause?.anchor || 'top-left';
     const offset = atClause?.offset;
 
     const obj = {
       type: objType,
       anchor: anchor,
-      roomAnchor: anchor
+      roomAnchor: anchor,
+      location: { line: loc.start.line, column: loc.start.column }
     };
 
     if (objType === 'square') {
