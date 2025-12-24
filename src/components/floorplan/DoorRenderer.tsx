@@ -6,16 +6,17 @@ const DOOR_THICKNESS = 100; // mm
 const SNAP_DISTANCE = 300; // mm - distance to snap to walls
 const MIN_DOOR_WIDTH = 400; // mm - minimum door width
 
-// Cycle through swing directions (excluding 'opening')
+// Cycle through swing directions (including 'opening')
 const SWING_CYCLE: SwingDirection[] = [
   'inwards-left',
   'inwards-right',
   'outwards-right',
   'outwards-left',
+  'opening',
 ];
 
 function getNextSwing(current: SwingDirection | undefined): SwingDirection {
-  if (!current || current === 'opening') return 'inwards-left';
+  if (!current) return 'inwards-left';
   const currentIndex = SWING_CYCLE.indexOf(current);
   if (currentIndex === -1) return 'inwards-left';
   return SWING_CYCLE[(currentIndex + 1) % SWING_CYCLE.length];
@@ -233,14 +234,12 @@ export function DoorRenderer({
   const handleToggleClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      const swing = door.swing || 'inwards-right';
-      const isOpening = door.type === 'opening' || swing === 'opening';
-      if (onSwingUpdate && !isOpening) {
+      if (onSwingUpdate) {
         const newSwing = getNextSwing(door.swing);
         onSwingUpdate(index, newSwing);
       }
     },
-    [onSwingUpdate, door.swing, door.type, index]
+    [onSwingUpdate, door.swing, index]
   );
 
   // Handle resize start
@@ -568,8 +567,8 @@ export function DoorRenderer({
           strokeDasharray="4,2"
         />
       )}
-      {/* Toggle orientation button (shown on hover, not for openings or when dragging) */}
-      {isHovered && !isDragging && !isResizing && !isOpening && onSwingUpdate && (
+      {/* Toggle orientation button (shown on hover, not when dragging/resizing) */}
+      {isHovered && !isDragging && !isResizing && onSwingUpdate && (
         <g
           data-testid="door-toggle-orientation"
           onClick={handleToggleClick}

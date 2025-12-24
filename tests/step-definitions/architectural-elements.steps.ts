@@ -1294,7 +1294,8 @@ Then(
     // inwards-left is the default and may be omitted from DSL
     if (expectedSwing === 'inwards-left') {
       // Either the swing is explicitly stated or it's omitted (default)
-      const hasExplicitSwing = text?.includes('inwards-') || text?.includes('outwards-');
+      const hasExplicitSwing =
+        text?.includes('inwards-') || text?.includes('outwards-') || text?.includes('opening');
       if (hasExplicitSwing) {
         expect(text).toContain(expectedSwing);
       }
@@ -1311,5 +1312,5 @@ Then('the DSL should reflect the new swing direction', async function (this: Flo
   await editor.waitFor({ state: 'visible' });
   const text = await editor.textContent();
   // Should contain one of the valid swing directions
-  expect(text).toMatch(/inwards-left|inwards-right|outwards-left|outwards-right/);
+  expect(text).toMatch(/inwards-left|inwards-right|outwards-left|outwards-right|opening/);
 });
