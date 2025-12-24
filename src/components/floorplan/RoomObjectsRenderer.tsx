@@ -285,14 +285,7 @@ function RoomObject({
       window.removeEventListener('mousemove', handleGlobalMouseMove);
       window.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [
-    isObjectDragging,
-    obj,
-    room,
-    onObjectDragUpdate,
-    idx,
-    findRoomAtPoint,
-  ]);
+  }, [isObjectDragging, obj, room, onObjectDragUpdate, idx, findRoomAtPoint]);
 
   // Use current position when dragging, otherwise use obj position
   const activeX = isObjectDragging ? currentObjX : obj.x;

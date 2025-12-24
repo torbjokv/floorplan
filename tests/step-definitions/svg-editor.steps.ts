@@ -879,16 +879,19 @@ When('I drag the object in the part to a new position', async function () {
 
   // Use direct event dispatch to initiate drag - Playwright's mouse.down() doesn't
   // reliably trigger React event handlers on SVG elements in all cases
-  await object.evaluate((el: SVGRectElement, coords: { x: number; y: number }) => {
-    const event = new MouseEvent('mousedown', {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      clientX: coords.x,
-      clientY: coords.y,
-    });
-    el.dispatchEvent(event);
-  }, { x: centerX, y: centerY });
+  await object.evaluate(
+    (el: SVGRectElement, coords: { x: number; y: number }) => {
+      const event = new MouseEvent('mousedown', {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+        clientX: coords.x,
+        clientY: coords.y,
+      });
+      el.dispatchEvent(event);
+    },
+    { x: centerX, y: centerY }
+  );
 
   // Use Playwright for mouse move and up (works correctly with global listeners)
   await this.page.mouse.move(centerX + 50, centerY + 30);
