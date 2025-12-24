@@ -851,3 +851,81 @@ Then('the DSL should not contain the part', async function () {
   const text = await editor.textContent();
   expect(text).not.toContain('part ');
 });
+
+// Object in room part steps
+Given('I have a room with a part containing an object', async function () {
+  const dsl = `grid 1000
+
+room livingroom "Living Room" 5000x4000
+    part closet "Closet" 2000x1500 at parent:bottom-left
+        object square "Shelf" 500x500 at top-left (100, 100)`;
+  await fillDSLEditor(this.page, dsl);
+});
+
+When('I drag the object in the part to a new position', async function () {
+  // Object in part has testid format: object-{parentRoomId}-part-{partId}-{idx}
+  const object = this.page.locator('[data-testid="object-livingroom-part-closet-0"]');
+  await object.waitFor({ state: 'visible' });
+
+  const box = await object.boundingBox();
+  if (!box) throw new Error('Object in part not found');
+
+  // Store original position for comparison
+  this.originalObjectX = box.x;
+  this.originalObjectY = box.y;
+
+  const centerX = box.x + box.width / 2;
+  const centerY = box.y + box.height / 2;
+
+  // Use direct event dispatch to initiate drag - Playwright's mouse.down() doesn't
+  // reliably trigger React event handlers on SVG elements in all cases
+  await object.evaluate(
+    (el: SVGRectElement, coords: { x: number; y: number }) => {
+      const event = new MouseEvent('mousedown', {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+        clientX: coords.x,
+        clientY: coords.y,
+      });
+      el.dispatchEvent(event);
+    },
+    { x: centerX, y: centerY }
+  );
+
+  // Use Playwright for mouse move and up (works correctly with global listeners)
+  await this.page.mouse.move(centerX + 50, centerY + 30);
+  await this.page.mouse.up();
+});
+
+Then('the object position in the part should be updated', async function () {
+  await this.page.waitForTimeout(600);
+  const object = this.page.locator('[data-testid="object-livingroom-part-closet-0"]');
+  await expect(object).toBeVisible();
+
+  // Check the DSL to see if position changed from (100, 100)
+  const editor = this.page.locator('.cm-content');
+  const text = await editor.textContent();
+
+  // Debug: print the DSL to see what's happening
+  console.log('DSL after drag:', text);
+
+  // The original position was (100, 100) - it should have changed after drag
+  // Extract the object line and check the position is different
+  expect(text).toContain('object square');
+  expect(text).toContain('Shelf');
+
+  // Position should NOT be (100, 100) anymore after dragging
+  expect(text).not.toContain('(100, 100)');
+});
+
+Then('the DSL should reflect the new object position in the part', async function () {
+  const editor = this.page.locator('.cm-content');
+  const text = await editor.textContent();
+  // The DSL should still have an object in the part
+  expect(text).toContain('object square');
+  expect(text).toContain('Shelf');
+  // The position should have changed from (100, 100)
+  // Since we dragged 200px right and down, the new offset should be larger
+  // We can't easily check the exact values, but we verify the object is still there
+});

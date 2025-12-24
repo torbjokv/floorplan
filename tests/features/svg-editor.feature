@@ -215,3 +215,10 @@ Feature: SVG Editor Interface
     And I wait for 600ms
     Then the part should be removed
     And the DSL should not contain the part
+
+  Scenario: Dragging an object inside a room part
+    Given I have a room with a part containing an object
+    When I drag the object in the part to a new position
+    And I wait for 600ms
+    Then the object position in the part should be updated
+    And the DSL should reflect the new object position in the part
