@@ -160,4 +160,6 @@ Feature: Architectural Elements
     When I click the toggle orientation button
     Then the door swing should change to "outwards-left"
     When I click the toggle orientation button
+    Then the door swing should change to "opening"
+    When I click the toggle orientation button
     Then the door swing should change to "inwards-left"
