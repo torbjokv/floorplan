@@ -33,14 +33,6 @@ import {
 import { resolveRoomPositions } from './utils';
 import { useUndoRedo } from './hooks/useUndoRedo';
 import { parseDSL, jsonToDSL, type DSLError } from './dslUtils';
-import {
-  findRoomLine,
-  findPartLine,
-  findDoorLine,
-  findWindowLine,
-  findObjectLine,
-  findFreestandingObjectLine,
-} from './utils/dslLineFinder';
 
 const defaultDSL = `grid 1000
 
@@ -306,12 +298,12 @@ function App() {
       setSelectedElement({ type: 'room', roomId });
 
       // Highlight the corresponding line in DSL editor
-      const location = findRoomLine(dslText, roomId);
-      if (location) {
-        dslEditorRef.current?.highlightLine(location.lineNumber);
+      const room = floorplanData.rooms.find(r => r.id === roomId);
+      if (room?.location) {
+        dslEditorRef.current?.highlightLine(room.location.line);
       }
     },
-    [dslText]
+    [floorplanData.rooms]
   );
 
   const handleDoorClick = useCallback(
@@ -321,12 +313,11 @@ function App() {
 
       // Highlight the corresponding line in DSL editor
       const door = floorplanData.doors?.[doorIndex];
-      const location = findDoorLine(dslText, doorIndex, door?.room);
-      if (location) {
-        dslEditorRef.current?.highlightLine(location.lineNumber);
+      if (door?.location) {
+        dslEditorRef.current?.highlightLine(door.location.line);
       }
     },
-    [dslText, floorplanData.doors]
+    [floorplanData.doors]
   );
 
   const handleWindowClick = useCallback(
@@ -336,12 +327,11 @@ function App() {
 
       // Highlight the corresponding line in DSL editor
       const window = floorplanData.windows?.[windowIndex];
-      const location = findWindowLine(dslText, windowIndex, window?.room);
-      if (location) {
-        dslEditorRef.current?.highlightLine(location.lineNumber);
+      if (window?.location) {
+        dslEditorRef.current?.highlightLine(window.location.line);
       }
     },
-    [dslText, floorplanData.windows]
+    [floorplanData.windows]
   );
 
   const handleGridStepChange = (newStep: number) => {
@@ -563,12 +553,13 @@ function App() {
       setSelectedElement({ type: 'part', roomId, partId });
 
       // Highlight the corresponding line in DSL editor
-      const location = findPartLine(dslText, partId);
-      if (location) {
-        dslEditorRef.current?.highlightLine(location.lineNumber);
+      const room = floorplanData.rooms.find(r => r.id === roomId);
+      const part = room?.parts?.find(p => p.id === partId);
+      if (part?.location) {
+        dslEditorRef.current?.highlightLine(part.location.line);
       }
     },
-    [dslText]
+    [floorplanData.rooms]
   );
 
   const handleRoomUpdate = useCallback(
@@ -604,17 +595,18 @@ function App() {
       setSelectedElement({ type: 'object', index: objectIndex, roomId });
 
       // Highlight the corresponding line in DSL editor
-      let location;
+      let obj: RoomObject | undefined;
       if (roomId === 'freestanding') {
-        location = findFreestandingObjectLine(dslText, objectIndex);
+        obj = floorplanData.objects?.[objectIndex];
       } else {
-        location = findObjectLine(dslText, roomId, objectIndex);
+        const room = floorplanData.rooms.find(r => r.id === roomId);
+        obj = room?.objects?.[objectIndex];
       }
-      if (location) {
-        dslEditorRef.current?.highlightLine(location.lineNumber);
+      if (obj?.location) {
+        dslEditorRef.current?.highlightLine(obj.location.line);
       }
     },
-    [dslText]
+    [floorplanData.rooms, floorplanData.objects]
   );
 
   // ============================================================================
