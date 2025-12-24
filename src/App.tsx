@@ -614,7 +614,7 @@ function App() {
       const updatedDoors = config.doors.map((door, idx) => {
         if (idx !== doorIndex) return door;
         // Set type based on swing direction
-        const newType = newSwing === 'opening' ? 'opening' : 'normal';
+        const newType: 'opening' | 'normal' = newSwing === 'opening' ? 'opening' : 'normal';
         return {
           ...door,
           swing: newSwing,
