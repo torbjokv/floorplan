@@ -1,5 +1,5 @@
 import type { ResolvedRoom, Anchor, RoomObject as RoomObjectType } from '../../types';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { ObjectResizeHandles } from './ObjectResizeHandles';
 
 const DEFAULT_OBJECT_SIZE = 1000; // mm
@@ -143,6 +143,11 @@ function RoomObject({
   const [currentObjY, setCurrentObjY] = useState(obj.y);
   const [targetRoomId, setTargetRoomId] = useState(room.id);
 
+  // Use refs to avoid stale closure issues in mouseup handler
+  const currentObjXRef = useRef(obj.x);
+  const currentObjYRef = useRef(obj.y);
+  const targetRoomIdRef = useRef(room.id);
+
   // Convert SVG screen coordinates to mm
   const screenToMM = useCallback((e: React.MouseEvent): { x: number; y: number } => {
     const svg = (e.target as SVGElement).ownerSVGElement;
@@ -172,20 +177,33 @@ function RoomObject({
       setDragStartObjY(obj.y);
       setCurrentObjX(obj.x);
       setCurrentObjY(obj.y);
+      // Initialize refs for mouseup handler
+      currentObjXRef.current = obj.x;
+      currentObjYRef.current = obj.y;
+      targetRoomIdRef.current = room.id;
     },
-    [onObjectDragUpdate, screenToMM, obj.x, obj.y]
+    [onObjectDragUpdate, screenToMM, obj.x, obj.y, room.id]
   );
 
   // Helper to find which room contains a point
+  // When multiple rooms contain the point (e.g., a part inside a room),
+  // prefer the smaller one (the part) for more precise targeting
   const findRoomAtPoint = useCallback(
     (x: number, y: number): ResolvedRoom | null => {
+      let bestMatch: ResolvedRoom | null = null;
+      let bestArea = Infinity;
+
       for (const r of Object.values(roomMap)) {
         if (r.id === 'zeropoint') continue; // Skip virtual zeropoint
         if (x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.depth) {
-          return r;
+          const area = r.width * r.depth;
+          if (area < bestArea) {
+            bestMatch = r;
+            bestArea = area;
+          }
         }
       }
-      return null;
+      return bestMatch;
     },
     [roomMap]
   );
@@ -211,7 +229,9 @@ function RoomObject({
 
       // Find which room the mouse is over
       const mouseRoom = findRoomAtPoint(x, y);
-      setTargetRoomId(mouseRoom?.id || 'freestanding');
+      const newTargetRoomId = mouseRoom?.id || 'freestanding';
+      setTargetRoomId(newTargetRoomId);
+      targetRoomIdRef.current = newTargetRoomId;
 
       let width, height;
       if (obj.type === 'circle') {
@@ -238,14 +258,24 @@ function RoomObject({
 
       setCurrentObjX(newX);
       setCurrentObjY(newY);
+      currentObjXRef.current = newX;
+      currentObjYRef.current = newY;
     };
 
     const handleGlobalMouseUp = () => {
       if (!isObjectDragging || !onObjectDragUpdate) return;
       setIsObjectDragging(false);
-      // Use parentRoomId when this is a part object
-      const sourceRoomId = parentRoomId || room.id;
-      onObjectDragUpdate(sourceRoomId, idx, targetRoomId, currentObjX, currentObjY);
+      // Use room.id as source - for room objects this is the room id,
+      // for part objects this is the part id (since room = resolvedPart)
+      const sourceRoomId = room.id;
+      // Use refs to get the latest values (avoids stale closure issue)
+      onObjectDragUpdate(
+        sourceRoomId,
+        idx,
+        targetRoomIdRef.current,
+        currentObjXRef.current,
+        currentObjYRef.current
+      );
     };
 
     window.addEventListener('mousemove', handleGlobalMouseMove);
@@ -257,20 +287,11 @@ function RoomObject({
     };
   }, [
     isObjectDragging,
-    dragStartObjX,
-    dragStartObjY,
-    dragStartX,
-    dragStartY,
     obj,
     room,
-    parentRoomId,
     onObjectDragUpdate,
     idx,
-    currentObjX,
-    currentObjY,
-    targetRoomId,
     findRoomAtPoint,
-    roomMap,
   ]);
 
   // Use current position when dragging, otherwise use obj position
@@ -392,7 +413,11 @@ function RoomObject({
             textAnchor="middle"
             dominantBaseline="middle"
             fill="#888"
-            style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+            style={{
+              pointerEvents: 'auto',
+              cursor: isObjectDragging ? 'grabbing' : onObjectDragUpdate ? 'grab' : 'pointer',
+            }}
+            onMouseDown={handleMouseDown}
             onDoubleClick={e => {
               e.stopPropagation();
               onObjectResizeNumeric?.(roomIdForTestId, idx, anchor, diameter, undefined, partId);
@@ -492,7 +517,11 @@ function RoomObject({
             textAnchor="middle"
             dominantBaseline="middle"
             fill="#888"
-            style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+            style={{
+              pointerEvents: 'auto',
+              cursor: isObjectDragging ? 'grabbing' : onObjectDragUpdate ? 'grab' : 'pointer',
+            }}
+            onMouseDown={handleMouseDown}
             onDoubleClick={e => {
               e.stopPropagation();
               onObjectResizeNumeric?.(roomIdForTestId, idx, anchor, width, height, partId);
