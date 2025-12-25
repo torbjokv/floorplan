@@ -1,5 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import type { ResolvedRoom, Anchor } from '../../types';
+import {
+  calculateCompositeRoomOutline,
+  polygonToSvgPath,
+  getCompositeBounds,
+  type Rectangle,
+} from '../../geometry';
 
 interface DragState {
   roomId: string;
@@ -240,7 +246,7 @@ function EditableRoomDimensions({ room, x, y, onDimensionsUpdate }: EditableRoom
   );
 }
 
-interface ResolvedPart {
+export interface ResolvedPart {
   id: string;
   x: number;
   y: number;
@@ -268,6 +274,18 @@ interface RoomRendererProps {
   onFocus?: (roomId: string) => void;
 }
 
+/**
+ * RoomRenderer uses a unified path-based approach for both simple rooms and composite rooms.
+ *
+ * Architecture:
+ * 1. Every room is treated the same - a collection of rectangles (1 for simple, N for composite)
+ * 2. The outer boundary is calculated using polygon union algorithm
+ * 3. A single SVG path is drawn for the outline (no line hack needed)
+ * 4. Invisible rectangles provide click targets for individual parts
+ *
+ * This eliminates the previous approach of drawing rectangles with borders
+ * and then covering internal edges with colored lines.
+ */
 export function RoomRenderer({
   room,
   dragState,
@@ -287,213 +305,133 @@ export function RoomRenderer({
 }: RoomRendererProps) {
   const parts = resolveCompositeRoom(room);
 
-  // For composite rooms, draw all rectangles WITH borders, then cover internal borders
-  if (parts.length > 0) {
-    const allParts = [{ x: room.x, y: room.y, width: room.width, depth: room.depth }, ...parts];
+  // Build array of all rectangles (main room + parts)
+  // A simple room has 0 parts, so this array has 1 element
+  // A composite room has N parts, so this array has N+1 elements
+  const allRectangles: Rectangle[] = useMemo(() => {
+    const mainRect: Rectangle = {
+      x: room.x,
+      y: room.y,
+      width: room.width,
+      depth: room.depth,
+    };
+    const partRects: Rectangle[] = parts.map(p => ({
+      x: p.x,
+      y: p.y,
+      width: p.width,
+      depth: p.depth,
+    }));
+    return [mainRect, ...partRects];
+  }, [room.x, room.y, room.width, room.depth, parts]);
 
-    // Find shared edges between rectangles
-    interface Edge {
-      x1: number;
-      y1: number;
-      x2: number;
-      y2: number;
-      isVertical: boolean;
-    }
+  // Calculate the outer boundary polygon
+  const outlinePath = useMemo(() => {
+    const outline = calculateCompositeRoomOutline(allRectangles);
+    return polygonToSvgPath(outline, mm);
+  }, [allRectangles, mm]);
 
-    const sharedEdges: Edge[] = [];
+  // Calculate bounds for label positioning
+  const bounds = useMemo(() => getCompositeBounds(allRectangles), [allRectangles]);
 
-    // Check each pair of rectangles for shared edges
-    for (let i = 0; i < allParts.length; i++) {
-      for (let j = i + 1; j < allParts.length; j++) {
-        const a = allParts[i];
-        const b = allParts[j];
-
-        // Check if they share a vertical edge (left/right sides touching)
-        if (a.x + a.width === b.x && !(a.y + a.depth <= b.y || b.y + b.depth <= a.y)) {
-          // A's right edge touches B's left edge
-          const overlapTop = Math.max(a.y, b.y);
-          const overlapBottom = Math.min(a.y + a.depth, b.y + b.depth);
-          sharedEdges.push({
-            x1: a.x + a.width,
-            y1: overlapTop,
-            x2: a.x + a.width,
-            y2: overlapBottom,
-            isVertical: true,
-          });
-        } else if (b.x + b.width === a.x && !(a.y + a.depth <= b.y || b.y + b.depth <= a.y)) {
-          // B's right edge touches A's left edge
-          const overlapTop = Math.max(a.y, b.y);
-          const overlapBottom = Math.min(a.y + a.depth, b.y + b.depth);
-          sharedEdges.push({
-            x1: b.x + b.width,
-            y1: overlapTop,
-            x2: b.x + b.width,
-            y2: overlapBottom,
-            isVertical: true,
-          });
-        }
-
-        // Check if they share a horizontal edge (top/bottom sides touching)
-        if (a.y + a.depth === b.y && !(a.x + a.width <= b.x || b.x + b.width <= a.x)) {
-          // A's bottom edge touches B's top edge
-          const overlapLeft = Math.max(a.x, b.x);
-          const overlapRight = Math.min(a.x + a.width, b.x + b.width);
-          sharedEdges.push({
-            x1: overlapLeft,
-            y1: a.y + a.depth,
-            x2: overlapRight,
-            y2: a.y + a.depth,
-            isVertical: false,
-          });
-        } else if (b.y + b.depth === a.y && !(a.x + a.width <= b.x || b.x + b.width <= a.x)) {
-          // B's bottom edge touches A's top edge
-          const overlapLeft = Math.max(a.x, b.x);
-          const overlapRight = Math.min(a.x + a.width, b.x + b.width);
-          sharedEdges.push({
-            x1: overlapLeft,
-            y1: b.y + b.depth,
-            x2: overlapRight,
-            y2: b.y + b.depth,
-            isVertical: false,
-          });
-        }
-      }
-    }
-
-    // Apply drag offset if this room is being dragged
-    const isDragging = dragState?.roomId === room.id;
-    const transform =
-      isDragging && dragOffset ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})` : undefined;
-
-    return (
-      <g
-        key={room.id}
-        className="composite-room"
-        data-room-id={room.id}
-        transform={transform}
-        onMouseEnter={() => onMouseEnter?.(room.id)}
-        onMouseLeave={() => onMouseLeave?.()}
-      >
-        {/* Layer 1: All rectangles WITH borders */}
-        <rect
-          className="room-rect composite-part"
-          x={mm(room.x)}
-          y={mm(room.y)}
-          width={mm(room.width)}
-          height={mm(room.depth)}
-          fill="#e0ebe8"
-          stroke={isConnected ? '#646cff' : 'black'}
-          strokeWidth={isConnected ? '3' : '2'}
-          opacity={isConnected ? 0.7 : 1}
-          onClick={() => {
-            onClick?.(room.id);
-            onFocus?.(room.id);
-          }}
-          onMouseDown={e => onMouseDown(e, room.id)}
-          style={{ cursor: dragState?.roomId === room.id ? 'grabbing' : 'grab' }}
-        />
-        {parts.map((part, idx) => {
-          const isPartSelected = selectedPartId === part.id;
-          return (
-            <rect
-              className="room-rect composite-part"
-              key={`border-${idx}`}
-              data-part-id={part.id}
-              x={mm(part.x)}
-              y={mm(part.y)}
-              width={mm(part.width)}
-              height={mm(part.depth)}
-              fill="#e0ebe8"
-              stroke={isPartSelected ? '#646cff' : isConnected ? '#646cff' : 'black'}
-              strokeWidth={isPartSelected ? '4' : isConnected ? '3' : '2'}
-              opacity={isConnected ? 0.7 : 1}
-              onClick={e => {
-                e.stopPropagation();
-                onPartClick?.(room.id, part.id);
-              }}
-              style={{ cursor: 'pointer' }}
-            />
-          );
-        })}
-
-        {/* Layer 2: Cover only the shared edges */}
-        {sharedEdges.map((edge, idx) => (
-          <line
-            key={`cover-${idx}`}
-            x1={mm(edge.x1)}
-            y1={mm(edge.y1)}
-            x2={mm(edge.x2)}
-            y2={mm(edge.y2)}
-            stroke="#e0ebe8"
-            strokeWidth="3"
-            pointerEvents="none"
-          />
-        ))}
-
-        {/* Room label */}
-        <EditableRoomLabel
-          room={room}
-          x={mm(room.x + room.width / 2)}
-          y={mm(room.y + room.depth / 2) - 10}
-          onNameUpdate={onNameUpdate}
-        />
-
-        {/* Room dimensions */}
-        <EditableRoomDimensions
-          room={room}
-          x={mm(room.x + room.width / 2)}
-          y={mm(room.y + room.depth / 2) + 20}
-          onDimensionsUpdate={onDimensionsUpdate}
-        />
-      </g>
-    );
-  }
-
-  // Simple room without parts
   // Apply drag offset if this room is being dragged
   const isDragging = dragState?.roomId === room.id;
   const transform =
     isDragging && dragOffset ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})` : undefined;
 
+  // Label position: center of bounding box of all rectangles
+  const labelX = mm(bounds.minX + bounds.width / 2);
+  const labelY = mm(bounds.minY + bounds.depth / 2);
+
+  const hasMultipleParts = parts.length > 0;
+
   return (
     <g
       key={room.id}
+      className={hasMultipleParts ? 'composite-room' : undefined}
       data-room-id={room.id}
       transform={transform}
       onMouseEnter={() => onMouseEnter?.(room.id)}
       onMouseLeave={() => onMouseLeave?.()}
     >
-      <rect
-        className="room-rect"
-        x={mm(room.x)}
-        y={mm(room.y)}
-        width={mm(room.width)}
-        height={mm(room.depth)}
+      {/* Layer 1: Unified fill using path - covers the entire shape without internal borders */}
+      <path
+        className="room-fill"
+        d={outlinePath}
         fill="#e0ebe8"
-        stroke={isConnected ? '#646cff' : 'black'}
-        strokeWidth={isConnected ? '3' : '2'}
-        opacity={isConnected ? 0.7 : 1}
+        stroke="none"
         onClick={() => {
           onClick?.(room.id);
           onFocus?.(room.id);
         }}
         onMouseDown={e => onMouseDown(e, room.id)}
-        style={{ cursor: dragState?.roomId === room.id ? 'grabbing' : 'grab' }}
+        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
       />
 
-      {/* Room label */}
-      <EditableRoomLabel
-        room={room}
-        x={mm(room.x + room.width / 2)}
-        y={mm(room.y + room.depth / 2) - 10}
-        onNameUpdate={onNameUpdate}
+      {/* Layer 2: Unified outline using path - only external borders visible */}
+      <path
+        className="room-outline"
+        d={outlinePath}
+        fill="none"
+        stroke={isConnected ? '#646cff' : 'black'}
+        strokeWidth={isConnected ? '3' : '2'}
+        opacity={isConnected ? 0.7 : 1}
+        pointerEvents="none"
       />
+
+      {/* Layer 3: Invisible click regions for individual parts (only for composite rooms) */}
+      {hasMultipleParts && (
+        <>
+          {/* Main room click region */}
+          <rect
+            className="room-rect composite-part"
+            x={mm(room.x)}
+            y={mm(room.y)}
+            width={mm(room.width)}
+            height={mm(room.depth)}
+            fill="transparent"
+            stroke="none"
+            onClick={() => {
+              onClick?.(room.id);
+              onFocus?.(room.id);
+            }}
+            onMouseDown={e => onMouseDown(e, room.id)}
+            style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+          />
+
+          {/* Part click regions with selection highlight */}
+          {parts.map((part, idx) => {
+            const isPartSelected = selectedPartId === part.id;
+            return (
+              <rect
+                className="room-rect composite-part"
+                key={`part-${idx}`}
+                data-part-id={part.id}
+                x={mm(part.x)}
+                y={mm(part.y)}
+                width={mm(part.width)}
+                height={mm(part.depth)}
+                fill="transparent"
+                stroke={isPartSelected ? '#646cff' : 'none'}
+                strokeWidth={isPartSelected ? '4' : '0'}
+                onClick={e => {
+                  e.stopPropagation();
+                  onPartClick?.(room.id, part.id);
+                }}
+                style={{ cursor: 'pointer' }}
+              />
+            );
+          })}
+        </>
+      )}
+
+      {/* Room label */}
+      <EditableRoomLabel room={room} x={labelX} y={labelY - 10} onNameUpdate={onNameUpdate} />
 
       {/* Room dimensions */}
       <EditableRoomDimensions
         room={room}
-        x={mm(room.x + room.width / 2)}
-        y={mm(room.y + room.depth / 2) + 20}
+        x={labelX}
+        y={labelY + 20}
         onDimensionsUpdate={onDimensionsUpdate}
       />
     </g>
