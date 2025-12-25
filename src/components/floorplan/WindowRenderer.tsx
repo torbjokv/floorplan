@@ -21,6 +21,8 @@ interface WindowRendererProps {
     y: number
   ) => void;
   onResizeUpdate?: (windowIndex: number, newWidth: number, newOffset: number) => void;
+  isFocused?: boolean;
+  onFocus?: (windowIndex: number) => void;
 }
 
 export function WindowRenderer({
@@ -31,9 +33,15 @@ export function WindowRenderer({
   onClick,
   onDragUpdate,
   onResizeUpdate,
+  isFocused,
+  onFocus,
 }: WindowRendererProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
+  // isHovered kept for potential CSS hover effects via onMouseEnter/Leave
+  const [, setIsHovered] = useState(false);
+
+  // Show buttons when focused (via click) - not just on hover
+  const showButtons = isFocused && !isDragging;
   const [currentX, setCurrentX] = useState(0);
   const [currentY, setCurrentY] = useState(0);
   const [currentOffset, setCurrentOffset] = useState(window.offset ?? 0);
@@ -418,7 +426,12 @@ export function WindowRenderer({
       className="window-group"
       data-window-index={index}
       transform={`translate(${x},${y}) rotate(${rotation})`}
-      onClick={() => !isDragging && onClick?.(index)}
+      onClick={() => {
+        if (!isDragging) {
+          onClick?.(index);
+          onFocus?.(index);
+        }
+      }}
       onMouseDown={handleMouseDown}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -433,8 +446,8 @@ export function WindowRenderer({
         stroke={snappedWall ? '#00ff00' : '#444'}
         strokeWidth={snappedWall ? '3' : '2'}
       />
-      {/* Resize handles (shown on hover, not when dragging) */}
-      {isHovered && !isDragging && onResizeUpdate && (
+      {/* Resize handles (shown when focused, not when dragging) */}
+      {showButtons && onResizeUpdate && (
         <DoorWindowResizeHandles
           x={rectX}
           y={rectY}

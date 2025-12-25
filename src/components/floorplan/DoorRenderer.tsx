@@ -38,6 +38,8 @@ interface DoorRendererProps {
   ) => void;
   onSwingUpdate?: (doorIndex: number, newSwing: SwingDirection) => void;
   onResizeUpdate?: (doorIndex: number, newWidth: number, newOffset: number) => void;
+  isFocused?: boolean;
+  onFocus?: (doorIndex: number) => void;
 }
 
 export function DoorRenderer({
@@ -49,9 +51,15 @@ export function DoorRenderer({
   onDragUpdate,
   onSwingUpdate,
   onResizeUpdate,
+  isFocused,
+  onFocus,
 }: DoorRendererProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
+  // isHovered kept for potential CSS hover effects via onMouseEnter/Leave
+  const [, setIsHovered] = useState(false);
+
+  // Show buttons when focused (via click) - not just on hover
+  const showButtons = isFocused && !isDragging;
   const [currentX, setCurrentX] = useState(0);
   const [currentY, setCurrentY] = useState(0);
   const [currentOffset, setCurrentOffset] = useState(door.offset ?? 0);
@@ -540,7 +548,12 @@ export function DoorRenderer({
       key={`door-${index}`}
       className="door-group"
       data-door-index={index}
-      onClick={() => !isDragging && onClick?.(index)}
+      onClick={() => {
+        if (!isDragging) {
+          onClick?.(index);
+          onFocus?.(index);
+        }
+      }}
       onMouseDown={handleMouseDown}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -567,8 +580,8 @@ export function DoorRenderer({
           strokeDasharray="4,2"
         />
       )}
-      {/* Toggle orientation button (shown on hover, not when dragging/resizing) */}
-      {isHovered && !isDragging && !isResizing && onSwingUpdate && (
+      {/* Toggle orientation button (shown when focused, not when dragging/resizing) */}
+      {showButtons && !isResizing && onSwingUpdate && (
         <g
           data-testid="door-toggle-orientation"
           onClick={handleToggleClick}
@@ -607,8 +620,8 @@ export function DoorRenderer({
           />
         </g>
       )}
-      {/* Resize handles (shown on hover, not when dragging) */}
-      {isHovered && !isDragging && onResizeUpdate && (
+      {/* Resize handles (shown when focused, not when dragging) */}
+      {showButtons && onResizeUpdate && (
         <DoorWindowResizeHandles
           x={x + doorRect.x}
           y={y + doorRect.y}

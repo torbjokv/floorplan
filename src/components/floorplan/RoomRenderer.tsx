@@ -265,6 +265,7 @@ interface RoomRendererProps {
   onDimensionsUpdate?: (roomId: string, width: number, depth: number) => void;
   onMouseEnter?: (roomId: string) => void;
   onMouseLeave?: () => void;
+  onFocus?: (roomId: string) => void;
 }
 
 export function RoomRenderer({
@@ -282,6 +283,7 @@ export function RoomRenderer({
   onDimensionsUpdate,
   onMouseEnter,
   onMouseLeave,
+  onFocus,
 }: RoomRendererProps) {
   const parts = resolveCompositeRoom(room);
 
@@ -383,7 +385,10 @@ export function RoomRenderer({
           stroke={isConnected ? '#646cff' : 'black'}
           strokeWidth={isConnected ? '3' : '2'}
           opacity={isConnected ? 0.7 : 1}
-          onClick={() => onClick?.(room.id)}
+          onClick={() => {
+            onClick?.(room.id);
+            onFocus?.(room.id);
+          }}
           onMouseDown={e => onMouseDown(e, room.id)}
           style={{ cursor: dragState?.roomId === room.id ? 'grabbing' : 'grab' }}
         />
@@ -468,7 +473,10 @@ export function RoomRenderer({
         stroke={isConnected ? '#646cff' : 'black'}
         strokeWidth={isConnected ? '3' : '2'}
         opacity={isConnected ? 0.7 : 1}
-        onClick={() => onClick?.(room.id)}
+        onClick={() => {
+          onClick?.(room.id);
+          onFocus?.(room.id);
+        }}
         onMouseDown={e => onMouseDown(e, room.id)}
         style={{ cursor: dragState?.roomId === room.id ? 'grabbing' : 'grab' }}
       />

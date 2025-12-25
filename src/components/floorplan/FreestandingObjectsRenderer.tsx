@@ -26,6 +26,8 @@ interface FreestandingObjectsRendererProps {
     currentWidth: number,
     currentHeight?: number
   ) => void;
+  focusedObjectIndex?: number | null;
+  onObjectFocus?: (objectIndex: number) => void;
 }
 
 export function FreestandingObjectsRenderer({
@@ -39,6 +41,8 @@ export function FreestandingObjectsRenderer({
   onObjectMouseLeave,
   onObjectResizeStart,
   onObjectResizeNumeric,
+  focusedObjectIndex,
+  onObjectFocus,
 }: FreestandingObjectsRendererProps) {
   return (
     <g className="freestanding-objects">
@@ -56,6 +60,8 @@ export function FreestandingObjectsRenderer({
           onObjectMouseLeave={onObjectMouseLeave}
           onObjectResizeStart={onObjectResizeStart}
           onObjectResizeNumeric={onObjectResizeNumeric}
+          isFocused={focusedObjectIndex === idx}
+          onFocus={onObjectFocus}
         />
       ))}
     </g>
@@ -84,6 +90,8 @@ interface FreestandingObjectProps {
     currentWidth: number,
     currentHeight?: number
   ) => void;
+  isFocused?: boolean;
+  onFocus?: (objectIndex: number) => void;
 }
 
 function FreestandingObject({
@@ -93,16 +101,21 @@ function FreestandingObject({
   mm,
   onObjectClick,
   onObjectDragUpdate,
-  isHovered,
+  isHovered: _isHovered,
   onObjectMouseEnter,
   onObjectMouseLeave,
   onObjectResizeStart,
   onObjectResizeNumeric,
+  isFocused,
+  onFocus,
 }: FreestandingObjectProps) {
   const [isObjectDragging, setIsObjectDragging] = useState(false);
   const [currentObjX, setCurrentObjX] = useState(obj.x);
   const [currentObjY, setCurrentObjY] = useState(obj.y);
   const [targetRoomId, setTargetRoomId] = useState<string>('freestanding');
+
+  // Show resize handles when focused (via click) - not just on hover
+  const showHandles = isFocused && !isObjectDragging;
 
   const width = obj.width || DEFAULT_OBJECT_SIZE;
   const height = obj.type === 'circle' ? width : obj.height || width;
@@ -224,11 +237,11 @@ function FreestandingObject({
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
-      if (!onObjectClick) return;
       e.stopPropagation();
-      onObjectClick(idx);
+      onObjectClick?.(idx);
+      onFocus?.(idx);
     },
-    [onObjectClick, idx]
+    [onObjectClick, onFocus, idx]
   );
 
   if (obj.type === 'circle') {
@@ -315,7 +328,7 @@ function FreestandingObject({
             ⌀{diameter}
           </text>
         </g>
-        {isHovered && onObjectResizeStart && (
+        {showHandles && onObjectResizeStart && (
           <ObjectResizeHandles
             room={virtualRoom}
             objectIndex={idx}
@@ -327,7 +340,7 @@ function FreestandingObject({
               onObjectResizeNumeric?.(objIdx, corner, w, h)
             }
             onMouseEnter={() => onObjectMouseEnter?.(idx)}
-            visible={isHovered}
+            visible={showHandles}
           />
         )}
       </>
@@ -403,7 +416,7 @@ function FreestandingObject({
             {width}×{height}
           </text>
         </g>
-        {isHovered && onObjectResizeStart && (
+        {showHandles && onObjectResizeStart && (
           <ObjectResizeHandles
             room={virtualRoom}
             objectIndex={idx}
@@ -415,7 +428,7 @@ function FreestandingObject({
               onObjectResizeNumeric?.(objIdx, corner, w, h)
             }
             onMouseEnter={() => onObjectMouseEnter?.(idx)}
-            visible={isHovered}
+            visible={showHandles}
           />
         )}
       </>
