@@ -218,12 +218,7 @@ function formatRoom(room: Room, doors?: Door[], windows?: Window[]): string {
 /**
  * Format a part as DSL text
  */
-function formatPart(
-  part: Room,
-  parentRoomId: string,
-  doors?: Door[],
-  windows?: Window[]
-): string {
+function formatPart(part: Room, parentRoomId: string, doors?: Door[], windows?: Window[]): string {
   const lines: string[] = [];
 
   let partLine = `    part ${capitalizeId(part.id)} ${part.width}x${part.depth}`;
