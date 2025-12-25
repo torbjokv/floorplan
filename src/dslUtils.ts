@@ -209,7 +209,7 @@ function formatRoom(room: Room, doors?: Door[], windows?: Window[]): string {
 
   // Add parts
   room.parts?.forEach(part => {
-    lines.push(formatPart(part, doors, windows));
+    lines.push(formatPart(part, room.id, doors, windows));
   });
 
   return lines.join('\n');
@@ -218,7 +218,7 @@ function formatRoom(room: Room, doors?: Door[], windows?: Window[]): string {
 /**
  * Format a part as DSL text
  */
-function formatPart(part: Room, doors?: Door[], windows?: Window[]): string {
+function formatPart(part: Room, parentRoomId: string, doors?: Door[], windows?: Window[]): string {
   const lines: string[] = [];
 
   let partLine = `    part ${capitalizeId(part.id)} ${part.width}x${part.depth}`;
@@ -227,9 +227,12 @@ function formatPart(part: Room, doors?: Door[], windows?: Window[]): string {
     partLine += ` ${part.anchor}`;
   }
 
-  // Parse attachTo
+  // Parse attachTo - use parent room ID if referencing parent
   const attachInfo = parseAttachTo(part.attachTo);
-  const target = attachInfo.target === 'parent' ? 'room' : capitalizeId(attachInfo.target);
+  const target =
+    attachInfo.target === 'parent' || attachInfo.target === parentRoomId
+      ? capitalizeId(parentRoomId)
+      : capitalizeId(attachInfo.target);
   partLine += ` at ${target}`;
 
   if (attachInfo.anchor && attachInfo.anchor !== 'bottom-right') {

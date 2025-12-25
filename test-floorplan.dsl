@@ -3,7 +3,7 @@ grid 1000
 room Entre1 "Entré/hall" 4100x3300 at soverom3:top-right
     door 900 outwards-left at top (2000)
     door 800 at left (3600)
-    part Entre1Part1 1700x1400 at room:bottom-left
+    part Entre1Part1 1700x1400 at Entre1:bottom-left
 
 room Stue1 "Stue" 3500x6300 at entre1:top-right
 
@@ -16,7 +16,7 @@ room Tvstue1 "TV-stue" 2900x3400 at kjokken1:bottom-left
 room Gang1 "Garderobe" 1700x2200 bottom-left at entre2
     door 800 opening at left (100)
     object square "Garderobe" 2500x600 #b5835a at bottom-left
-    part Gang1Part1 2400x1300 bottom-left at room
+    part Gang1Part1 2400x1300 bottom-left at Gang1
 
 room Stuespis1 "Stue/spisestue" 4400x7300 at entre2:bottom-left
 

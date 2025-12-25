@@ -184,9 +184,10 @@ export class RoomPositionResolver {
   ): { x: number; y: number } | null {
     const [refId, refCorner] = part.attachTo!.split(':') as [string, Anchor];
 
-    // Determine reference (parent or another part)
+    // Determine reference (parent room or another part)
+    // Parts can reference parent by "parent" keyword or by the parent room's ID
     let refRoom: ResolvedRoom | ResolvedPart;
-    if (refId === 'parent') {
+    if (refId === 'parent' || refId === parentRoom.id) {
       refRoom = parentRoom;
     } else {
       const found = partMap[refId];

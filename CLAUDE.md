@@ -92,14 +92,14 @@ The DSL parser is built with **PEG.js** (Parser Expression Grammar):
 
 ### Composite Rooms
 
-Rooms can have `parts` arrays for complex shapes. Parts use the same positioning system but can reference `"parent"` in their `attachTo` field. The renderer merges these visually by detecting and covering shared edges between adjacent rectangles. **Parts can contain windows, doors, and objects.**
+Rooms can have `parts` arrays for complex shapes. Parts use the same positioning system and reference the parent room by its ID in their `attachTo` field (e.g., `at Bedroom:bottom-left`). The renderer merges these visually by detecting and covering shared edges between adjacent rectangles. **Parts can contain windows, doors, and objects.**
 
 ### Type System
 
 All core types are defined in [src/types.ts](src/types.ts):
 
 - `Room`: Requires `id` field (e.g., "livingroom1"). `name` is optional display name. First room is placed at origin; other rooms use `attachTo` to attach to existing rooms. No absolute x/y coordinates supported. Supports optional `parts[]` and `objects[]`. Has `width` (x-axis) and `depth` (y-axis) dimensions.
-- `RoomPart`: Nested room parts that can attach to parent or other parts. Requires `id` field, `name` is optional. Can contain windows, doors, and objects.
+- `RoomPart`: Nested room parts that attach to the parent room (by ID) or other parts. Requires `id` field, `name` is optional. Can contain windows, doors, and objects.
 - `RoomObject`: Decorative objects inside rooms with dual anchor system:
   - `type`: `'square'` or `'circle'`
   - Position relative to room with `x`, `y` offsets from anchors
@@ -158,8 +158,8 @@ room RoomId [LABEL] WxD [SELF_ANCHOR] [at TargetId [TARGET_ANCHOR]] [(OFFSET_X, 
 - `WxD`: Width and depth in millimeters (e.g., `5000x4000`)
 - `W`: Width/diameter in millimeters (e.g., `1200`)
 - `SELF_ANCHOR`: `top-left` | `top-right` | `bottom-left` | `bottom-right` (default: `top-left`)
-- `TARGET_ANCHOR`: Same as SELF_ANCHOR (default: `bottom-right` for rooms, `parent` for parts)
-- `Target`: Another room/part ID, or `parent` (for parts). Note: `zeropoint` still works for backward compatibility but is not needed - just omit the `at` clause
+- `TARGET_ANCHOR`: Same as SELF_ANCHOR (default: `bottom-right`)
+- `Target`: Another room/part ID. For parts, use the parent room's ID to attach to the parent. Note: `zeropoint` still works for backward compatibility but is not needed - just omit the `at` clause
 - `WALL`: `top` | `bottom` | `left` | `right`
 - `SWING`: `inwards-left` | `inwards-right` | `outwards-left` | `outwards-right` | `opening` (default: `inwards-left`)
 - `TYPE`: `square` | `circle`
@@ -197,7 +197,7 @@ room Kitchen 4000x3000 at LivingRoom:bottom-right (100, 100)
     door 800 opening at bottom (300)
 
 room Bedroom 5000x4000 at (5000, 0)
-    part Closet 2000x1500 at parent:bottom-left
+    part Closet 2000x1500 at Bedroom:bottom-left
         door 800 inwards-left at right (400)
         object square "Shelf" 500x1200 #9141ac at top-left (100, 100)
 ```
