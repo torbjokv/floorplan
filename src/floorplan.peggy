@@ -353,8 +353,7 @@ PartDefinition
   = SingleIndent "part"i _ id:Identifier _ label:Label? _ dims:Dimensions _ anchor:Anchor? _ "at"i _ attach:PartAttachTo __ offset:Offset? children:PartChildren? {
       const partId = id.toLowerCase();
       const loc = location();
-      const target = attach.target === 'room' ? 'parent' : attach.target.toLowerCase();
-      const attachInfo = { target, anchor: attach.anchor };
+      const attachInfo = { target: attach.target.toLowerCase(), anchor: attach.anchor };
 
       // Convert children.objects array into proper format for buildPart
       const childrenForBuild = (children?.objects || []).map(obj => ({ type: 'object', data: obj }));
@@ -622,10 +621,7 @@ AttachTo
     }
 
 PartAttachTo
-  = "room"i anchor:(":" Anchor)? {
-      return { target: 'room', anchor: anchor ? anchor[1] : 'bottom-right' };
-    }
-  / target:Identifier anchor:(":" Anchor)? {
+  = target:Identifier anchor:(":" Anchor)? {
       return { target: target.toLowerCase(), anchor: anchor ? anchor[1] : 'bottom-right' };
     }
 
