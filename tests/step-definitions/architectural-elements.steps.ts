@@ -467,18 +467,16 @@ When('I hover over the door', async function (this: FloorplanWorld) {
   const svg = this.page.locator('.floorplan-svg');
   await expect(svg).toBeVisible({ timeout: 5000 });
 
-  // Find door element - look for the rect inside door-group
+  // Find the door rect inside the door-group (the rect receives clicks and bubbles to parent)
   const doorRect = this.page.locator('.door-group rect').first();
 
-  // Get the bounding box and move mouse to center
-  const box = await doorRect.boundingBox();
-  if (box) {
-    // Move mouse to center of door rect
-    await this.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    await this.page.waitForTimeout(300); // Wait for hover state to be applied
-  } else {
-    throw new Error('Could not get bounding box of door element');
-  }
+  // Wait for door to be attached to DOM (may take time after DSL update)
+  await doorRect.waitFor({ state: 'attached', timeout: 10000 });
+
+  // Click the door rect to focus and show buttons (click-to-focus behavior)
+  // Use dispatchEvent to ensure the click bubbles properly to the parent group
+  await doorRect.dispatchEvent('click');
+  await this.page.waitForTimeout(500); // Wait for focus state to be applied
 });
 
 Then('the door should highlight', async function (this: FloorplanWorld) {
@@ -1264,23 +1262,16 @@ Then('a toggle orientation button should be visible', async function (this: Floo
 });
 
 When('I click the toggle orientation button', async function (this: FloorplanWorld) {
-  // Re-hover over door to ensure toggle button is visible
+  // Re-click door to ensure it's focused and toggle button is visible (click-to-focus behavior)
   const doorRect = this.page.locator('.door-group rect').first();
-  const doorBox = await doorRect.boundingBox();
-  if (doorBox) {
-    await this.page.mouse.move(doorBox.x + doorBox.width / 2, doorBox.y + doorBox.height / 2);
-    await this.page.waitForTimeout(300);
-  }
+  await doorRect.dispatchEvent('click');
+  await this.page.waitForTimeout(300);
 
   // Get the toggle button and click it
   const toggleButton = this.page.locator('[data-testid="door-toggle-orientation"]').first();
-  const box = await toggleButton.boundingBox();
-  if (box) {
-    await this.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-    await this.page.waitForTimeout(700); // Wait for debounce and re-render
-  } else {
-    throw new Error('Could not get bounding box of toggle button');
-  }
+  await expect(toggleButton).toBeVisible({ timeout: 5000 });
+  await toggleButton.dispatchEvent('click');
+  await this.page.waitForTimeout(700); // Wait for debounce and re-render
 });
 
 Then(
