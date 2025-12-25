@@ -111,6 +111,8 @@ When(
     const testId = getObjectTestId(roomId, result!.objectIndex);
     const objectElement = this.page.locator(`[data-testid="${testId}"]`);
     await objectElement.hover();
+    // Click to focus and show resize handles (click-to-focus behavior)
+    await objectElement.click();
 
     // Store for later use
     this.currentObject = { name: objectName, roomId, objectIndex: result!.objectIndex, testId };
@@ -126,6 +128,8 @@ When(
     const testId = getObjectTestId(result!.roomId, result!.objectIndex, partId);
     const objectElement = this.page.locator(`[data-testid="${testId}"]`);
     await objectElement.hover();
+    // Click to focus and show resize handles (click-to-focus behavior)
+    await objectElement.click();
 
     // Store for later use
     this.currentObject = {
@@ -139,8 +143,8 @@ When(
 );
 
 When('I move the mouse away from the object', async function (this: World) {
-  // Move mouse to a neutral location (top-left corner)
-  await this.page.mouse.move(10, 10);
+  // Press ESC to clear focus and hide handles (click-to-focus behavior)
+  await this.page.keyboard.press('Escape');
   await this.page.waitForTimeout(100);
 });
 

@@ -73,7 +73,9 @@ When('I hover over the room in the preview', async function (this: FloorplanWorl
   const room = this.page.locator(`[data-room-id="${roomId}"]`).first();
   await room.waitFor({ state: 'visible', timeout: 5000 });
   await room.hover({ timeout: 3000 });
-  await this.page.waitForTimeout(100); // Wait for hover effects
+  // Click to focus and show buttons/handles (click-to-focus behavior)
+  await room.click();
+  await this.page.waitForTimeout(100); // Wait for focus effects
 });
 
 Then('resize handles should appear on all four edges', async function (this: FloorplanWorld) {
@@ -434,7 +436,8 @@ When('resize handles appear', async function (this: FloorplanWorld) {
 });
 
 When('I move the mouse away from the room', async function (this: FloorplanWorld) {
-  await this.page.mouse.move(0, 0); // Move to corner away from room
+  // Press ESC to clear focus and hide handles (click-to-focus behavior)
+  await this.page.keyboard.press('Escape');
   await this.page.waitForTimeout(100);
 });
 
@@ -481,6 +484,8 @@ When('I hover over the part in the preview', async function (this: FloorplanWorl
   // Parts in composite rooms don't have separate data-room-id, hover on composite room instead
   const compositeRoom = this.page.locator('[data-room-id="composite"]').first();
   await compositeRoom.hover();
+  // Click to focus and show buttons/handles (click-to-focus behavior)
+  await compositeRoom.click();
   await this.page.waitForTimeout(100);
 });
 
@@ -527,9 +532,10 @@ When(
   async function (this: FloorplanWorld, roomId: string, newWidth: number) {
     (this as any).roomId = roomId;
 
-    // Hover over room
+    // Hover over room and click to focus (click-to-focus behavior)
     const room = this.page.locator(`[data-room-id="${roomId}"]`).first();
     await room.hover();
+    await room.click();
     await this.page.waitForTimeout(100);
 
     // Calculate drag distance based on current width
@@ -614,9 +620,10 @@ When(
   async function (this: FloorplanWorld, targetWidth: number) {
     const roomId = (this as any).roomId || 'testroom';
 
-    // Hover over room to show resize handles
+    // Hover over room and click to show resize handles (click-to-focus behavior)
     const room = this.page.locator(`[data-room-id="${roomId}"]`).first();
     await room.hover();
+    await room.click();
     await this.page.waitForTimeout(100);
 
     // Get current width from room rect element (inside the g element)

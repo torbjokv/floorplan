@@ -102,6 +102,15 @@ interface CornerHighlight {
   corner: Anchor;
 }
 
+// Type for tracking which element is currently focused (showing buttons/handles)
+type FocusedElement =
+  | { type: 'room'; roomId: string }
+  | { type: 'door'; index: number }
+  | { type: 'window'; index: number }
+  | { type: 'object'; roomId: string; objectIndex: number; partId?: string }
+  | { type: 'freestandingObject'; index: number }
+  | null;
+
 // Helper function to calculate anchor offset for objects
 function getObjectAnchorOffset(
   anchor: Anchor,
@@ -163,7 +172,8 @@ const FloorplanRendererComponent = ({
     startY: number;
   } | null>(null);
   const resizeStateRef = useRef(resizeState);
-  const [hoveredRoomId, setHoveredRoomId] = useState<string | null>(null);
+  // Keep hoveredRoomId for UI hover effects (CSS class changes)
+  const [, setHoveredRoomId] = useState<string | null>(null);
 
   // Object resize state
   const [objectResizeState, setObjectResizeState] = useState<{
@@ -189,6 +199,9 @@ const FloorplanRendererComponent = ({
   const [hoveredFreestandingObjectIndex, setHoveredFreestandingObjectIndex] = useState<
     number | null
   >(null);
+
+  // Focused element state (for click-to-show-buttons behavior)
+  const [focusedElement, setFocusedElement] = useState<FocusedElement>(null);
   const [freestandingObjectResizeState, setFreestandingObjectResizeState] = useState<{
     objectIndex: number;
     corner: Anchor;
@@ -1484,6 +1497,46 @@ const FloorplanRendererComponent = ({
     };
   }, []);
 
+  // ESC key handler to clear focused element
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setFocusedElement(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Handler for clicking on SVG background (empty space) to clear focus
+  const handleSvgClick = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
+    // Only clear focus if clicking directly on SVG (not on a child element)
+    if (e.target === e.currentTarget) {
+      setFocusedElement(null);
+    }
+  }, []);
+
+  // Handlers for setting focus on different element types
+  const handleDoorFocus = useCallback((index: number) => {
+    setFocusedElement({ type: 'door', index });
+  }, []);
+
+  const handleWindowFocus = useCallback((index: number) => {
+    setFocusedElement({ type: 'window', index });
+  }, []);
+
+  const handleRoomFocus = useCallback((roomId: string) => {
+    setFocusedElement({ type: 'room', roomId });
+  }, []);
+
+  const handleObjectFocus = useCallback((roomId: string, objectIndex: number, partId?: string) => {
+    setFocusedElement({ type: 'object', roomId, objectIndex, partId });
+  }, []);
+
+  const handleFreestandingObjectFocus = useCallback((index: number) => {
+    setFocusedElement({ type: 'freestandingObject', index });
+  }, []);
+
   // Convert bounds to screen coordinates
   const viewBox = `${mm(bounds.x)} ${mm(bounds.y)} ${mm(bounds.width)} ${mm(bounds.depth)}`;
 
@@ -1496,6 +1549,7 @@ const FloorplanRendererComponent = ({
         preserveAspectRatio="xMidYMid meet"
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
+        onClick={handleSvgClick}
       >
         {/* Grid */}
         <GridRenderer
@@ -1530,6 +1584,7 @@ const FloorplanRendererComponent = ({
               onDimensionsUpdate={handleRoomDimensionsUpdate}
               onMouseEnter={setHoveredRoomId}
               onMouseLeave={() => setHoveredRoomId(null)}
+              onFocus={handleRoomFocus}
             />
           ))}
 
@@ -1557,6 +1612,8 @@ const FloorplanRendererComponent = ({
                 onDragUpdate={onDoorDragUpdate}
                 onSwingUpdate={onDoorSwingUpdate}
                 onResizeUpdate={onDoorResizeUpdate}
+                isFocused={focusedElement?.type === 'door' && focusedElement.index === index}
+                onFocus={handleDoorFocus}
               />
             </g>
           );
@@ -1585,6 +1642,8 @@ const FloorplanRendererComponent = ({
                 onClick={onWindowClick}
                 onDragUpdate={onWindowDragUpdate}
                 onResizeUpdate={onWindowResizeUpdate}
+                isFocused={focusedElement?.type === 'window' && focusedElement.index === index}
+                onFocus={handleWindowFocus}
               />
             </g>
           );
@@ -1606,6 +1665,16 @@ const FloorplanRendererComponent = ({
           onObjectMouseLeave={() => setHoveredObject(null)}
           onObjectResizeStart={handleObjectResizeStart}
           onObjectResizeNumeric={handleObjectResizeNumeric}
+          focusedObject={
+            focusedElement?.type === 'object'
+              ? {
+                  roomId: focusedElement.roomId,
+                  objectIndex: focusedElement.objectIndex,
+                  partId: focusedElement.partId,
+                }
+              : null
+          }
+          onObjectFocus={handleObjectFocus}
         />
 
         {/* Freestanding doors (at absolute coordinates) */}
@@ -1643,41 +1712,45 @@ const FloorplanRendererComponent = ({
             onObjectMouseLeave={() => setHoveredFreestandingObjectIndex(null)}
             onObjectResizeStart={handleFreestandingObjectResizeStart}
             onObjectResizeNumeric={handleFreestandingObjectResizeNumeric}
+            focusedObjectIndex={
+              focusedElement?.type === 'freestandingObject' ? focusedElement.index : null
+            }
+            onObjectFocus={handleFreestandingObjectFocus}
           />
         )}
 
-        {/* Resize handles - rendered on top when hovering */}
-        {hoveredRoomId &&
+        {/* Resize handles - rendered on top when room is focused */}
+        {focusedElement?.type === 'room' &&
           !dragState &&
           !resizeState &&
-          roomMap[hoveredRoomId] &&
-          !partIds.has(hoveredRoomId) && (
+          roomMap[focusedElement.roomId] &&
+          !partIds.has(focusedElement.roomId) && (
             <ResizeHandles
-              room={roomMap[hoveredRoomId]}
+              room={roomMap[focusedElement.roomId]}
               mm={mm}
               onResizeStart={handleResizeStart}
               onResizeNumeric={handleResizeNumeric}
-              onMouseEnter={() => setHoveredRoomId(hoveredRoomId)}
+              onMouseEnter={() => setHoveredRoomId(focusedElement.roomId)}
               visible={true}
             />
           )}
 
-        {/* Offset arrows - rendered on top when hovering */}
-        {hoveredRoomId &&
+        {/* Offset arrows - rendered on top when room is focused */}
+        {focusedElement?.type === 'room' &&
           !dragState &&
           !resizeState &&
           !offsetDragState &&
-          roomMap[hoveredRoomId] &&
-          !partIds.has(hoveredRoomId) &&
+          roomMap[focusedElement.roomId] &&
+          !partIds.has(focusedElement.roomId) &&
           (() => {
-            const originalRoom = data.rooms.find(r => r.id === hoveredRoomId);
+            const originalRoom = data.rooms.find(r => r.id === focusedElement.roomId);
             return originalRoom ? (
               <OffsetArrows
-                room={roomMap[hoveredRoomId]}
+                room={roomMap[focusedElement.roomId]}
                 originalRoom={originalRoom}
                 mm={mm}
                 onOffsetDragStart={handleOffsetDragStart}
-                onMouseEnter={() => setHoveredRoomId(hoveredRoomId)}
+                onMouseEnter={() => setHoveredRoomId(focusedElement.roomId)}
                 visible={true}
               />
             ) : null;

@@ -46,6 +46,8 @@ interface RoomObjectsRendererProps {
     currentHeight?: number,
     partId?: string
   ) => void;
+  focusedObject?: { roomId: string; objectIndex: number; partId?: string } | null;
+  onObjectFocus?: (roomId: string, objectIndex: number, partId?: string) => void;
 }
 
 // Helper function to get room corner position
@@ -92,12 +94,14 @@ function RoomObject({
   isDragging: _isRoomDragging,
   dragOffset: _roomDragOffset,
   roomMap,
-  isHovered,
+  isHovered: _isHovered,
   onObjectMouseEnter,
   onObjectMouseLeave,
   onObjectResizeStart,
   onObjectResizeNumeric,
   partId,
+  isFocused,
+  onFocus,
 }: {
   room: ResolvedRoom;
   parentRoomId?: string; // Parent room ID for test IDs when room is a part
@@ -133,11 +137,16 @@ function RoomObject({
     partId?: string
   ) => void;
   partId?: string;
+  isFocused?: boolean;
+  onFocus?: (roomId: string, objectIndex: number, partId?: string) => void;
 }) {
   const [isObjectDragging, setIsObjectDragging] = useState(false);
   const [currentObjX, setCurrentObjX] = useState(obj.x);
   const [currentObjY, setCurrentObjY] = useState(obj.y);
   const [targetRoomId, setTargetRoomId] = useState(room.id);
+
+  // Show resize handles when focused (via click) - not just on hover
+  const showHandles = isFocused && !isObjectDragging;
 
   // Use refs to avoid stale closure issues in mouseup handler
   const currentObjXRef = useRef(obj.x);
@@ -353,6 +362,7 @@ function RoomObject({
               e.stopPropagation();
               if (!isObjectDragging) {
                 onObjectClick?.(roomIdForTestId, idx);
+                onFocus?.(roomIdForTestId, idx, partId);
               }
             }}
             onMouseDown={handleMouseDown}
@@ -394,7 +404,7 @@ function RoomObject({
             ⌀{diameter}
           </text>
         </g>
-        {isHovered && onObjectResizeStart && (
+        {showHandles && onObjectResizeStart && (
           <ObjectResizeHandles
             room={room}
             parentRoomId={parentRoomId}
@@ -409,7 +419,7 @@ function RoomObject({
               onObjectResizeNumeric?.(roomId, objIdx, corner, width, height, partId)
             }
             onMouseEnter={() => onObjectMouseEnter?.(roomIdForTestId, idx, partId)}
-            visible={isHovered}
+            visible={showHandles}
             partId={partId}
           />
         )}
@@ -455,6 +465,7 @@ function RoomObject({
               e.stopPropagation();
               if (!isObjectDragging) {
                 onObjectClick?.(roomIdForTestId, idx);
+                onFocus?.(roomIdForTestId, idx, partId);
               }
             }}
             onMouseDown={handleMouseDown}
@@ -498,7 +509,7 @@ function RoomObject({
             {width}×{height}
           </text>
         </g>
-        {isHovered && onObjectResizeStart && (
+        {showHandles && onObjectResizeStart && (
           <ObjectResizeHandles
             room={room}
             parentRoomId={parentRoomId}
@@ -513,7 +524,7 @@ function RoomObject({
               onObjectResizeNumeric?.(roomId, objIdx, corner, width, height, partId)
             }
             onMouseEnter={() => onObjectMouseEnter?.(roomIdForTestId, idx, partId)}
-            visible={isHovered}
+            visible={showHandles}
             partId={partId}
           />
         )}
@@ -535,6 +546,8 @@ export function RoomObjectsRenderer({
   onObjectMouseLeave,
   onObjectResizeStart,
   onObjectResizeNumeric,
+  focusedObject,
+  onObjectFocus,
 }: RoomObjectsRendererProps) {
   return (
     <>
@@ -572,6 +585,12 @@ export function RoomObjectsRenderer({
                   onObjectMouseLeave={onObjectMouseLeave}
                   onObjectResizeStart={onObjectResizeStart}
                   onObjectResizeNumeric={onObjectResizeNumeric}
+                  isFocused={
+                    focusedObject?.roomId === room.id &&
+                    focusedObject?.objectIndex === idx &&
+                    !focusedObject?.partId
+                  }
+                  onFocus={onObjectFocus}
                 />
               ))}
               {/* Render part-level objects */}
@@ -602,6 +621,12 @@ export function RoomObjectsRenderer({
                     onObjectResizeStart={onObjectResizeStart}
                     onObjectResizeNumeric={onObjectResizeNumeric}
                     partId={part.id}
+                    isFocused={
+                      focusedObject?.roomId === room.id &&
+                      focusedObject?.objectIndex === idx &&
+                      focusedObject?.partId === part.id
+                    }
+                    onFocus={onObjectFocus}
                   />
                 ));
               })}
