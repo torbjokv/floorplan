@@ -122,6 +122,7 @@ function App() {
 
   // Grid settings menu state
   const [showGridMenu, setShowGridMenu] = useState(false);
+  const [customGridValue, setCustomGridValue] = useState('');
 
   // Close object menu when clicking outside
   useEffect(() => {
@@ -1510,6 +1511,41 @@ function App() {
           </button>
           {showGridMenu && (
             <div className="grid-step-menu" data-testid="grid-step-menu">
+              <div className="grid-custom-input-container">
+                <input
+                  type="number"
+                  className="grid-custom-input"
+                  placeholder="Custom (mm)"
+                  value={customGridValue}
+                  onChange={e => setCustomGridValue(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      const value = parseInt(customGridValue, 10);
+                      if (value > 0) {
+                        handleGridStepChange(value);
+                        setCustomGridValue('');
+                      }
+                    }
+                  }}
+                  data-testid="grid-custom-input"
+                  min="1"
+                  autoFocus
+                />
+                <button
+                  className="grid-custom-apply-btn"
+                  onClick={() => {
+                    const value = parseInt(customGridValue, 10);
+                    if (value > 0) {
+                      handleGridStepChange(value);
+                      setCustomGridValue('');
+                    }
+                  }}
+                  data-testid="grid-custom-apply-btn"
+                >
+                  Apply
+                </button>
+              </div>
+              <div className="grid-presets-divider">Presets</div>
               {[100, 250, 500, 1000, 2000, 5000].map(step => (
                 <button
                   key={step}
