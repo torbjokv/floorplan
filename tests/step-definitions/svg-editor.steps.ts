@@ -726,8 +726,8 @@ Then('the DSL should contain the part attached to parent', async function () {
   const editor = this.page.locator('.cm-content');
   const text = await editor.textContent();
   expect(text).toContain('part');
-  // DSL format uses "room" instead of "parent" - it gets converted back to "parent" on parse
-  expect(text).toContain('at room');
+  // Parts are attached using the parent room's ID (e.g., "at Livingroom:bottom-left")
+  expect(text).toMatch(/at \w+:/);
 });
 
 When('I click on the part to select it', async function () {
