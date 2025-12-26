@@ -1888,6 +1888,58 @@ const FloorplanRendererComponent = ({
         return;
       }
 
+      // Calculate where the part would be after snapping
+      const resolvedParentRoom = roomMap[dragState.parentRoomId];
+      if (!resolvedParentRoom) {
+        setDragState(null);
+        setSnapTarget(null);
+        setDragOffset(null);
+        return;
+      }
+
+      // Get the target position (where the part's anchor will snap to)
+      const targetRoom = roomMap[snapTarget.roomId];
+      if (!targetRoom) {
+        setDragState(null);
+        setSnapTarget(null);
+        setDragOffset(null);
+        return;
+      }
+      const targetCornerPos = getCorner(targetRoom, snapTarget.corner);
+
+      // Calculate where the part would be positioned based on its anchor
+      const partAnchor = dragState.anchor || 'top-left';
+      let newPartX = targetCornerPos.x;
+      let newPartY = targetCornerPos.y;
+
+      // Adjust position based on which corner of the part is being anchored
+      if (partAnchor === 'top-right' || partAnchor === 'bottom-right') {
+        newPartX -= resolvedPart.width;
+      }
+      if (partAnchor === 'bottom-left' || partAnchor === 'bottom-right') {
+        newPartY -= resolvedPart.depth;
+      }
+
+      // Check if the part would extend beyond at least one edge of the parent room
+      const partRight = newPartX + resolvedPart.width;
+      const partBottom = newPartY + resolvedPart.depth;
+      const parentRight = resolvedParentRoom.x + resolvedParentRoom.width;
+      const parentBottom = resolvedParentRoom.y + resolvedParentRoom.depth;
+
+      const extendsRoom =
+        newPartX < resolvedParentRoom.x ||
+        partRight > parentRight ||
+        newPartY < resolvedParentRoom.y ||
+        partBottom > parentBottom;
+
+      // If the part would be completely inside the parent, reject the snap
+      if (!extendsRoom) {
+        setDragState(null);
+        setSnapTarget(null);
+        setDragOffset(null);
+        return;
+      }
+
       // Snap to target (parent room corner or sibling part corner)
       const updatedPart = { ...part };
       updatedPart.attachTo = `${snapTarget.roomId}:${snapTarget.corner}`;
