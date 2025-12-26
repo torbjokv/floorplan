@@ -712,18 +712,66 @@ const FloorplanRendererComponent = ({
           updatedRoom.width = newWidth;
           updatedRoom.depth = newDepth;
 
-          // If left or top edge, also adjust position
-          if (currentResizeState.edge === 'left' || currentResizeState.edge === 'top') {
-            const deltaX =
-              currentResizeState.edge === 'left' ? currentResizeState.startWidth - newWidth : 0;
-            const deltaY =
-              currentResizeState.edge === 'top' ? currentResizeState.startDepth - newDepth : 0;
+          // Calculate offset adjustment to keep the opposite edge fixed
+          // The adjustment depends on the room's anchor point
+          const anchor = roomData.anchor || 'top-left';
+          const currentOffset = roomData.offset || [0, 0];
+          let offsetX = currentOffset[0];
+          let offsetY = currentOffset[1];
 
-            const newX = Math.round(currentResizeState.startX + deltaX);
-            const newY = Math.round(currentResizeState.startY + deltaY);
-            updatedRoom.attachTo = 'zeropoint:top-left';
-            updatedRoom.anchor = 'top-left';
-            updatedRoom.offset = [newX, newY];
+          // Width change
+          const widthDelta = newWidth - currentResizeState.startWidth;
+
+          // Depth change
+          const depthDelta = newDepth - currentResizeState.startDepth;
+
+          // Left edge resize: keep right edge fixed
+          // Need to adjust offset for left-anchored rooms (top-left, bottom-left)
+          if (currentResizeState.edge === 'left') {
+            if (anchor === 'top-left' || anchor === 'bottom-left') {
+              // Room is anchored at left edge, so we need to shift the offset
+              // to compensate for the width change and keep right edge fixed
+              offsetX = currentOffset[0] - widthDelta;
+            }
+            // For right-anchored rooms, the right edge is already fixed by the anchor
+          }
+
+          // Right edge resize: keep left edge fixed
+          // Need to adjust offset for right-anchored rooms (top-right, bottom-right)
+          if (currentResizeState.edge === 'right') {
+            if (anchor === 'top-right' || anchor === 'bottom-right') {
+              // Room is anchored at right edge, so we need to shift the offset
+              // to compensate for the width change and keep left edge fixed
+              offsetX = currentOffset[0] + widthDelta;
+            }
+            // For left-anchored rooms, the left edge is already fixed by the anchor
+          }
+
+          // Top edge resize: keep bottom edge fixed
+          // Need to adjust offset for top-anchored rooms (top-left, top-right)
+          if (currentResizeState.edge === 'top') {
+            if (anchor === 'top-left' || anchor === 'top-right') {
+              // Room is anchored at top edge, so we need to shift the offset
+              // to compensate for the depth change and keep bottom edge fixed
+              offsetY = currentOffset[1] - depthDelta;
+            }
+            // For bottom-anchored rooms, the bottom edge is already fixed by the anchor
+          }
+
+          // Bottom edge resize: keep top edge fixed
+          // Need to adjust offset for bottom-anchored rooms (bottom-left, bottom-right)
+          if (currentResizeState.edge === 'bottom') {
+            if (anchor === 'bottom-left' || anchor === 'bottom-right') {
+              // Room is anchored at bottom edge, so we need to shift the offset
+              // to compensate for the depth change and keep top edge fixed
+              offsetY = currentOffset[1] + depthDelta;
+            }
+            // For top-anchored rooms, the top edge is already fixed by the anchor
+          }
+
+          // Update offset if it changed
+          if (offsetX !== currentOffset[0] || offsetY !== currentOffset[1]) {
+            updatedRoom.offset = [Math.round(offsetX), Math.round(offsetY)];
           }
 
           const updatedRooms = data.rooms.map(r =>
@@ -795,41 +843,57 @@ const FloorplanRendererComponent = ({
       const room = data.rooms.find(r => r.id === roomId);
       if (!room) return;
 
-      const resolvedRoom = roomMap[roomId];
-      if (!resolvedRoom) return;
-
       const updatedRoom = { ...room };
+      const anchor = room.anchor || 'top-left';
+      const currentOffset = room.offset || [0, 0];
+      let offsetX = currentOffset[0];
+      let offsetY = currentOffset[1];
 
-      // Update the appropriate dimension
+      // Update the appropriate dimension and adjust offset based on anchor
       if (edge === 'left' || edge === 'right') {
         const widthDelta = newValue - room.width;
         updatedRoom.width = newValue;
 
-        // If left edge, adjust position to keep right edge fixed
+        // Left edge resize: adjust offset for left-anchored rooms
         if (edge === 'left') {
-          const newX = resolvedRoom.x - widthDelta;
-          updatedRoom.attachTo = 'zeropoint:top-left';
-          updatedRoom.anchor = 'top-left';
-          updatedRoom.offset = [newX, resolvedRoom.y];
+          if (anchor === 'top-left' || anchor === 'bottom-left') {
+            offsetX = currentOffset[0] - widthDelta;
+          }
+        }
+        // Right edge resize: adjust offset for right-anchored rooms
+        if (edge === 'right') {
+          if (anchor === 'top-right' || anchor === 'bottom-right') {
+            offsetX = currentOffset[0] + widthDelta;
+          }
         }
       } else {
         // top or bottom
         const depthDelta = newValue - room.depth;
         updatedRoom.depth = newValue;
 
-        // If top edge, adjust position to keep bottom edge fixed
+        // Top edge resize: adjust offset for top-anchored rooms
         if (edge === 'top') {
-          const newY = resolvedRoom.y - depthDelta;
-          updatedRoom.attachTo = 'zeropoint:top-left';
-          updatedRoom.anchor = 'top-left';
-          updatedRoom.offset = [resolvedRoom.x, newY];
+          if (anchor === 'top-left' || anchor === 'top-right') {
+            offsetY = currentOffset[1] - depthDelta;
+          }
         }
+        // Bottom edge resize: adjust offset for bottom-anchored rooms
+        if (edge === 'bottom') {
+          if (anchor === 'bottom-left' || anchor === 'bottom-right') {
+            offsetY = currentOffset[1] + depthDelta;
+          }
+        }
+      }
+
+      // Update offset if it changed
+      if (offsetX !== currentOffset[0] || offsetY !== currentOffset[1]) {
+        updatedRoom.offset = [Math.round(offsetX), Math.round(offsetY)];
       }
 
       const updatedRooms = data.rooms.map(r => (r.id === roomId ? updatedRoom : r));
       onRoomUpdate({ ...data, rooms: updatedRooms });
     },
-    [data, roomMap, onRoomUpdate]
+    [data, onRoomUpdate]
   );
 
   // Handle dimensions update (double-click on dimensions text)
