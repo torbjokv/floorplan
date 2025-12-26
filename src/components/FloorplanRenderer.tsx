@@ -1581,54 +1581,78 @@ const FloorplanRendererComponent = ({
     return `${newX} ${newY} ${zoomedWidth} ${zoomedDepth}`;
   }, [bounds, zoom, panOffset]);
 
-  // Handle mouse wheel for zooming
+  // Handle mouse wheel for zooming (with Ctrl) or panning (without Ctrl)
+  // Touchpad pinch-to-zoom sends wheel events with ctrlKey: true
+  // Touchpad two-finger scroll sends regular wheel events
   const handleWheel = useCallback(
     (e: React.WheelEvent<SVGSVGElement>) => {
       e.preventDefault();
 
-      const zoomFactor = 1.1;
-      const delta = e.deltaY > 0 ? 1 / zoomFactor : zoomFactor;
-      const newZoom = Math.min(Math.max(zoom * delta, 0.1), 10);
-
       if (!svgRef.current) return;
 
-      // Get mouse position in SVG coordinates before zoom
-      const pt = svgRef.current.createSVGPoint();
-      pt.x = e.clientX;
-      pt.y = e.clientY;
-      const svgPt = pt.matrixTransform(svgRef.current.getScreenCTM()?.inverse());
+      // Pinch-to-zoom (touchpad) or Ctrl+wheel (mouse) -> zoom
+      if (e.ctrlKey || e.metaKey) {
+        // Touchpad pinch uses smaller delta values, so use a gentler zoom factor
+        const zoomFactor = e.ctrlKey ? 1.02 : 1.1;
+        const delta = e.deltaY > 0 ? 1 / zoomFactor : zoomFactor;
+        const newZoom = Math.min(Math.max(zoom * delta, 0.1), 10);
 
-      // Calculate the center of current viewBox
-      const baseWidth = mm(bounds.width);
-      const baseDepth = mm(bounds.depth);
-      const baseX = mm(bounds.x);
-      const baseY = mm(bounds.y);
-      const centerX = baseX + baseWidth / 2;
-      const centerY = baseY + baseDepth / 2;
+        // Get mouse position in SVG coordinates before zoom
+        const pt = svgRef.current.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        const svgPt = pt.matrixTransform(svgRef.current.getScreenCTM()?.inverse());
 
-      // Current viewBox dimensions
-      const currentWidth = baseWidth / zoom;
-      const currentDepth = baseDepth / zoom;
-      const currentX = centerX - currentWidth / 2 - panOffset.x;
-      const currentY = centerY - currentDepth / 2 - panOffset.y;
+        // Calculate the center of current viewBox
+        const baseWidth = mm(bounds.width);
+        const baseDepth = mm(bounds.depth);
+        const baseX = mm(bounds.x);
+        const baseY = mm(bounds.y);
+        const centerX = baseX + baseWidth / 2;
+        const centerY = baseY + baseDepth / 2;
 
-      // Calculate mouse position as a ratio within the current viewBox
-      const ratioX = (svgPt.x - currentX) / currentWidth;
-      const ratioY = (svgPt.y - currentY) / currentDepth;
+        // Current viewBox dimensions
+        const currentWidth = baseWidth / zoom;
+        const currentDepth = baseDepth / zoom;
+        const currentX = centerX - currentWidth / 2 - panOffset.x;
+        const currentY = centerY - currentDepth / 2 - panOffset.y;
 
-      // New viewBox dimensions after zoom
-      const newWidth = baseWidth / newZoom;
-      const newDepth = baseDepth / newZoom;
+        // Calculate mouse position as a ratio within the current viewBox
+        const ratioX = (svgPt.x - currentX) / currentWidth;
+        const ratioY = (svgPt.y - currentY) / currentDepth;
 
-      // Calculate new offset so mouse position stays at same ratio
-      const newCenterX = svgPt.x - (ratioX - 0.5) * newWidth;
-      const newCenterY = svgPt.y - (ratioY - 0.5) * newDepth;
+        // New viewBox dimensions after zoom
+        const newWidth = baseWidth / newZoom;
+        const newDepth = baseDepth / newZoom;
 
-      const newPanX = centerX - newCenterX;
-      const newPanY = centerY - newCenterY;
+        // Calculate new offset so mouse position stays at same ratio
+        const newCenterX = svgPt.x - (ratioX - 0.5) * newWidth;
+        const newCenterY = svgPt.y - (ratioY - 0.5) * newDepth;
 
-      setZoom(newZoom);
-      setPanOffset({ x: newPanX, y: newPanY });
+        const newPanX = centerX - newCenterX;
+        const newPanY = centerY - newCenterY;
+
+        setZoom(newZoom);
+        setPanOffset({ x: newPanX, y: newPanY });
+      } else {
+        // Regular scroll (touchpad two-finger or mouse wheel without Ctrl) -> pan
+        const svg = svgRef.current;
+        const viewBox = svg.viewBox.baseVal;
+        const rect = svg.getBoundingClientRect();
+
+        // Calculate scale from screen pixels to viewBox units
+        const scaleX = viewBox.width / rect.width;
+        const scaleY = viewBox.height / rect.height;
+
+        // Convert scroll delta to pan offset (invert for natural scrolling feel)
+        const dx = e.deltaX * scaleX;
+        const dy = e.deltaY * scaleY;
+
+        setPanOffset(prev => ({
+          x: prev.x - dx,
+          y: prev.y - dy,
+        }));
+      }
     },
     [zoom, panOffset, bounds]
   );

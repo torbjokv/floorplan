@@ -637,7 +637,7 @@
 .zoom-controls {
   position: absolute;
   bottom: 20px;
-  right: 20px;
+  right: 150px;
   display: flex;
   align-items: center;
   gap: 4px;
