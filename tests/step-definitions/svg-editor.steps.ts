@@ -256,11 +256,12 @@ When('I click on the door to select it', async function () {
 });
 
 When('I click on the window to select it', async function () {
-  // Use .window-group selector which is more reliable
-  const window = this.page.locator('.window-group').first();
-  await window.waitFor({ state: 'visible', timeout: 10000 });
-  // Use force click to avoid issues with overlapping elements
-  await window.click({ force: true, timeout: 5000 });
+  // Click directly on the window rect to avoid bounding box issues with labels
+  const windowGroup = this.page.locator('.window-group').first();
+  await windowGroup.waitFor({ state: 'visible', timeout: 10000 });
+  // Click on the rect inside the group (the actual window visual)
+  const windowRect = windowGroup.locator('rect').first();
+  await windowRect.click({ force: true, timeout: 5000 });
   this.selectedElement = 'window';
 });
 
