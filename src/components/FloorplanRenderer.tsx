@@ -515,13 +515,44 @@ const FloorplanRendererComponent = ({
 
       // Find which room we're inside
       for (const room of Object.values(roomMap)) {
+        if (partIds.has(room.id)) continue; // Skip parts in top-level iteration
+
         if (isPointInRoom(room, x, y)) {
-          // We're inside this room - check if we're near a corner
-          const closest = findClosestCorner(room, x, y);
-          if (closest) {
-            // Near a corner - highlight ONLY that specific corner
-            setHoveredCorner({ roomId: room.id, corner: closest.corner });
-            foundHover = true;
+          // First check if we're near a part corner (parts take priority)
+          if (room.parts) {
+            for (const part of room.parts) {
+              const resolvedPart = roomMap[part.id];
+              if (!resolvedPart) continue;
+
+              // Check if inside this part
+              if (
+                x >= resolvedPart.x &&
+                x <= resolvedPart.x + resolvedPart.width &&
+                y >= resolvedPart.y &&
+                y <= resolvedPart.y + resolvedPart.depth
+              ) {
+                const closest = findClosestCorner(resolvedPart, x, y);
+                if (closest) {
+                  setHoveredCorner({
+                    roomId: room.id,
+                    corner: closest.corner,
+                    partId: part.id,
+                  });
+                  foundHover = true;
+                  break;
+                }
+              }
+            }
+          }
+
+          // If not near a part corner, check room corner
+          if (!foundHover) {
+            const closest = findClosestCorner(room, x, y);
+            if (closest) {
+              // Near a corner - highlight ONLY that specific corner
+              setHoveredCorner({ roomId: room.id, corner: closest.corner });
+              foundHover = true;
+            }
           }
           break;
         }
@@ -1507,51 +1538,20 @@ const FloorplanRendererComponent = ({
         return;
       }
 
-      // Calculate the new position for the part
-      const updatedPart = { ...part };
-
-      if (dragState.dragType === 'corner' && dragState.anchor && snapTarget && hasMoved) {
-        // Snap to target (parent room corner or sibling part corner)
-        updatedPart.attachTo = `${snapTarget.roomId}:${snapTarget.corner}`;
-        updatedPart.anchor = dragState.anchor;
-        delete updatedPart.offset;
-      } else if (dragState.anchor && hasMoved) {
-        // Moved significantly but no snap target - calculate offset from parent room
-        const cornerPos = getCorner(resolvedPart, dragState.anchor);
-        const newCornerX = cornerPos.x + dragOffset.x;
-        const newCornerY = cornerPos.y + dragOffset.y;
-
-        // Calculate offset relative to parent room's top-left
-        const parentResolved = roomMap[dragState.parentRoomId!];
-        if (parentResolved) {
-          const offsetX = newCornerX - parentResolved.x;
-          const offsetY = newCornerY - parentResolved.y;
-          updatedPart.attachTo = `${dragState.parentRoomId}:top-left`;
-          updatedPart.anchor = dragState.anchor;
-          updatedPart.offset = [offsetX, offsetY];
-        }
-      } else if (dragState.dragType === 'center' && hasMoved) {
-        // Center drag - calculate offset from parent room
-        const newX = resolvedPart.x + dragOffset.x;
-        const newY = resolvedPart.y + dragOffset.y;
-
-        const parentResolved = roomMap[dragState.parentRoomId!];
-        if (parentResolved) {
-          const offsetX = newX - parentResolved.x;
-          const offsetY = newY - parentResolved.y;
-          updatedPart.attachTo = `${dragState.parentRoomId}:top-left`;
-          updatedPart.anchor = 'top-left';
-          updatedPart.offset = [offsetX, offsetY];
-        }
-      }
-
-      // Only update if there were actual changes
-      if (!hasMoved && !dragOffset) {
+      // Parts MUST snap to parent room or sibling part corners - no free-standing positioning
+      // If no snap target, cancel the drag
+      if (!snapTarget || !hasMoved) {
         setDragState(null);
         setSnapTarget(null);
         setDragOffset(null);
         return;
       }
+
+      // Snap to target (parent room corner or sibling part corner)
+      const updatedPart = { ...part };
+      updatedPart.attachTo = `${snapTarget.roomId}:${snapTarget.corner}`;
+      updatedPart.anchor = dragState.anchor || 'top-left';
+      delete updatedPart.offset;
 
       // Update the part in the parent room
       const updatedParts = [...parentRoom.parts];

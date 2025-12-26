@@ -8,11 +8,14 @@ interface DragState {
   startMouseY: number;
   startRoomX: number;
   startRoomY: number;
+  partId?: string;
+  parentRoomId?: string;
 }
 
 interface CornerHighlight {
   roomId: string;
   corner: Anchor;
+  partId?: string; // If set, this is a part corner
 }
 
 interface CornerHighlightsProps {
@@ -66,9 +69,11 @@ export function CornerHighlights({
 
   // When dragging, show only the grabbed corner
   if (dragState && dragState.anchor) {
-    const room = roomMap[dragState.roomId];
-    if (room) {
-      const corner = getCorner(room, dragState.anchor);
+    // For parts, use the part's resolved position; for rooms, use the room
+    const targetId = dragState.partId || dragState.roomId;
+    const target = roomMap[targetId];
+    if (target) {
+      const corner = getCorner(target, dragState.anchor);
 
       // Apply drag offset
       let cornerX = corner.x;
@@ -82,7 +87,7 @@ export function CornerHighlights({
 
       highlights.push(
         <path
-          key={`corner-${dragState.roomId}-${dragState.anchor}`}
+          key={`corner-${targetId}-${dragState.anchor}`}
           d={path}
           fill="rgba(100, 108, 255, 0.5)"
           stroke="#646cff"
@@ -94,14 +99,16 @@ export function CornerHighlights({
   }
   // When hovering (not dragging), show only the single hovered corner
   else if (hoveredCorner) {
-    const room = roomMap[hoveredCorner.roomId];
-    if (room) {
-      const corner = getCorner(room, hoveredCorner.corner);
+    // For parts, use the part's resolved position; for rooms, use the room
+    const targetId = hoveredCorner.partId || hoveredCorner.roomId;
+    const target = roomMap[targetId];
+    if (target) {
+      const corner = getCorner(target, hoveredCorner.corner);
       const path = getQuarterCirclePath(corner.x, corner.y, hoveredCorner.corner, 600, mm);
 
       highlights.push(
         <path
-          key={`corner-${hoveredCorner.roomId}-${hoveredCorner.corner}`}
+          key={`corner-${targetId}-${hoveredCorner.corner}`}
           d={path}
           fill="rgba(100, 108, 255, 0.5)"
           stroke="#646cff"
@@ -114,9 +121,11 @@ export function CornerHighlights({
 
   // Render snap target
   if (snapTarget) {
-    const room = roomMap[snapTarget.roomId];
-    if (room) {
-      const corner = getCorner(room, snapTarget.corner);
+    // For part snap targets, use the part's resolved position
+    const targetId = snapTarget.partId || snapTarget.roomId;
+    const target = roomMap[targetId];
+    if (target) {
+      const corner = getCorner(target, snapTarget.corner);
       highlights.push(
         <circle
           key="snap"
