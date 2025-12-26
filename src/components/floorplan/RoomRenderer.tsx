@@ -1,11 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import type { ResolvedRoom, Anchor } from '../../types';
-import {
-  calculateCompositeRoomOutline,
-  polygonToSvgPath,
-  getCompositeBounds,
-  type Rectangle,
-} from '../../geometry';
+import { calculateCompositeRoomOutline, polygonToSvgPath, type Rectangle } from '../../geometry';
 
 interface DragState {
   roomId: string;
@@ -330,17 +325,14 @@ export function RoomRenderer({
     return polygonToSvgPath(outline, mm);
   }, [allRectangles, mm]);
 
-  // Calculate bounds for label positioning
-  const bounds = useMemo(() => getCompositeBounds(allRectangles), [allRectangles]);
-
   // Apply drag offset if this room is being dragged
   const isDragging = dragState?.roomId === room.id;
   const transform =
     isDragging && dragOffset ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})` : undefined;
 
-  // Label position: center of bounding box of all rectangles
-  const labelX = mm(bounds.minX + bounds.width / 2);
-  const labelY = mm(bounds.minY + bounds.depth / 2);
+  // Label position: center of main room only (not across all parts)
+  const labelX = mm(room.x + room.width / 2);
+  const labelY = mm(room.y + room.depth / 2);
 
   const hasMultipleParts = parts.length > 0;
 
