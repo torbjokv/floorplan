@@ -1486,9 +1486,7 @@ const FloorplanRendererComponent = ({
       if (onRoomUpdate) {
         const parentRoom = data.rooms.find(r => r.id === currentPartResizeState.parentRoomId);
         if (parentRoom && parentRoom.parts) {
-          const partIndex = parentRoom.parts.findIndex(
-            p => p.id === currentPartResizeState.partId
-          );
+          const partIndex = parentRoom.parts.findIndex(p => p.id === currentPartResizeState.partId);
           if (partIndex >= 0) {
             const partData = parentRoom.parts[partIndex];
             const updatedPart = { ...partData };
@@ -1564,9 +1562,7 @@ const FloorplanRendererComponent = ({
       const parentRoom = data.rooms.find(r => r.id === currentPartOffsetDragState.parentRoomId);
       if (!parentRoom || !parentRoom.parts) return;
 
-      const partIndex = parentRoom.parts.findIndex(
-        p => p.id === currentPartOffsetDragState.partId
-      );
+      const partIndex = parentRoom.parts.findIndex(p => p.id === currentPartOffsetDragState.partId);
       if (partIndex < 0) return;
 
       const partData = parentRoom.parts[partIndex];
