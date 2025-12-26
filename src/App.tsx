@@ -1158,6 +1158,68 @@ function App() {
     [dslText, updateDslText]
   );
 
+  // Delete selected element handler (used by both Delete key and Delete button)
+  const handleDeleteSelected = useCallback(() => {
+    if (!selectedElement) return;
+
+    const { config } = parseDSL(dslText);
+    if (!config) return;
+
+    const updatedData = { ...config };
+
+    switch (selectedElement.type) {
+      case 'door':
+        if (selectedElement.index !== undefined) {
+          updatedData.doors = config.doors?.filter((_, i) => i !== selectedElement.index) || [];
+        }
+        break;
+
+      case 'window':
+        if (selectedElement.index !== undefined) {
+          updatedData.windows = config.windows?.filter((_, i) => i !== selectedElement.index) || [];
+        }
+        break;
+
+      case 'object':
+        if (selectedElement.roomId && selectedElement.index !== undefined) {
+          updatedData.rooms = config.rooms.map(room => {
+            if (room.id === selectedElement.roomId) {
+              return {
+                ...room,
+                objects: room.objects?.filter((_, i) => i !== selectedElement.index),
+              };
+            }
+            return room;
+          });
+        }
+        break;
+
+      case 'room':
+        if (selectedElement.roomId) {
+          updatedData.rooms = config.rooms.filter(r => r.id !== selectedElement.roomId);
+        }
+        break;
+
+      case 'part':
+        if (selectedElement.roomId && selectedElement.partId) {
+          updatedData.rooms = config.rooms.map(room => {
+            if (room.id === selectedElement.roomId) {
+              return {
+                ...room,
+                parts: (room.parts || []).filter(p => p.id !== selectedElement.partId),
+              };
+            }
+            return room;
+          });
+        }
+        break;
+    }
+
+    const dsl = jsonToDSL(updatedData);
+    updateDslText(dsl);
+    setSelectedElement(null);
+  }, [selectedElement, dslText, updateDslText]);
+
   // Keyboard handler for selected elements (Delete to remove, Escape to deselect)
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -1169,70 +1231,13 @@ function App() {
 
       if (event.key === 'Delete' && selectedElement) {
         event.preventDefault();
-
-        const { config } = parseDSL(dslText);
-        if (!config) return;
-
-        const updatedData = { ...config };
-
-        switch (selectedElement.type) {
-          case 'door':
-            if (selectedElement.index !== undefined) {
-              updatedData.doors = config.doors?.filter((_, i) => i !== selectedElement.index) || [];
-            }
-            break;
-
-          case 'window':
-            if (selectedElement.index !== undefined) {
-              updatedData.windows =
-                config.windows?.filter((_, i) => i !== selectedElement.index) || [];
-            }
-            break;
-
-          case 'object':
-            if (selectedElement.roomId && selectedElement.index !== undefined) {
-              updatedData.rooms = config.rooms.map(room => {
-                if (room.id === selectedElement.roomId) {
-                  return {
-                    ...room,
-                    objects: room.objects?.filter((_, i) => i !== selectedElement.index),
-                  };
-                }
-                return room;
-              });
-            }
-            break;
-
-          case 'room':
-            if (selectedElement.roomId) {
-              updatedData.rooms = config.rooms.filter(r => r.id !== selectedElement.roomId);
-            }
-            break;
-
-          case 'part':
-            if (selectedElement.roomId && selectedElement.partId) {
-              updatedData.rooms = config.rooms.map(room => {
-                if (room.id === selectedElement.roomId) {
-                  return {
-                    ...room,
-                    parts: (room.parts || []).filter(p => p.id !== selectedElement.partId),
-                  };
-                }
-                return room;
-              });
-            }
-            break;
-        }
-
-        const dsl = jsonToDSL(updatedData);
-        updateDslText(dsl);
-        setSelectedElement(null);
+        handleDeleteSelected();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedElement, dslText, updateDslText]);
+  }, [selectedElement, handleDeleteSelected]);
 
   const handleDownloadDSL = () => {
     // Download the DSL source
@@ -1700,6 +1705,24 @@ function App() {
               </div>
             )}
           </div>
+          {selectedElement && (
+            <button
+              className="delete-element-button"
+              onClick={handleDeleteSelected}
+              data-testid="svg-delete-btn"
+            >
+              Delete{' '}
+              {selectedElement.type === 'room'
+                ? 'Room'
+                : selectedElement.type === 'part'
+                  ? 'Part'
+                  : selectedElement.type === 'door'
+                    ? 'Door'
+                    : selectedElement.type === 'window'
+                      ? 'Window'
+                      : 'Object'}
+            </button>
+          )}
         </div>
         <ErrorPanel
           jsonError={jsonError}

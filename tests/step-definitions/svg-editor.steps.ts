@@ -256,10 +256,11 @@ When('I click on the door to select it', async function () {
 });
 
 When('I click on the window to select it', async function () {
-  // Use .window-group selector which is more reliable
   const window = this.page.locator('.window-group').first();
   await window.waitFor({ state: 'visible', timeout: 10000 });
-  await window.click();
+  // Use dispatchEvent to ensure React handler fires on SVG elements
+  await window.dispatchEvent('click');
+  await this.page.waitForTimeout(200);
   this.selectedElement = 'window';
 });
 
@@ -272,6 +273,12 @@ When('I click on the object to select it', async function () {
 
 When('I press the Delete key', async function () {
   await this.page.keyboard.press('Delete');
+});
+
+When('I click the Delete button', async function () {
+  const deleteButton = this.page.locator('[data-testid="svg-delete-btn"]');
+  await deleteButton.waitFor({ state: 'visible', timeout: 5000 });
+  await deleteButton.click();
 });
 
 Then('the room should be removed', async function () {
