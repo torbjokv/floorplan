@@ -236,17 +236,17 @@
 
 /* SVG Hover Effects */
 
-.floorplan-svg .room-rect:hover {
+/* Room hover: style the path elements, not individual rects */
+.floorplan-svg g[data-room-id]:hover .room-fill {
   fill: #e3f2fd;
-  stroke: #2196f3;
-  stroke-width: 3;
-  cursor: pointer;
 }
 
-.floorplan-svg .composite-room:hover .composite-part {
-  fill: #e3f2fd;
+.floorplan-svg g[data-room-id]:hover .room-outline {
   stroke: #2196f3;
   stroke-width: 3;
+}
+
+.floorplan-svg g[data-room-id]:hover .room-rect {
   cursor: pointer;
 }
 
