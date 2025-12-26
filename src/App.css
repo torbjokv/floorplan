@@ -666,10 +666,10 @@
   align-items: center;
   gap: 4px;
   z-index: 10;
-  background-color: rgba(45, 45, 45, 0.9);
+  background-color: rgba(245, 245, 245, 0.95);
   padding: 6px 10px;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .zoom-button {
@@ -678,9 +678,9 @@
   padding: 0;
   font-size: 18px;
   font-weight: 600;
-  background-color: transparent;
-  color: #e0e0e0;
-  border: 1px solid #555;
+  background-color: white;
+  color: #555;
+  border: 1px solid #ccc;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s;
@@ -690,19 +690,19 @@
 }
 
 .zoom-button:hover {
-  background-color: #404040;
-  border-color: #666;
-  color: white;
+  background-color: #f0f0f0;
+  border-color: #aaa;
+  color: #333;
 }
 
 .zoom-button:active {
-  background-color: #555;
+  background-color: #e5e5e5;
 }
 
 .zoom-level {
   font-size: 12px;
   font-weight: 500;
-  color: #b0b0b0;
+  color: #666;
   min-width: 45px;
   text-align: center;
   padding: 0 4px;
