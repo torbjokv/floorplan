@@ -590,6 +590,74 @@ function App() {
     [dslText, updateDslText]
   );
 
+  const handleObjectTextUpdate = useCallback(
+    (roomId: string, objectIndex: number, newText: string | undefined, partId?: string) => {
+      const { config } = parseDSL(dslText);
+      if (!config) return;
+
+      const updatedRooms = config.rooms.map((room: Room) => {
+        if (room.id !== roomId) return room;
+
+        if (partId && room.parts) {
+          // Update object in a part
+          const updatedParts = room.parts.map(part => {
+            if (part.id !== partId || !part.objects) return part;
+            const updatedObjects = part.objects.map((obj, idx) =>
+              idx === objectIndex ? { ...obj, text: newText } : obj
+            );
+            return { ...part, objects: updatedObjects };
+          });
+          return { ...room, parts: updatedParts };
+        } else if (room.objects) {
+          // Update object in the room
+          const updatedObjects = room.objects.map((obj, idx) =>
+            idx === objectIndex ? { ...obj, text: newText } : obj
+          );
+          return { ...room, objects: updatedObjects };
+        }
+        return room;
+      });
+
+      const dsl = jsonToDSL({ ...config, rooms: updatedRooms });
+      updateDslText(dsl);
+    },
+    [dslText, updateDslText]
+  );
+
+  const handleObjectColorUpdate = useCallback(
+    (roomId: string, objectIndex: number, newColor: string | undefined, partId?: string) => {
+      const { config } = parseDSL(dslText);
+      if (!config) return;
+
+      const updatedRooms = config.rooms.map((room: Room) => {
+        if (room.id !== roomId) return room;
+
+        if (partId && room.parts) {
+          // Update object in a part
+          const updatedParts = room.parts.map(part => {
+            if (part.id !== partId || !part.objects) return part;
+            const updatedObjects = part.objects.map((obj, idx) =>
+              idx === objectIndex ? { ...obj, color: newColor } : obj
+            );
+            return { ...part, objects: updatedObjects };
+          });
+          return { ...room, parts: updatedParts };
+        } else if (room.objects) {
+          // Update object in the room
+          const updatedObjects = room.objects.map((obj, idx) =>
+            idx === objectIndex ? { ...obj, color: newColor } : obj
+          );
+          return { ...room, objects: updatedObjects };
+        }
+        return room;
+      });
+
+      const dsl = jsonToDSL({ ...config, rooms: updatedRooms });
+      updateDslText(dsl);
+    },
+    [dslText, updateDslText]
+  );
+
   const handleObjectClick = useCallback(
     (roomId: string, objectIndex: number) => {
       // Select the object for potential deletion
@@ -1500,6 +1568,8 @@ function App() {
           onDoorResizeUpdate={handleDoorResizeUpdate}
           onWindowResizeUpdate={handleWindowResizeUpdate}
           onBackgroundClick={() => setSelectedElement(null)}
+          onObjectTextUpdate={handleObjectTextUpdate}
+          onObjectColorUpdate={handleObjectColorUpdate}
         />
         <button
           className="download-svg-button"

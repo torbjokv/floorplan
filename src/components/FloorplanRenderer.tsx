@@ -86,6 +86,18 @@ interface FloorplanRendererProps {
   onDoorResizeUpdate?: (doorIndex: number, newWidth: number, newOffset: number) => void;
   onWindowResizeUpdate?: (windowIndex: number, newWidth: number, newOffset: number) => void;
   onBackgroundClick?: () => void;
+  onObjectTextUpdate?: (
+    roomId: string,
+    objectIndex: number,
+    newText: string | undefined,
+    partId?: string
+  ) => void;
+  onObjectColorUpdate?: (
+    roomId: string,
+    objectIndex: number,
+    newColor: string | undefined,
+    partId?: string
+  ) => void;
 }
 
 interface DragState {
@@ -156,6 +168,8 @@ const FloorplanRendererComponent = ({
   onDoorResizeUpdate,
   onWindowResizeUpdate,
   onBackgroundClick,
+  onObjectTextUpdate,
+  onObjectColorUpdate,
 }: FloorplanRendererProps) => {
   const gridStep = data.grid_step || 1000;
   const svgRef = useRef<SVGSVGElement>(null);
@@ -1235,6 +1249,41 @@ const FloorplanRendererComponent = ({
       }
     },
     [data, roomMap, onRoomUpdate]
+  );
+
+  // Handler for editing object text (name) via prompt
+  const handleObjectTextUpdate = useCallback(
+    (roomId: string, objectIndex: number, currentText: string | undefined, partId?: string) => {
+      const promptMessage = `Enter object name${currentText ? ` (current: "${currentText}")` : ''}:`;
+      const input = window.prompt(promptMessage, currentText || '');
+
+      if (input === null) return; // User cancelled
+
+      // Call the callback with the new text (empty string means remove the text)
+      onObjectTextUpdate?.(roomId, objectIndex, input || undefined, partId);
+    },
+    [onObjectTextUpdate]
+  );
+
+  // Handler for editing object color via prompt
+  const handleObjectColorUpdate = useCallback(
+    (roomId: string, objectIndex: number, currentColor: string | undefined, partId?: string) => {
+      const defaultColor = currentColor || '#888888';
+      const promptMessage = `Enter object color (hex format, e.g., #ff0000).\nCurrent: ${defaultColor}`;
+      const input = window.prompt(promptMessage, defaultColor);
+
+      if (input === null) return; // User cancelled
+
+      // Validate hex color format
+      const hexColorRegex = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
+      if (!hexColorRegex.test(input)) {
+        alert('Please enter a valid hex color (e.g., #ff0000 or #f00)');
+        return;
+      }
+
+      onObjectColorUpdate?.(roomId, objectIndex, input, partId);
+    },
+    [onObjectColorUpdate]
   );
 
   // Freestanding object resize handlers
@@ -2578,6 +2627,8 @@ const FloorplanRendererComponent = ({
               : null
           }
           onObjectFocus={handleObjectFocus}
+          onObjectTextUpdate={handleObjectTextUpdate}
+          onObjectColorUpdate={handleObjectColorUpdate}
         />
 
         {/* Freestanding doors (at absolute coordinates) */}
