@@ -106,6 +106,39 @@ Feature: SVG Editor Interface
     Then the object should be removed
     And the DSL should not contain the object
 
+  # Delete button tests
+  Scenario: Delete room by clicking Delete button
+    Given I have multiple rooms in the floorplan
+    When I click on a room to select it
+    And I click the Delete button
+    And I wait for 600ms
+    Then the room should be removed
+    And the DSL should not contain the room
+
+  Scenario: Delete door by clicking Delete button
+    Given I have a room with a door
+    When I click on the door to select it
+    And I click the Delete button
+    And I wait for 600ms
+    Then the door should be removed
+    And the DSL should not contain the door
+
+  Scenario: Delete window by clicking Delete button
+    Given I have a room with a window
+    When I click on the window to select it
+    And I click the Delete button
+    And I wait for 600ms
+    Then the window should be removed
+    And the DSL should not contain the window
+
+  Scenario: Delete object by clicking Delete button
+    Given I have a room with an object
+    When I click on the object to select it
+    And I click the Delete button
+    And I wait for 600ms
+    Then the object should be removed
+    And the DSL should not contain the object
+
   Scenario: Dragging a door from one wall to another wall
     Given I have a room with a door on the bottom wall
     When I drag the door to the left wall
@@ -212,6 +245,14 @@ Feature: SVG Editor Interface
     Given I have a room with a part
     When I click on the part to select it
     And I press the Delete key
+    And I wait for 600ms
+    Then the part should be removed
+    And the DSL should not contain the part
+
+  Scenario: Delete part by clicking Delete button
+    Given I have a room with a part
+    When I click on the part to select it
+    And I click the Delete button
     And I wait for 600ms
     Then the part should be removed
     And the DSL should not contain the part
