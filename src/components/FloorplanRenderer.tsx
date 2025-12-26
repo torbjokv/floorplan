@@ -96,11 +96,15 @@ interface DragState {
   startMouseY: number;
   startRoomX: number;
   startRoomY: number;
+  // Part-specific fields (when dragging a part instead of a room)
+  partId?: string;
+  parentRoomId?: string;
 }
 
 interface CornerHighlight {
   roomId: string;
   corner: Anchor;
+  partId?: string; // If set, this is a part corner, not a room corner
 }
 
 // Type for tracking which element is currently focused (showing buttons/handles)
@@ -511,13 +515,44 @@ const FloorplanRendererComponent = ({
 
       // Find which room we're inside
       for (const room of Object.values(roomMap)) {
+        if (partIds.has(room.id)) continue; // Skip parts in top-level iteration
+
         if (isPointInRoom(room, x, y)) {
-          // We're inside this room - check if we're near a corner
-          const closest = findClosestCorner(room, x, y);
-          if (closest) {
-            // Near a corner - highlight ONLY that specific corner
-            setHoveredCorner({ roomId: room.id, corner: closest.corner });
-            foundHover = true;
+          // First check if we're near a part corner (parts take priority)
+          if (room.parts) {
+            for (const part of room.parts) {
+              const resolvedPart = roomMap[part.id];
+              if (!resolvedPart) continue;
+
+              // Check if inside this part
+              if (
+                x >= resolvedPart.x &&
+                x <= resolvedPart.x + resolvedPart.width &&
+                y >= resolvedPart.y &&
+                y <= resolvedPart.y + resolvedPart.depth
+              ) {
+                const closest = findClosestCorner(resolvedPart, x, y);
+                if (closest) {
+                  setHoveredCorner({
+                    roomId: room.id,
+                    corner: closest.corner,
+                    partId: part.id,
+                  });
+                  foundHover = true;
+                  break;
+                }
+              }
+            }
+          }
+
+          // If not near a part corner, check room corner
+          if (!foundHover) {
+            const closest = findClosestCorner(room, x, y);
+            if (closest) {
+              // Near a corner - highlight ONLY that specific corner
+              setHoveredCorner({ roomId: room.id, corner: closest.corner });
+              foundHover = true;
+            }
           }
           break;
         }
@@ -560,6 +595,47 @@ const FloorplanRendererComponent = ({
         startMouseY: y,
         startRoomX: room.x,
         startRoomY: room.y,
+      });
+    }
+  };
+
+  // Mouse down handler for part dragging
+  const handlePartMouseDown = (
+    e: React.MouseEvent<SVGElement>,
+    parentRoomId: string,
+    partId: string
+  ) => {
+    e.stopPropagation();
+    const { x, y } = screenToMM(e.clientX, e.clientY);
+
+    // Parts are stored in roomMap with their own id
+    const part = roomMap[partId];
+    if (!part) return;
+
+    // Check if clicking on corner of the part
+    const closest = findClosestCorner(part, x, y);
+    if (closest) {
+      setDragState({
+        roomId: partId,
+        dragType: 'corner',
+        anchor: closest.corner,
+        startMouseX: x,
+        startMouseY: y,
+        startRoomX: part.x,
+        startRoomY: part.y,
+        partId,
+        parentRoomId,
+      });
+    } else if (isInsideRoomCenter(part, x, y)) {
+      setDragState({
+        roomId: partId,
+        dragType: 'center',
+        startMouseX: x,
+        startMouseY: y,
+        startRoomX: part.x,
+        startRoomY: part.y,
+        partId,
+        parentRoomId,
       });
     }
   };
@@ -1328,23 +1404,79 @@ const FloorplanRendererComponent = ({
         let newSnapTarget: CornerHighlight | null = null;
 
         if (dragState.dragType === 'corner' && dragState.anchor) {
-          // Check all other rooms for snap targets
-          for (const otherRoom of Object.values(roomMap)) {
-            if (otherRoom.id === dragState.roomId) continue;
+          // For parts, only check parent room and sibling parts
+          if (dragState.partId && dragState.parentRoomId) {
+            const parentRoom = roomMap[dragState.parentRoomId];
+            if (parentRoom) {
+              // Check parent room corners
+              const otherCorners: Anchor[] = [
+                'top-left',
+                'top-right',
+                'bottom-left',
+                'bottom-right',
+              ];
+              for (const otherCorner of otherCorners) {
+                const otherPos = getCorner(parentRoom, otherCorner);
+                const dist = Math.sqrt(Math.pow(x - otherPos.x, 2) + Math.pow(y - otherPos.y, 2));
 
-            const otherCorners: Anchor[] = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
-            for (const otherCorner of otherCorners) {
-              const otherPos = getCorner(otherRoom, otherCorner);
-              // Check distance from current mouse position (where dragged corner is)
-              const dist = Math.sqrt(Math.pow(x - otherPos.x, 2) + Math.pow(y - otherPos.y, 2));
+                if (dist < SNAP_DISTANCE) {
+                  newSnapTarget = { roomId: parentRoom.id, corner: otherCorner };
+                  foundSnap = true;
+                  break;
+                }
+              }
 
-              if (dist < SNAP_DISTANCE) {
-                newSnapTarget = { roomId: otherRoom.id, corner: otherCorner };
-                foundSnap = true;
-                break;
+              // Check sibling part corners
+              if (!foundSnap && parentRoom.parts) {
+                for (const siblingPart of parentRoom.parts) {
+                  if (siblingPart.id === dragState.partId) continue;
+                  const siblingResolved = roomMap[siblingPart.id];
+                  if (!siblingResolved) continue;
+
+                  for (const otherCorner of otherCorners) {
+                    const otherPos = getCorner(siblingResolved, otherCorner);
+                    const dist = Math.sqrt(
+                      Math.pow(x - otherPos.x, 2) + Math.pow(y - otherPos.y, 2)
+                    );
+
+                    if (dist < SNAP_DISTANCE) {
+                      newSnapTarget = {
+                        roomId: siblingResolved.id,
+                        corner: otherCorner,
+                        partId: siblingPart.id,
+                      };
+                      foundSnap = true;
+                      break;
+                    }
+                  }
+                  if (foundSnap) break;
+                }
               }
             }
-            if (foundSnap) break;
+          } else {
+            // For rooms, check all other rooms for snap targets
+            for (const otherRoom of Object.values(roomMap)) {
+              if (otherRoom.id === dragState.roomId) continue;
+
+              const otherCorners: Anchor[] = [
+                'top-left',
+                'top-right',
+                'bottom-left',
+                'bottom-right',
+              ];
+              for (const otherCorner of otherCorners) {
+                const otherPos = getCorner(otherRoom, otherCorner);
+                // Check distance from current mouse position (where dragged corner is)
+                const dist = Math.sqrt(Math.pow(x - otherPos.x, 2) + Math.pow(y - otherPos.y, 2));
+
+                if (dist < SNAP_DISTANCE) {
+                  newSnapTarget = { roomId: otherRoom.id, corner: otherCorner };
+                  foundSnap = true;
+                  break;
+                }
+              }
+              if (foundSnap) break;
+            }
           }
         }
 
@@ -1372,6 +1504,75 @@ const FloorplanRendererComponent = ({
       return;
     }
 
+    // Check if the element actually moved significantly (more than 100mm)
+    const MOVEMENT_THRESHOLD = 100; // mm
+    const hasMoved =
+      dragOffset &&
+      (Math.abs(dragOffset.x) > MOVEMENT_THRESHOLD || Math.abs(dragOffset.y) > MOVEMENT_THRESHOLD);
+
+    // Handle part dragging
+    if (dragState.partId && dragState.parentRoomId) {
+      const parentRoom = data.rooms.find(r => r.id === dragState.parentRoomId);
+      if (!parentRoom || !parentRoom.parts) {
+        setDragState(null);
+        setSnapTarget(null);
+        setDragOffset(null);
+        return;
+      }
+
+      const partIndex = parentRoom.parts.findIndex(p => p.id === dragState.partId);
+      if (partIndex === -1) {
+        setDragState(null);
+        setSnapTarget(null);
+        setDragOffset(null);
+        return;
+      }
+
+      const part = parentRoom.parts[partIndex];
+      const resolvedPart = roomMap[dragState.partId!];
+
+      if (!resolvedPart || !dragOffset) {
+        setDragState(null);
+        setSnapTarget(null);
+        setDragOffset(null);
+        return;
+      }
+
+      // Parts MUST snap to parent room or sibling part corners - no free-standing positioning
+      // If no snap target, cancel the drag
+      if (!snapTarget || !hasMoved) {
+        setDragState(null);
+        setSnapTarget(null);
+        setDragOffset(null);
+        return;
+      }
+
+      // Snap to target (parent room corner or sibling part corner)
+      const updatedPart = { ...part };
+      updatedPart.attachTo = `${snapTarget.roomId}:${snapTarget.corner}`;
+      updatedPart.anchor = dragState.anchor || 'top-left';
+      delete updatedPart.offset;
+
+      // Update the part in the parent room
+      const updatedParts = [...parentRoom.parts];
+      updatedParts[partIndex] = updatedPart;
+      const updatedParentRoom = { ...parentRoom, parts: updatedParts };
+      const updatedRooms = data.rooms.map(r =>
+        r.id === dragState.parentRoomId ? updatedParentRoom : r
+      );
+
+      // Clear drag state immediately before updating
+      setDragState(null);
+      setSnapTarget(null);
+      setDragOffset(null);
+      setConnectedRooms(new Set());
+
+      // Trigger update after clearing drag state
+      onRoomUpdate({ ...data, rooms: updatedRooms });
+      return;
+    }
+
+    // Handle room dragging (existing logic)
     const room = data.rooms.find(r => r.id === dragState.roomId);
     if (!room) {
       setDragState(null);
@@ -1379,12 +1580,6 @@ const FloorplanRendererComponent = ({
       setDragOffset(null);
       return;
     }
-
-    // Check if the room actually moved significantly (more than 100mm)
-    const MOVEMENT_THRESHOLD = 100; // mm
-    const hasMoved =
-      dragOffset &&
-      (Math.abs(dragOffset.x) > MOVEMENT_THRESHOLD || Math.abs(dragOffset.y) > MOVEMENT_THRESHOLD);
 
     const updatedRoom = { ...room };
     const resolvedRoom = roomMap[dragState.roomId];
@@ -1584,6 +1779,7 @@ const FloorplanRendererComponent = ({
               resolveCompositeRoom={resolveCompositeRoom}
               getCorner={getCorner}
               onMouseDown={handleMouseDown}
+              onPartMouseDown={handlePartMouseDown}
               onClick={onRoomClick}
               onPartClick={onPartClick}
               onNameUpdate={onRoomNameUpdate}

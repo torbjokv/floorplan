@@ -231,36 +231,102 @@ function removeInternalEdges(allEdges: DirectedEdge[]): DirectedEdge[] {
 /**
  * Connect edges into a closed polygon by following end-to-start connections.
  * Returns an array of points forming the polygon outline.
+ *
+ * When multiple edges start from the same point (rectangles share a corner but not an edge),
+ * we pick the edge that turns right (clockwise) from the incoming direction.
  */
 function connectEdgesToPolygon(edges: DirectedEdge[]): Point[] {
   if (edges.length === 0) return [];
 
-  // Build a map from start point to edge
-  const edgeMap = new Map<string, DirectedEdge>();
+  // Build a map from start point to list of edges starting there
+  const edgeMap = new Map<string, DirectedEdge[]>();
   for (const edge of edges) {
     const key = `${edge.start.x},${edge.start.y}`;
-    edgeMap.set(key, edge);
+    const list = edgeMap.get(key) || [];
+    list.push(edge);
+    edgeMap.set(key, list);
   }
 
   // Start from the first edge and follow the chain
   const points: Point[] = [];
   const startEdge = edges[0];
   let currentEdge: DirectedEdge | undefined = startEdge;
-  const visited = new Set<string>();
+  const visitedEdges = new Set<DirectedEdge>();
 
-  while (currentEdge) {
-    const key = `${currentEdge.start.x},${currentEdge.start.y}`;
-    if (visited.has(key)) break; // Completed the loop
-    visited.add(key);
-
+  while (currentEdge && !visitedEdges.has(currentEdge)) {
+    visitedEdges.add(currentEdge);
     points.push(currentEdge.start);
 
     // Find the next edge that starts where this one ends
     const nextKey = `${currentEdge.end.x},${currentEdge.end.y}`;
-    currentEdge = edgeMap.get(nextKey);
+    const candidates = edgeMap.get(nextKey);
+
+    if (!candidates || candidates.length === 0) {
+      break;
+    }
+
+    if (candidates.length === 1) {
+      currentEdge = candidates[0];
+    } else {
+      // Multiple edges start from this point - pick the one that turns right (clockwise)
+      currentEdge = pickNextEdgeClockwise(currentEdge, candidates);
+    }
   }
 
   return points;
+}
+
+/**
+ * Pick the next edge that makes a clockwise turn from the current edge direction.
+ * Direction vectors:
+ *   right (east):  +x = 0
+ *   down (south):  +y = 1
+ *   left (west):   -x = 2
+ *   up (north):    -y = 3
+ *
+ * Clockwise order: 0 -> 1 -> 2 -> 3 -> 0
+ * After arriving from direction D, we want to leave in direction (D+1) mod 4 (right turn)
+ * If that's not available, try (D+2) mod 4 (straight), then (D+3) mod 4 (left turn)
+ */
+function pickNextEdgeClockwise(current: DirectedEdge, candidates: DirectedEdge[]): DirectedEdge {
+  // Determine incoming direction (direction we arrived FROM)
+  const incomingDir = getEdgeDirection(current);
+
+  // The direction we arrived from (opposite of edge direction)
+  // If edge goes right, we arrived FROM the left
+  const arrivedFrom = (incomingDir + 2) % 4;
+
+  // Priority order for next edge: right turn, straight, left turn, back
+  // From the perspective of walking along the boundary
+  const priorityOrder = [
+    (arrivedFrom + 1) % 4, // right turn
+    (arrivedFrom + 2) % 4, // straight (continue in same direction)
+    (arrivedFrom + 3) % 4, // left turn
+    arrivedFrom, // back (u-turn, shouldn't happen normally)
+  ];
+
+  for (const targetDir of priorityOrder) {
+    const found = candidates.find(e => getEdgeDirection(e) === targetDir);
+    if (found) return found;
+  }
+
+  // Fallback to first candidate
+  return candidates[0];
+}
+
+/**
+ * Get the direction of an edge as a number 0-3:
+ * 0 = right (positive x)
+ * 1 = down (positive y)
+ * 2 = left (negative x)
+ * 3 = up (negative y)
+ */
+function getEdgeDirection(edge: DirectedEdge): number {
+  if (edge.isHorizontal) {
+    return edge.end.x > edge.start.x ? 0 : 2; // right or left
+  } else {
+    return edge.end.y > edge.start.y ? 1 : 3; // down or up
+  }
 }
 
 /**

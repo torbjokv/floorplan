@@ -10,6 +10,8 @@ interface DragState {
   startMouseY: number;
   startRoomX: number;
   startRoomY: number;
+  partId?: string;
+  parentRoomId?: string;
 }
 
 interface EditableRoomLabelProps {
@@ -253,13 +255,14 @@ interface RoomRendererProps {
   room: ResolvedRoom;
   dragState: DragState | null;
   dragOffset: { x: number; y: number } | null;
-  hoveredCorner: { roomId: string; corner: Anchor } | null;
+  hoveredCorner: { roomId: string; corner: Anchor; partId?: string } | null;
   isConnected: boolean;
   selectedPartId?: string | null;
   mm: (val: number) => number;
   resolveCompositeRoom: (room: ResolvedRoom) => Array<ResolvedPart>;
   getCorner: (room: ResolvedRoom, corner: Anchor) => { x: number; y: number };
   onMouseDown: (e: React.MouseEvent<SVGElement>, roomId: string) => void;
+  onPartMouseDown?: (e: React.MouseEvent<SVGElement>, roomId: string, partId: string) => void;
   onClick?: (roomId: string) => void;
   onPartClick?: (roomId: string, partId: string) => void;
   onNameUpdate?: (roomId: string, newName: string) => void;
@@ -290,6 +293,7 @@ export function RoomRenderer({
   mm,
   resolveCompositeRoom,
   onMouseDown,
+  onPartMouseDown,
   onClick,
   onPartClick,
   onNameUpdate,
@@ -325,10 +329,12 @@ export function RoomRenderer({
     return polygonToSvgPath(outline, mm);
   }, [allRectangles, mm]);
 
-  // Apply drag offset if this room is being dragged
-  const isDragging = dragState?.roomId === room.id;
+  // Apply drag offset if this room or any of its parts is being dragged
+  const isRoomDragging = dragState?.roomId === room.id && !dragState?.partId;
+  const isAnyPartDragging = dragState?.parentRoomId === room.id && dragState?.partId;
+  // Room moves with offset only when room is dragged (not when part is dragged)
   const transform =
-    isDragging && dragOffset ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})` : undefined;
+    isRoomDragging && dragOffset ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})` : undefined;
 
   // Label position: center of main room only (not across all parts)
   const labelX = mm(room.x + room.width / 2);
@@ -356,7 +362,7 @@ export function RoomRenderer({
           onFocus?.(room.id);
         }}
         onMouseDown={e => onMouseDown(e, room.id)}
-        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+        style={{ cursor: isRoomDragging || isAnyPartDragging ? 'grabbing' : 'grab' }}
       />
 
       {/* Layer 2: Unified outline using path - only external borders visible */}
@@ -384,18 +390,25 @@ export function RoomRenderer({
           onFocus?.(room.id);
         }}
         onMouseDown={e => onMouseDown(e, room.id)}
-        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+        style={{ cursor: isRoomDragging ? 'grabbing' : 'grab' }}
       />
 
       {/* Layer 4: Part click regions with selection highlight (only for composite rooms) */}
       {hasMultipleParts &&
         parts.map((part, idx) => {
           const isPartSelected = selectedPartId === part.id;
+          const isThisPartDragging = dragState?.partId === part.id;
+          // Calculate transform for this specific part when it's being dragged
+          const partTransform =
+            isThisPartDragging && dragOffset
+              ? `translate(${mm(dragOffset.x)} ${mm(dragOffset.y)})`
+              : undefined;
           return (
             <rect
               className="room-rect composite-part"
               key={`part-${idx}`}
               data-part-id={part.id}
+              data-testid={`part-${part.id}`}
               x={mm(part.x)}
               y={mm(part.y)}
               width={mm(part.width)}
@@ -403,11 +416,16 @@ export function RoomRenderer({
               fill="transparent"
               stroke={isPartSelected ? '#646cff' : 'none'}
               strokeWidth={isPartSelected ? '4' : '0'}
+              transform={partTransform}
               onClick={e => {
                 e.stopPropagation();
                 onPartClick?.(room.id, part.id);
               }}
-              style={{ cursor: 'pointer' }}
+              onMouseDown={e => {
+                e.stopPropagation();
+                onPartMouseDown?.(e, room.id, part.id);
+              }}
+              style={{ cursor: isThisPartDragging ? 'grabbing' : 'grab' }}
             />
           );
         })}
