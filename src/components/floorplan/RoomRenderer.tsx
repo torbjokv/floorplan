@@ -270,6 +270,7 @@ interface RoomRendererProps {
   onMouseEnter?: (roomId: string) => void;
   onMouseLeave?: () => void;
   onFocus?: (roomId: string) => void;
+  onPartFocus?: (roomId: string, partId: string) => void;
 }
 
 /**
@@ -301,6 +302,7 @@ export function RoomRenderer({
   onMouseEnter,
   onMouseLeave,
   onFocus,
+  onPartFocus,
 }: RoomRendererProps) {
   const parts = resolveCompositeRoom(room);
 
@@ -420,6 +422,7 @@ export function RoomRenderer({
               onClick={e => {
                 e.stopPropagation();
                 onPartClick?.(room.id, part.id);
+                onPartFocus?.(room.id, part.id);
               }}
               onMouseDown={e => {
                 e.stopPropagation();

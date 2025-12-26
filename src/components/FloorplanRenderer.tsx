@@ -110,6 +110,7 @@ interface CornerHighlight {
 // Type for tracking which element is currently focused (showing buttons/handles)
 type FocusedElement =
   | { type: 'room'; roomId: string }
+  | { type: 'part'; roomId: string; partId: string }
   | { type: 'door'; index: number }
   | { type: 'window'; index: number }
   | { type: 'object'; roomId: string; objectIndex: number; partId?: string }
@@ -178,6 +179,22 @@ const FloorplanRendererComponent = ({
     startY: number;
   } | null>(null);
   const resizeStateRef = useRef(resizeState);
+
+  // Part resize state
+  const [partResizeState, setPartResizeState] = useState<{
+    parentRoomId: string;
+    partId: string;
+    edge: ResizeEdge;
+    startMouseX: number;
+    startMouseY: number;
+    startWidth: number;
+    startDepth: number;
+    startX: number;
+    startY: number;
+    startOffsetX: number;
+    startOffsetY: number;
+  } | null>(null);
+  const partResizeStateRef = useRef(partResizeState);
   // Keep hoveredRoomId for UI hover effects (CSS class changes)
   const [, setHoveredRoomId] = useState<string | null>(null);
 
@@ -230,6 +247,17 @@ const FloorplanRendererComponent = ({
   } | null>(null);
   const offsetDragStateRef = useRef(offsetDragState);
 
+  // Part offset drag state
+  const [partOffsetDragState, setPartOffsetDragState] = useState<{
+    parentRoomId: string;
+    partId: string;
+    direction: OffsetDirection;
+    startMouseX: number;
+    startMouseY: number;
+    startOffset: [number, number];
+  } | null>(null);
+  const partOffsetDragStateRef = useRef(partOffsetDragState);
+
   // Zoom and pan state
   const [zoom, setZoom] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
@@ -256,6 +284,14 @@ const FloorplanRendererComponent = ({
   useEffect(() => {
     offsetDragStateRef.current = offsetDragState;
   }, [offsetDragState]);
+
+  useEffect(() => {
+    partResizeStateRef.current = partResizeState;
+  }, [partResizeState]);
+
+  useEffect(() => {
+    partOffsetDragStateRef.current = partOffsetDragState;
+  }, [partOffsetDragState]);
 
   // Memoize room resolution to avoid recalculating on every render
   const { roomMap, errors, partIds, partToParent, normalizationOffset } = useMemo(() => {
@@ -1448,6 +1484,330 @@ const FloorplanRendererComponent = ({
     [data, handleOffsetDragMove, handleOffsetDragEnd]
   );
 
+  // Part resize handlers
+  const handlePartResizeEnd = useCallback(() => {
+    setPartResizeState(null);
+  }, []);
+
+  const handlePartResizeMove = useCallback(
+    (x: number, y: number) => {
+      const currentPartResizeState = partResizeStateRef.current;
+      if (!currentPartResizeState) return;
+
+      const part = roomMap[currentPartResizeState.partId];
+      if (!part) return;
+
+      // Initialize start position on first move
+      if (currentPartResizeState.startMouseX === 0 && currentPartResizeState.startMouseY === 0) {
+        setPartResizeState({
+          ...currentPartResizeState,
+          startMouseX: x,
+          startMouseY: y,
+        });
+        return;
+      }
+
+      // Calculate delta from start position
+      const deltaX = x - currentPartResizeState.startMouseX;
+      const deltaY = y - currentPartResizeState.startMouseY;
+
+      // Calculate new dimensions based on which edge is being dragged
+      const MIN_SIZE = 500; // mm - minimum part dimension
+
+      let newWidth = currentPartResizeState.startWidth;
+      let newDepth = currentPartResizeState.startDepth;
+      let newOffsetX = 0;
+      let newOffsetY = 0;
+
+      switch (currentPartResizeState.edge) {
+        case 'right':
+          newWidth = Math.round(Math.max(MIN_SIZE, currentPartResizeState.startWidth + deltaX));
+          break;
+        case 'left':
+          newWidth = Math.round(Math.max(MIN_SIZE, currentPartResizeState.startWidth - deltaX));
+          newOffsetX = currentPartResizeState.startWidth - newWidth;
+          break;
+        case 'bottom':
+          newDepth = Math.round(Math.max(MIN_SIZE, currentPartResizeState.startDepth + deltaY));
+          break;
+        case 'top':
+          newDepth = Math.round(Math.max(MIN_SIZE, currentPartResizeState.startDepth - deltaY));
+          newOffsetY = currentPartResizeState.startDepth - newDepth;
+          break;
+      }
+
+      // Get the resolved part
+      const resolvedPart = roomMap[currentPartResizeState.partId];
+      if (!resolvedPart) return;
+
+      // Get the part data to find what it's attached to
+      const parentRoomData = data.rooms.find(r => r.id === currentPartResizeState.parentRoomId);
+      const partData = parentRoomData?.parts?.find(p => p.id === currentPartResizeState.partId);
+
+      // Determine what the part is attached to (could be main room or another part)
+      const attachToTarget = partData?.attachTo?.split(':')[0];
+      const resolvedAttachTarget = attachToTarget ? roomMap[attachToTarget] : null;
+
+      // If we can't find the attach target, use the parent room as fallback
+      const resolvedParentRoom = roomMap[currentPartResizeState.parentRoomId];
+      const targetForValidation = resolvedAttachTarget || resolvedParentRoom;
+      if (!targetForValidation) return;
+
+      // Calculate where the part would be after resize
+      const newPartX = resolvedPart.x + newOffsetX;
+      const newPartY = resolvedPart.y + newOffsetY;
+
+      // Check if the part would still touch or overlap with its attach target
+      const partRight = newPartX + newWidth;
+      const partBottom = newPartY + newDepth;
+      const targetRight = targetForValidation.x + targetForValidation.width;
+      const targetBottom = targetForValidation.y + targetForValidation.depth;
+
+      const wouldTouch =
+        newPartX <= targetRight &&
+        partRight >= targetForValidation.x &&
+        newPartY <= targetBottom &&
+        partBottom >= targetForValidation.y;
+
+      // Part must be COMPLETELY OUTSIDE its attach target (only touching at boundary)
+      const completelyToRight = newPartX >= targetRight;
+      const completelyToLeft = partRight <= targetForValidation.x;
+      const completelyBelow = newPartY >= targetBottom;
+      const completelyAbove = partBottom <= targetForValidation.y;
+
+      const outsideTarget =
+        completelyToRight || completelyToLeft || completelyBelow || completelyAbove;
+
+      // If the part would disconnect or overlap with target interior, don't update
+      if (!wouldTouch || !outsideTarget) {
+        return;
+      }
+
+      // Update the part in data to show live resize feedback
+      if (onRoomUpdate) {
+        const parentRoom = data.rooms.find(r => r.id === currentPartResizeState.parentRoomId);
+        if (parentRoom && parentRoom.parts) {
+          const partIndex = parentRoom.parts.findIndex(p => p.id === currentPartResizeState.partId);
+          if (partIndex >= 0) {
+            const partDataFromRooms = parentRoom.parts[partIndex];
+            const updatedPart = { ...partDataFromRooms };
+            updatedPart.width = newWidth;
+            updatedPart.depth = newDepth;
+
+            // If left or top edge, also adjust offset from the stored start offset
+            if (currentPartResizeState.edge === 'left' || currentPartResizeState.edge === 'top') {
+              updatedPart.offset = [
+                currentPartResizeState.startOffsetX + newOffsetX,
+                currentPartResizeState.startOffsetY + newOffsetY,
+              ];
+            }
+
+            const updatedParts = [...parentRoom.parts];
+            updatedParts[partIndex] = updatedPart;
+            const updatedParentRoom = { ...parentRoom, parts: updatedParts };
+            const updatedRooms = data.rooms.map(r =>
+              r.id === currentPartResizeState.parentRoomId ? updatedParentRoom : r
+            );
+            onRoomUpdate({ ...data, rooms: updatedRooms });
+          }
+        }
+      }
+    },
+    [roomMap, data, onRoomUpdate]
+  );
+
+  const handlePartResizeStart = useCallback(
+    (parentRoomId: string, partId: string, edge: ResizeEdge) => {
+      const part = roomMap[partId];
+      if (!part) return;
+
+      // Get the original offset from the part data
+      const parentRoom = data.rooms.find(r => r.id === parentRoomId);
+      const partData = parentRoom?.parts?.find(p => p.id === partId);
+      const originalOffset = partData?.offset || [0, 0];
+
+      const handleMouseMove = (e: MouseEvent) => {
+        const { x, y } = screenToMM(e.clientX, e.clientY);
+        handlePartResizeMove(x, y);
+      };
+
+      const handleMouseUp = () => {
+        handlePartResizeEnd();
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+
+      // Set initial resize state
+      setPartResizeState({
+        parentRoomId,
+        partId,
+        edge,
+        startMouseX: 0, // Will be set on first move
+        startMouseY: 0, // Will be set on first move
+        startWidth: part.width,
+        startDepth: part.depth,
+        startX: part.x,
+        startY: part.y,
+        startOffsetX: originalOffset[0],
+        startOffsetY: originalOffset[1],
+      });
+    },
+    [data.rooms, roomMap, handlePartResizeMove, handlePartResizeEnd]
+  );
+
+  // Part offset drag handlers
+  const handlePartOffsetDragEnd = useCallback(() => {
+    setPartOffsetDragState(null);
+  }, []);
+
+  const handlePartOffsetDragMove = useCallback(
+    (x: number, y: number) => {
+      const currentPartOffsetDragState = partOffsetDragStateRef.current;
+      if (!currentPartOffsetDragState) return;
+      if (!onRoomUpdate) return;
+
+      const parentRoom = data.rooms.find(r => r.id === currentPartOffsetDragState.parentRoomId);
+      if (!parentRoom || !parentRoom.parts) return;
+
+      const partIndex = parentRoom.parts.findIndex(p => p.id === currentPartOffsetDragState.partId);
+      if (partIndex < 0) return;
+
+      const partData = parentRoom.parts[partIndex];
+
+      // Initialize start position on first move
+      if (
+        currentPartOffsetDragState.startMouseX === 0 &&
+        currentPartOffsetDragState.startMouseY === 0
+      ) {
+        setPartOffsetDragState({
+          ...currentPartOffsetDragState,
+          startMouseX: x,
+          startMouseY: y,
+        });
+        return;
+      }
+
+      // Calculate delta from start position
+      const deltaX = x - currentPartOffsetDragState.startMouseX;
+      const deltaY = y - currentPartOffsetDragState.startMouseY;
+
+      // Determine which axis to adjust based on direction
+      let newOffsetX = currentPartOffsetDragState.startOffset[0];
+      let newOffsetY = currentPartOffsetDragState.startOffset[1];
+
+      switch (currentPartOffsetDragState.direction) {
+        case 'left':
+        case 'right':
+          // Horizontal arrows adjust X offset
+          newOffsetX = Math.round(currentPartOffsetDragState.startOffset[0] + deltaX);
+          break;
+        case 'top':
+        case 'bottom':
+          // Vertical arrows adjust Y offset
+          newOffsetY = Math.round(currentPartOffsetDragState.startOffset[1] + deltaY);
+          break;
+      }
+
+      // Get the resolved part
+      const resolvedPart = roomMap[currentPartOffsetDragState.partId];
+      if (!resolvedPart) return;
+
+      // Determine what the part is attached to (could be main room or another part)
+      // Parse attachTo to get the target ID (format: "targetId:corner")
+      const attachToTarget = partData.attachTo?.split(':')[0];
+      const resolvedAttachTarget = attachToTarget ? roomMap[attachToTarget] : null;
+
+      // If we can't find the attach target, use the parent room as fallback
+      const resolvedParentRoom = roomMap[currentPartOffsetDragState.parentRoomId];
+      const targetForValidation = resolvedAttachTarget || resolvedParentRoom;
+      if (!targetForValidation) return;
+
+      // Calculate where the part would be with the new offset
+      const currentOffset = partData.offset || [0, 0];
+      const offsetDeltaX = newOffsetX - currentOffset[0];
+      const offsetDeltaY = newOffsetY - currentOffset[1];
+      const newPartX = resolvedPart.x + offsetDeltaX;
+      const newPartY = resolvedPart.y + offsetDeltaY;
+
+      // Check if the part would still touch or overlap with its attach target
+      const partRight = newPartX + resolvedPart.width;
+      const partBottom = newPartY + resolvedPart.depth;
+      const targetRight = targetForValidation.x + targetForValidation.width;
+      const targetBottom = targetForValidation.y + targetForValidation.depth;
+
+      // Check if rectangles would still touch (allowing edge contact)
+      const wouldTouch =
+        newPartX <= targetRight &&
+        partRight >= targetForValidation.x &&
+        newPartY <= targetBottom &&
+        partBottom >= targetForValidation.y;
+
+      // Part must be COMPLETELY OUTSIDE its attach target (only touching at boundary)
+      const completelyToRight = newPartX >= targetRight;
+      const completelyToLeft = partRight <= targetForValidation.x;
+      const completelyBelow = newPartY >= targetBottom;
+      const completelyAbove = partBottom <= targetForValidation.y;
+
+      const outsideTarget =
+        completelyToRight || completelyToLeft || completelyBelow || completelyAbove;
+
+      // If the part would disconnect or overlap with target interior, don't update
+      if (!wouldTouch || !outsideTarget) {
+        return;
+      }
+
+      // Update the part offset
+      const updatedPart = { ...partData, offset: [newOffsetX, newOffsetY] as [number, number] };
+      const updatedParts = [...parentRoom.parts];
+      updatedParts[partIndex] = updatedPart;
+      const updatedParentRoom = { ...parentRoom, parts: updatedParts };
+      const updatedRooms = data.rooms.map(r =>
+        r.id === currentPartOffsetDragState.parentRoomId ? updatedParentRoom : r
+      );
+      onRoomUpdate({ ...data, rooms: updatedRooms });
+    },
+    [data, onRoomUpdate, roomMap]
+  );
+
+  const handlePartOffsetDragStart = useCallback(
+    (parentRoomId: string, partId: string, direction: OffsetDirection) => {
+      const parentRoom = data.rooms.find(r => r.id === parentRoomId);
+      if (!parentRoom || !parentRoom.parts) return;
+
+      const part = parentRoom.parts.find(p => p.id === partId);
+      if (!part) return;
+
+      const handleMouseMove = (e: MouseEvent) => {
+        const { x, y } = screenToMM(e.clientX, e.clientY);
+        handlePartOffsetDragMove(x, y);
+      };
+
+      const handleMouseUp = () => {
+        handlePartOffsetDragEnd();
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+
+      // Set initial offset drag state
+      const currentOffset = part.offset || [0, 0];
+      setPartOffsetDragState({
+        parentRoomId,
+        partId,
+        direction,
+        startMouseX: 0, // Will be set on first move
+        startMouseY: 0, // Will be set on first move
+        startOffset: [currentOffset[0], currentOffset[1]],
+      });
+    },
+    [data, handlePartOffsetDragMove, handlePartOffsetDragEnd]
+  );
+
   // Handle drag movement with requestAnimationFrame for smooth performance
   const handleDragMove = useCallback(
     (x: number, y: number) => {
@@ -1619,6 +1979,58 @@ const FloorplanRendererComponent = ({
       // Parts MUST snap to parent room or sibling part corners - no free-standing positioning
       // If no snap target, cancel the drag
       if (!snapTarget || !hasMoved) {
+        setDragState(null);
+        setSnapTarget(null);
+        setDragOffset(null);
+        return;
+      }
+
+      // Calculate where the part would be after snapping
+      const resolvedParentRoom = roomMap[dragState.parentRoomId];
+      if (!resolvedParentRoom) {
+        setDragState(null);
+        setSnapTarget(null);
+        setDragOffset(null);
+        return;
+      }
+
+      // Get the target position (where the part's anchor will snap to)
+      const targetRoom = roomMap[snapTarget.roomId];
+      if (!targetRoom) {
+        setDragState(null);
+        setSnapTarget(null);
+        setDragOffset(null);
+        return;
+      }
+      const targetCornerPos = getCorner(targetRoom, snapTarget.corner);
+
+      // Calculate where the part would be positioned based on its anchor
+      const partAnchor = dragState.anchor || 'top-left';
+      let newPartX = targetCornerPos.x;
+      let newPartY = targetCornerPos.y;
+
+      // Adjust position based on which corner of the part is being anchored
+      if (partAnchor === 'top-right' || partAnchor === 'bottom-right') {
+        newPartX -= resolvedPart.width;
+      }
+      if (partAnchor === 'bottom-left' || partAnchor === 'bottom-right') {
+        newPartY -= resolvedPart.depth;
+      }
+
+      // Check if the part would extend beyond at least one edge of the parent room
+      const partRight = newPartX + resolvedPart.width;
+      const partBottom = newPartY + resolvedPart.depth;
+      const parentRight = resolvedParentRoom.x + resolvedParentRoom.width;
+      const parentBottom = resolvedParentRoom.y + resolvedParentRoom.depth;
+
+      const extendsRoom =
+        newPartX < resolvedParentRoom.x ||
+        partRight > parentRight ||
+        newPartY < resolvedParentRoom.y ||
+        partBottom > parentBottom;
+
+      // If the part would be completely inside the parent, reject the snap
+      if (!extendsRoom) {
         setDragState(null);
         setSnapTarget(null);
         setDragOffset(null);
@@ -1806,6 +2218,10 @@ const FloorplanRendererComponent = ({
 
   const handleRoomFocus = useCallback((roomId: string) => {
     setFocusedElement({ type: 'room', roomId });
+  }, []);
+
+  const handlePartFocus = useCallback((roomId: string, partId: string) => {
+    setFocusedElement({ type: 'part', roomId, partId });
   }, []);
 
   const handleObjectFocus = useCallback((roomId: string, objectIndex: number, partId?: string) => {
@@ -2071,6 +2487,7 @@ const FloorplanRendererComponent = ({
               onMouseEnter={setHoveredRoomId}
               onMouseLeave={() => setHoveredRoomId(null)}
               onFocus={handleRoomFocus}
+              onPartFocus={handlePartFocus}
             />
           ))}
 
@@ -2240,6 +2657,83 @@ const FloorplanRendererComponent = ({
                 visible={true}
               />
             ) : null;
+          })()}
+
+        {/* Resize handles - rendered on top when part is focused */}
+        {focusedElement?.type === 'part' &&
+          !dragState &&
+          !resizeState &&
+          !partResizeState &&
+          roomMap[focusedElement.partId] && (
+            <ResizeHandles
+              room={roomMap[focusedElement.partId]}
+              mm={mm}
+              onResizeStart={(partId, edge) =>
+                handlePartResizeStart(focusedElement.roomId, partId, edge)
+              }
+              onMouseEnter={() => setHoveredRoomId(focusedElement.roomId)}
+              visible={true}
+            />
+          )}
+
+        {/* Offset arrows - rendered on top when part is focused */}
+        {focusedElement?.type === 'part' &&
+          !dragState &&
+          !resizeState &&
+          !partResizeState &&
+          !partOffsetDragState &&
+          roomMap[focusedElement.partId] &&
+          (() => {
+            const parentRoom = data.rooms.find(r => r.id === focusedElement.roomId);
+            const originalPart = parentRoom?.parts?.find(p => p.id === focusedElement.partId);
+            if (!originalPart) return null;
+
+            const resolvedPart = roomMap[focusedElement.partId];
+            if (!resolvedPart) return null;
+
+            // Determine what the part is attached to (could be main room or another part)
+            const attachToTarget = originalPart.attachTo?.split(':')[0];
+            const resolvedAttachTarget = attachToTarget ? roomMap[attachToTarget] : null;
+            const resolvedParent = roomMap[focusedElement.roomId];
+            const targetForValidation = resolvedAttachTarget || resolvedParent;
+            if (!targetForValidation) return null;
+
+            const partRight = resolvedPart.x + resolvedPart.width;
+            const partBottom = resolvedPart.y + resolvedPart.depth;
+            const targetRight = targetForValidation.x + targetForValidation.width;
+            const targetBottom = targetForValidation.y + targetForValidation.depth;
+
+            // Check which direction the part extends relative to its attach target
+            const extendsRight = resolvedPart.x >= targetRight;
+            const extendsLeft = partRight <= targetForValidation.x;
+            const extendsBottom = resolvedPart.y >= targetBottom;
+            const extendsTop = partBottom <= targetForValidation.y;
+
+            // If part extends horizontally, show vertical arrows (to slide along edge)
+            // If part extends vertically, show horizontal arrows (to slide along edge)
+            let showDirections: Array<'left' | 'right' | 'top' | 'bottom'>;
+            if (extendsLeft || extendsRight) {
+              showDirections = ['top', 'bottom'];
+            } else if (extendsTop || extendsBottom) {
+              showDirections = ['left', 'right'];
+            } else {
+              // Fallback: show all (shouldn't happen with valid parts)
+              showDirections = ['left', 'right', 'top', 'bottom'];
+            }
+
+            return (
+              <OffsetArrows
+                room={resolvedPart}
+                originalRoom={originalPart as unknown as import('../types').Room}
+                mm={mm}
+                onOffsetDragStart={(partId, direction) =>
+                  handlePartOffsetDragStart(focusedElement.roomId, partId, direction)
+                }
+                onMouseEnter={() => setHoveredRoomId(focusedElement.roomId)}
+                visible={true}
+                showDirections={showDirections}
+              />
+            );
           })()}
 
         {/* Corner highlights - rendered on top */}
