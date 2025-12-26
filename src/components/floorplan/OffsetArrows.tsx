@@ -119,6 +119,7 @@ export function OffsetArrows({
             width={ARROW_HITBOX_SIZE}
             height={ARROW_HITBOX_SIZE}
             fill="transparent"
+            pointerEvents="all"
             cursor="move"
             className="offset-arrow-hitbox"
             onMouseDown={e => {
@@ -147,6 +148,7 @@ export function OffsetArrows({
             width={ARROW_HITBOX_SIZE}
             height={ARROW_HITBOX_SIZE}
             fill="transparent"
+            pointerEvents="all"
             cursor="move"
             className="offset-arrow-hitbox"
             onMouseDown={e => {
@@ -175,6 +177,7 @@ export function OffsetArrows({
             width={ARROW_HITBOX_SIZE}
             height={ARROW_HITBOX_SIZE}
             fill="transparent"
+            pointerEvents="all"
             cursor="move"
             className="offset-arrow-hitbox"
             onMouseDown={e => {
@@ -203,6 +206,7 @@ export function OffsetArrows({
             width={ARROW_HITBOX_SIZE}
             height={ARROW_HITBOX_SIZE}
             fill="transparent"
+            pointerEvents="all"
             cursor="move"
             className="offset-arrow-hitbox"
             onMouseDown={e => {
