@@ -1491,16 +1491,30 @@ const FloorplanRendererComponent = ({
         newPartY <= parentBottom &&
         partBottom >= resolvedParentRoom.y;
 
-      // Check that the part extends beyond at least one edge of the parent room
-      // (i.e., it's not completely contained within the parent)
-      const extendsRoom =
-        newPartX < resolvedParentRoom.x ||
-        partRight > parentRight ||
-        newPartY < resolvedParentRoom.y ||
-        partBottom > parentBottom;
+      // Check extension in each direction
+      const extendsLeft = newPartX < resolvedParentRoom.x;
+      const extendsRight = partRight > parentRight;
+      const extendsTop = newPartY < resolvedParentRoom.y;
+      const extendsBottom = partBottom > parentBottom;
 
-      // If the part would disconnect or be fully contained, don't update
-      if (!wouldTouch || !extendsRoom) {
+      const extendsHorizontally = extendsLeft || extendsRight;
+      const extendsVertically = extendsTop || extendsBottom;
+
+      // Part must be AT the boundary, not inside the room
+      const atLeftBoundary = newPartX <= resolvedParentRoom.x;
+      const atRightBoundary = partRight >= parentRight;
+      const atTopBoundary = newPartY <= resolvedParentRoom.y;
+      const atBottomBoundary = partBottom >= parentBottom;
+
+      const atHorizontalBoundary = atLeftBoundary || atRightBoundary;
+      const atVerticalBoundary = atTopBoundary || atBottomBoundary;
+
+      // Part must extend AND be at the boundary in at least one direction
+      const validPosition =
+        (extendsHorizontally && atHorizontalBoundary) || (extendsVertically && atVerticalBoundary);
+
+      // If the part would disconnect or not be at a valid boundary position, don't update
+      if (!wouldTouch || !validPosition) {
         return;
       }
 
@@ -1649,23 +1663,35 @@ const FloorplanRendererComponent = ({
         newPartY <= parentBottom &&
         partBottom >= resolvedParentRoom.y;
 
-      // Check extension based on drag direction:
-      // - Horizontal arrows (left/right): part must extend horizontally
-      // - Vertical arrows (top/bottom): part must extend vertically
-      // This prevents parts from sliding across the room by extending in a perpendicular direction
-      const extendsHorizontally = newPartX < resolvedParentRoom.x || partRight > parentRight;
-      const extendsVertically = newPartY < resolvedParentRoom.y || partBottom > parentBottom;
+      // Check extension in each direction
+      const extendsLeft = newPartX < resolvedParentRoom.x;
+      const extendsRight = partRight > parentRight;
+      const extendsTop = newPartY < resolvedParentRoom.y;
+      const extendsBottom = partBottom > parentBottom;
+
+      const extendsHorizontally = extendsLeft || extendsRight;
+      const extendsVertically = extendsTop || extendsBottom;
+
+      // Part must be AT the boundary, not inside the room
+      // At least one edge of the part must align with or be outside the parent's boundary
+      const atLeftBoundary = newPartX <= resolvedParentRoom.x;
+      const atRightBoundary = partRight >= parentRight;
+      const atTopBoundary = newPartY <= resolvedParentRoom.y;
+      const atBottomBoundary = partBottom >= parentBottom;
+
+      const atHorizontalBoundary = atLeftBoundary || atRightBoundary;
+      const atVerticalBoundary = atTopBoundary || atBottomBoundary;
 
       let validExtension = false;
       if (
         currentPartOffsetDragState.direction === 'left' ||
         currentPartOffsetDragState.direction === 'right'
       ) {
-        // Horizontal movement requires horizontal extension
-        validExtension = extendsHorizontally;
+        // Horizontal movement requires horizontal extension AND being at a horizontal boundary
+        validExtension = extendsHorizontally && atHorizontalBoundary;
       } else {
-        // Vertical movement requires vertical extension
-        validExtension = extendsVertically;
+        // Vertical movement requires vertical extension AND being at a vertical boundary
+        validExtension = extendsVertically && atVerticalBoundary;
       }
 
       // If the part would disconnect or not extend in the correct direction, don't update
