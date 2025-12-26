@@ -230,6 +230,13 @@ const FloorplanRendererComponent = ({
   } | null>(null);
   const offsetDragStateRef = useRef(offsetDragState);
 
+  // Zoom and pan state
+  const [zoom, setZoom] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [isSpacePressed, setIsSpacePressed] = useState(false);
+
   // Use ref to track animation frame for drag updates
   const dragAnimationFrame = useRef<number | null>(null);
 
@@ -394,13 +401,20 @@ const FloorplanRendererComponent = ({
 
   // Calculate grid bounds to cover beyond the viewBox for seamless appearance
   // Add extra grid steps beyond the viewBox to ensure grid covers the entire visible area
-  const extraGridSteps = 5;
-  const gridMinX = Math.floor(bounds.x / gridStep) * gridStep - gridStep * extraGridSteps;
-  const gridMinY = Math.floor(bounds.y / gridStep) * gridStep - gridStep * extraGridSteps;
+  // When zoomed out, we need more grid coverage
+  const baseExtraSteps = 5;
+  const zoomExtraSteps = Math.ceil(baseExtraSteps / Math.min(zoom, 1));
+  const panExtraX = Math.abs(panOffset.x) / gridStep;
+  const panExtraY = Math.abs(panOffset.y) / gridStep;
+  const extraGridStepsX = zoomExtraSteps + Math.ceil(panExtraX) + 2;
+  const extraGridStepsY = zoomExtraSteps + Math.ceil(panExtraY) + 2;
+
+  const gridMinX = Math.floor(bounds.x / gridStep) * gridStep - gridStep * extraGridStepsX;
+  const gridMinY = Math.floor(bounds.y / gridStep) * gridStep - gridStep * extraGridStepsY;
   const gridMaxX =
-    Math.ceil((bounds.x + bounds.width) / gridStep) * gridStep + gridStep * extraGridSteps;
+    Math.ceil((bounds.x + bounds.width) / gridStep) * gridStep + gridStep * extraGridStepsX;
   const gridMaxY =
-    Math.ceil((bounds.y + bounds.depth) / gridStep) * gridStep + gridStep * extraGridSteps;
+    Math.ceil((bounds.y + bounds.depth) / gridStep) * gridStep + gridStep * extraGridStepsY;
 
   // Convert SVG screen coordinates to mm coordinates
   const screenToMM = (screenX: number, screenY: number): { x: number; y: number } => {
@@ -1738,19 +1752,225 @@ const FloorplanRendererComponent = ({
     setFocusedElement({ type: 'freestandingObject', index });
   }, []);
 
-  // Convert bounds to screen coordinates
-  const viewBox = `${mm(bounds.x)} ${mm(bounds.y)} ${mm(bounds.width)} ${mm(bounds.depth)}`;
+  // Calculate zoomed viewBox
+  // When zoom > 1, we want a smaller viewBox (see less, zoomed in)
+  // When zoom < 1, we want a larger viewBox (see more, zoomed out)
+  const zoomedViewBox = useMemo(() => {
+    const baseWidth = mm(bounds.width);
+    const baseDepth = mm(bounds.depth);
+    const baseX = mm(bounds.x);
+    const baseY = mm(bounds.y);
+
+    // Calculate the center of the original viewBox
+    const centerX = baseX + baseWidth / 2;
+    const centerY = baseY + baseDepth / 2;
+
+    // Zoom scales the view: zoom > 1 means see less (zoomed in)
+    const zoomedWidth = baseWidth / zoom;
+    const zoomedDepth = baseDepth / zoom;
+
+    // Calculate new origin to keep center stable, then apply pan offset
+    const newX = centerX - zoomedWidth / 2 - panOffset.x;
+    const newY = centerY - zoomedDepth / 2 - panOffset.y;
+
+    return `${newX} ${newY} ${zoomedWidth} ${zoomedDepth}`;
+  }, [bounds, zoom, panOffset]);
+
+  // Handle mouse wheel for zooming (with Ctrl) or panning (without Ctrl)
+  // Touchpad pinch-to-zoom sends wheel events with ctrlKey: true
+  // Touchpad two-finger scroll sends regular wheel events
+  const handleWheel = useCallback(
+    (e: WheelEvent) => {
+      // Only prevent default for pinch-to-zoom (ctrlKey), not for regular Ctrl++ page zoom
+      // This allows Ctrl++ keyboard shortcut to still zoom the page
+      if (!svgRef.current) return;
+
+      // Pinch-to-zoom (touchpad) or Ctrl+wheel (mouse) -> zoom SVG
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+
+        // Touchpad pinch uses smaller delta values, so use a gentler zoom factor
+        const zoomFactor = 1.02;
+        const delta = e.deltaY > 0 ? 1 / zoomFactor : zoomFactor;
+        const newZoom = Math.min(Math.max(zoom * delta, 0.1), 10);
+
+        // Get mouse position in SVG coordinates before zoom
+        const pt = svgRef.current.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        const svgPt = pt.matrixTransform(svgRef.current.getScreenCTM()?.inverse());
+
+        // Calculate the center of current viewBox
+        const baseWidth = mm(bounds.width);
+        const baseDepth = mm(bounds.depth);
+        const baseX = mm(bounds.x);
+        const baseY = mm(bounds.y);
+        const centerX = baseX + baseWidth / 2;
+        const centerY = baseY + baseDepth / 2;
+
+        // Current viewBox dimensions
+        const currentWidth = baseWidth / zoom;
+        const currentDepth = baseDepth / zoom;
+        const currentX = centerX - currentWidth / 2 - panOffset.x;
+        const currentY = centerY - currentDepth / 2 - panOffset.y;
+
+        // Calculate mouse position as a ratio within the current viewBox
+        const ratioX = (svgPt.x - currentX) / currentWidth;
+        const ratioY = (svgPt.y - currentY) / currentDepth;
+
+        // New viewBox dimensions after zoom
+        const newWidth = baseWidth / newZoom;
+        const newDepth = baseDepth / newZoom;
+
+        // Calculate new offset so mouse position stays at same ratio
+        const newCenterX = svgPt.x - (ratioX - 0.5) * newWidth;
+        const newCenterY = svgPt.y - (ratioY - 0.5) * newDepth;
+
+        const newPanX = centerX - newCenterX;
+        const newPanY = centerY - newCenterY;
+
+        setZoom(newZoom);
+        setPanOffset({ x: newPanX, y: newPanY });
+      } else {
+        // Regular scroll (touchpad two-finger or mouse wheel without Ctrl) -> pan
+        e.preventDefault();
+
+        const svg = svgRef.current;
+        const viewBox = svg.viewBox.baseVal;
+        const rect = svg.getBoundingClientRect();
+
+        // Calculate scale from screen pixels to viewBox units
+        const scaleX = viewBox.width / rect.width;
+        const scaleY = viewBox.height / rect.height;
+
+        // Convert scroll delta to pan offset (invert for natural scrolling feel)
+        const dx = e.deltaX * scaleX;
+        const dy = e.deltaY * scaleY;
+
+        setPanOffset(prev => ({
+          x: prev.x - dx,
+          y: prev.y - dy,
+        }));
+      }
+    },
+    [zoom, panOffset, bounds]
+  );
+
+  // Attach wheel listener with passive: false to allow preventDefault
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    svg.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      svg.removeEventListener('wheel', handleWheel);
+    };
+  }, [handleWheel]);
+
+  // Handle pan start (middle mouse button or space+left click)
+  const handlePanStart = useCallback(
+    (e: React.MouseEvent<SVGSVGElement>) => {
+      if (e.button === 1 || (e.button === 0 && isSpacePressed)) {
+        e.preventDefault();
+        setIsPanning(true);
+        setPanStart({ x: e.clientX, y: e.clientY });
+      }
+    },
+    [isSpacePressed]
+  );
+
+  // Handle pan move
+  const handlePanMove = useCallback(
+    (e: React.MouseEvent<SVGSVGElement>) => {
+      if (!isPanning || !svgRef.current) return;
+
+      const svg = svgRef.current;
+      const viewBox = svg.viewBox.baseVal;
+
+      // Calculate scale from SVG viewBox to screen pixels
+      const rect = svg.getBoundingClientRect();
+      const scaleX = viewBox.width / rect.width;
+      const scaleY = viewBox.height / rect.height;
+
+      // Convert screen movement to viewBox movement
+      const dx = (e.clientX - panStart.x) * scaleX;
+      const dy = (e.clientY - panStart.y) * scaleY;
+
+      setPanOffset(prev => ({
+        x: prev.x + dx,
+        y: prev.y + dy,
+      }));
+      setPanStart({ x: e.clientX, y: e.clientY });
+    },
+    [isPanning, panStart]
+  );
+
+  // Handle pan end
+  const handlePanEnd = useCallback(() => {
+    setIsPanning(false);
+  }, []);
+
+  // Reset zoom and pan
+  const resetView = useCallback(() => {
+    setZoom(1);
+    setPanOffset({ x: 0, y: 0 });
+  }, []);
+
+  // Space key handler for pan mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && !e.repeat) {
+        setIsSpacePressed(true);
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        setIsSpacePressed(false);
+        setIsPanning(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
+  // Combined mouse move handler
+  const handleCombinedMouseMove = useCallback(
+    (e: React.MouseEvent<SVGSVGElement>) => {
+      if (isPanning) {
+        handlePanMove(e);
+      } else {
+        handleMouseMove(e);
+      }
+    },
+    [isPanning, handlePanMove, handleMouseMove]
+  );
+
+  // Combined mouse up handler
+  const handleCombinedMouseUp = useCallback(() => {
+    if (isPanning) {
+      handlePanEnd();
+    } else {
+      handleMouseUp();
+    }
+  }, [isPanning, handlePanEnd, handleMouseUp]);
 
   return (
     <div className="preview-container">
       <svg
         ref={svgRef}
         className="floorplan-svg"
-        viewBox={viewBox}
+        viewBox={zoomedViewBox}
         preserveAspectRatio="xMidYMid meet"
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
+        onMouseMove={handleCombinedMouseMove}
+        onMouseDown={handlePanStart}
+        onMouseUp={handleCombinedMouseUp}
+        onMouseLeave={handlePanEnd}
         onClick={handleSvgClick}
+        style={{ cursor: isPanning ? 'grabbing' : isSpacePressed ? 'grab' : undefined }}
       >
         {/* Grid */}
         <GridRenderer
@@ -1969,6 +2189,37 @@ const FloorplanRendererComponent = ({
           dragOffset={dragOffset}
         />
       </svg>
+
+      {/* Zoom controls */}
+      <div className="zoom-controls" data-testid="zoom-controls">
+        <button
+          className="zoom-button"
+          data-testid="zoom-in-button"
+          onClick={() => setZoom(z => Math.min(z * 1.2, 10))}
+          title="Zoom in"
+        >
+          +
+        </button>
+        <button
+          className="zoom-button"
+          data-testid="zoom-out-button"
+          onClick={() => setZoom(z => Math.max(z / 1.2, 0.1))}
+          title="Zoom out"
+        >
+          −
+        </button>
+        <button
+          className="zoom-button"
+          data-testid="zoom-reset-button"
+          onClick={resetView}
+          title="Reset view"
+        >
+          ⟲
+        </button>
+        <span className="zoom-level" data-testid="zoom-level">
+          {Math.round(zoom * 100)}%
+        </span>
+      </div>
     </div>
   );
 };
