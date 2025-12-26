@@ -110,6 +110,7 @@ interface CornerHighlight {
 // Type for tracking which element is currently focused (showing buttons/handles)
 type FocusedElement =
   | { type: 'room'; roomId: string }
+  | { type: 'part'; roomId: string; partId: string }
   | { type: 'door'; index: number }
   | { type: 'window'; index: number }
   | { type: 'object'; roomId: string; objectIndex: number; partId?: string }
@@ -178,6 +179,20 @@ const FloorplanRendererComponent = ({
     startY: number;
   } | null>(null);
   const resizeStateRef = useRef(resizeState);
+
+  // Part resize state
+  const [partResizeState, setPartResizeState] = useState<{
+    parentRoomId: string;
+    partId: string;
+    edge: ResizeEdge;
+    startMouseX: number;
+    startMouseY: number;
+    startWidth: number;
+    startDepth: number;
+    startX: number;
+    startY: number;
+  } | null>(null);
+  const partResizeStateRef = useRef(partResizeState);
   // Keep hoveredRoomId for UI hover effects (CSS class changes)
   const [, setHoveredRoomId] = useState<string | null>(null);
 
@@ -230,6 +245,17 @@ const FloorplanRendererComponent = ({
   } | null>(null);
   const offsetDragStateRef = useRef(offsetDragState);
 
+  // Part offset drag state
+  const [partOffsetDragState, setPartOffsetDragState] = useState<{
+    parentRoomId: string;
+    partId: string;
+    direction: OffsetDirection;
+    startMouseX: number;
+    startMouseY: number;
+    startOffset: [number, number];
+  } | null>(null);
+  const partOffsetDragStateRef = useRef(partOffsetDragState);
+
   // Use ref to track animation frame for drag updates
   const dragAnimationFrame = useRef<number | null>(null);
 
@@ -249,6 +275,14 @@ const FloorplanRendererComponent = ({
   useEffect(() => {
     offsetDragStateRef.current = offsetDragState;
   }, [offsetDragState]);
+
+  useEffect(() => {
+    partResizeStateRef.current = partResizeState;
+  }, [partResizeState]);
+
+  useEffect(() => {
+    partOffsetDragStateRef.current = partOffsetDragState;
+  }, [partOffsetDragState]);
 
   // Memoize room resolution to avoid recalculating on every render
   const { roomMap, errors, partIds, partToParent, normalizationOffset } = useMemo(() => {
@@ -1370,6 +1404,230 @@ const FloorplanRendererComponent = ({
     [data, handleOffsetDragMove, handleOffsetDragEnd]
   );
 
+  // Part resize handlers
+  const handlePartResizeEnd = useCallback(() => {
+    setPartResizeState(null);
+  }, []);
+
+  const handlePartResizeMove = useCallback(
+    (x: number, y: number) => {
+      const currentPartResizeState = partResizeStateRef.current;
+      if (!currentPartResizeState) return;
+
+      const part = roomMap[currentPartResizeState.partId];
+      if (!part) return;
+
+      // Initialize start position on first move
+      if (currentPartResizeState.startMouseX === 0 && currentPartResizeState.startMouseY === 0) {
+        setPartResizeState({
+          ...currentPartResizeState,
+          startMouseX: x,
+          startMouseY: y,
+        });
+        return;
+      }
+
+      // Calculate delta from start position
+      const deltaX = x - currentPartResizeState.startMouseX;
+      const deltaY = y - currentPartResizeState.startMouseY;
+
+      // Calculate new dimensions based on which edge is being dragged
+      const MIN_SIZE = 500; // mm - minimum part dimension
+
+      let newWidth = currentPartResizeState.startWidth;
+      let newDepth = currentPartResizeState.startDepth;
+      let newOffsetX = 0;
+      let newOffsetY = 0;
+
+      switch (currentPartResizeState.edge) {
+        case 'right':
+          newWidth = Math.round(Math.max(MIN_SIZE, currentPartResizeState.startWidth + deltaX));
+          break;
+        case 'left':
+          newWidth = Math.round(Math.max(MIN_SIZE, currentPartResizeState.startWidth - deltaX));
+          newOffsetX = currentPartResizeState.startWidth - newWidth;
+          break;
+        case 'bottom':
+          newDepth = Math.round(Math.max(MIN_SIZE, currentPartResizeState.startDepth + deltaY));
+          break;
+        case 'top':
+          newDepth = Math.round(Math.max(MIN_SIZE, currentPartResizeState.startDepth - deltaY));
+          newOffsetY = currentPartResizeState.startDepth - newDepth;
+          break;
+      }
+
+      // Update the part in data to show live resize feedback
+      if (onRoomUpdate) {
+        const parentRoom = data.rooms.find(r => r.id === currentPartResizeState.parentRoomId);
+        if (parentRoom && parentRoom.parts) {
+          const partIndex = parentRoom.parts.findIndex(
+            p => p.id === currentPartResizeState.partId
+          );
+          if (partIndex >= 0) {
+            const partData = parentRoom.parts[partIndex];
+            const updatedPart = { ...partData };
+            updatedPart.width = newWidth;
+            updatedPart.depth = newDepth;
+
+            // If left or top edge, also adjust offset
+            if (currentPartResizeState.edge === 'left' || currentPartResizeState.edge === 'top') {
+              const currentOffset = partData.offset || [0, 0];
+              updatedPart.offset = [currentOffset[0] + newOffsetX, currentOffset[1] + newOffsetY];
+            }
+
+            const updatedParts = [...parentRoom.parts];
+            updatedParts[partIndex] = updatedPart;
+            const updatedParentRoom = { ...parentRoom, parts: updatedParts };
+            const updatedRooms = data.rooms.map(r =>
+              r.id === currentPartResizeState.parentRoomId ? updatedParentRoom : r
+            );
+            onRoomUpdate({ ...data, rooms: updatedRooms });
+          }
+        }
+      }
+    },
+    [roomMap, data, onRoomUpdate]
+  );
+
+  const handlePartResizeStart = useCallback(
+    (parentRoomId: string, partId: string, edge: ResizeEdge) => {
+      const part = roomMap[partId];
+      if (!part) return;
+
+      const handleMouseMove = (e: MouseEvent) => {
+        const { x, y } = screenToMM(e.clientX, e.clientY);
+        handlePartResizeMove(x, y);
+      };
+
+      const handleMouseUp = () => {
+        handlePartResizeEnd();
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+
+      // Set initial resize state
+      setPartResizeState({
+        parentRoomId,
+        partId,
+        edge,
+        startMouseX: 0, // Will be set on first move
+        startMouseY: 0, // Will be set on first move
+        startWidth: part.width,
+        startDepth: part.depth,
+        startX: part.x,
+        startY: part.y,
+      });
+    },
+    [roomMap, handlePartResizeMove, handlePartResizeEnd]
+  );
+
+  // Part offset drag handlers
+  const handlePartOffsetDragEnd = useCallback(() => {
+    setPartOffsetDragState(null);
+  }, []);
+
+  const handlePartOffsetDragMove = useCallback(
+    (x: number, y: number) => {
+      const currentPartOffsetDragState = partOffsetDragStateRef.current;
+      if (!currentPartOffsetDragState) return;
+      if (!onRoomUpdate) return;
+
+      const parentRoom = data.rooms.find(r => r.id === currentPartOffsetDragState.parentRoomId);
+      if (!parentRoom || !parentRoom.parts) return;
+
+      const partIndex = parentRoom.parts.findIndex(
+        p => p.id === currentPartOffsetDragState.partId
+      );
+      if (partIndex < 0) return;
+
+      const partData = parentRoom.parts[partIndex];
+
+      // Initialize start position on first move
+      if (
+        currentPartOffsetDragState.startMouseX === 0 &&
+        currentPartOffsetDragState.startMouseY === 0
+      ) {
+        setPartOffsetDragState({
+          ...currentPartOffsetDragState,
+          startMouseX: x,
+          startMouseY: y,
+        });
+        return;
+      }
+
+      // Calculate delta from start position
+      const deltaX = x - currentPartOffsetDragState.startMouseX;
+      const deltaY = y - currentPartOffsetDragState.startMouseY;
+
+      // Determine which axis to adjust based on direction
+      let newOffsetX = currentPartOffsetDragState.startOffset[0];
+      let newOffsetY = currentPartOffsetDragState.startOffset[1];
+
+      switch (currentPartOffsetDragState.direction) {
+        case 'left':
+        case 'right':
+          // Horizontal arrows adjust X offset
+          newOffsetX = Math.round(currentPartOffsetDragState.startOffset[0] + deltaX);
+          break;
+        case 'top':
+        case 'bottom':
+          // Vertical arrows adjust Y offset
+          newOffsetY = Math.round(currentPartOffsetDragState.startOffset[1] + deltaY);
+          break;
+      }
+
+      // Update the part offset
+      const updatedPart = { ...partData, offset: [newOffsetX, newOffsetY] as [number, number] };
+      const updatedParts = [...parentRoom.parts];
+      updatedParts[partIndex] = updatedPart;
+      const updatedParentRoom = { ...parentRoom, parts: updatedParts };
+      const updatedRooms = data.rooms.map(r =>
+        r.id === currentPartOffsetDragState.parentRoomId ? updatedParentRoom : r
+      );
+      onRoomUpdate({ ...data, rooms: updatedRooms });
+    },
+    [data, onRoomUpdate]
+  );
+
+  const handlePartOffsetDragStart = useCallback(
+    (parentRoomId: string, partId: string, direction: OffsetDirection) => {
+      const parentRoom = data.rooms.find(r => r.id === parentRoomId);
+      if (!parentRoom || !parentRoom.parts) return;
+
+      const part = parentRoom.parts.find(p => p.id === partId);
+      if (!part) return;
+
+      const handleMouseMove = (e: MouseEvent) => {
+        const { x, y } = screenToMM(e.clientX, e.clientY);
+        handlePartOffsetDragMove(x, y);
+      };
+
+      const handleMouseUp = () => {
+        handlePartOffsetDragEnd();
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+
+      // Set initial offset drag state
+      const currentOffset = part.offset || [0, 0];
+      setPartOffsetDragState({
+        parentRoomId,
+        partId,
+        direction,
+        startMouseX: 0, // Will be set on first move
+        startMouseY: 0, // Will be set on first move
+        startOffset: [currentOffset[0], currentOffset[1]],
+      });
+    },
+    [data, handlePartOffsetDragMove, handlePartOffsetDragEnd]
+  );
+
   // Handle drag movement with requestAnimationFrame for smooth performance
   const handleDragMove = useCallback(
     (x: number, y: number) => {
@@ -1730,6 +1988,10 @@ const FloorplanRendererComponent = ({
     setFocusedElement({ type: 'room', roomId });
   }, []);
 
+  const handlePartFocus = useCallback((roomId: string, partId: string) => {
+    setFocusedElement({ type: 'part', roomId, partId });
+  }, []);
+
   const handleObjectFocus = useCallback((roomId: string, objectIndex: number, partId?: string) => {
     setFocusedElement({ type: 'object', roomId, objectIndex, partId });
   }, []);
@@ -1787,6 +2049,7 @@ const FloorplanRendererComponent = ({
               onMouseEnter={setHoveredRoomId}
               onMouseLeave={() => setHoveredRoomId(null)}
               onFocus={handleRoomFocus}
+              onPartFocus={handlePartFocus}
             />
           ))}
 
@@ -1952,6 +2215,49 @@ const FloorplanRendererComponent = ({
                 originalRoom={originalRoom}
                 mm={mm}
                 onOffsetDragStart={handleOffsetDragStart}
+                onMouseEnter={() => setHoveredRoomId(focusedElement.roomId)}
+                visible={true}
+              />
+            ) : null;
+          })()}
+
+        {/* Resize handles - rendered on top when part is focused */}
+        {focusedElement?.type === 'part' &&
+          !dragState &&
+          !resizeState &&
+          !partResizeState &&
+          roomMap[focusedElement.partId] && (
+            <ResizeHandles
+              room={roomMap[focusedElement.partId]}
+              mm={mm}
+              onResizeStart={(partId, edge) =>
+                handlePartResizeStart(focusedElement.roomId, partId, edge)
+              }
+              onMouseEnter={() => setHoveredRoomId(focusedElement.roomId)}
+              visible={true}
+            />
+          )}
+
+        {/* Offset arrows - rendered on top when part is focused */}
+        {focusedElement?.type === 'part' &&
+          !dragState &&
+          !resizeState &&
+          !partResizeState &&
+          !partOffsetDragState &&
+          roomMap[focusedElement.partId] &&
+          (() => {
+            const parentRoom = data.rooms.find(r => r.id === focusedElement.roomId);
+            const originalPart = parentRoom?.parts?.find(p => p.id === focusedElement.partId);
+            // Parts always have attachTo, so we can render offset arrows
+            // Cast to Room since the fields used (attachTo, offset) are present in both types
+            return originalPart ? (
+              <OffsetArrows
+                room={roomMap[focusedElement.partId]}
+                originalRoom={originalPart as unknown as import('../types').Room}
+                mm={mm}
+                onOffsetDragStart={(partId, direction) =>
+                  handlePartOffsetDragStart(focusedElement.roomId, partId, direction)
+                }
                 onMouseEnter={() => setHoveredRoomId(focusedElement.roomId)}
                 visible={true}
               />
