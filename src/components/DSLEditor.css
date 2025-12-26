@@ -220,7 +220,10 @@
   background-color: #1e1e1e;
   border-top: 1px solid #3c3c3c;
   font-size: 12px;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   color: #cccccc;
   min-height: 28px;
   box-sizing: border-box;
