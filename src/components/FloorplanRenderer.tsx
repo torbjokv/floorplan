@@ -1491,8 +1491,16 @@ const FloorplanRendererComponent = ({
         newPartY <= parentBottom &&
         partBottom >= resolvedParentRoom.y;
 
-      // If the part would disconnect, don't update
-      if (!wouldTouch) {
+      // Check that the part extends beyond at least one edge of the parent room
+      // (i.e., it's not completely contained within the parent)
+      const extendsRoom =
+        newPartX < resolvedParentRoom.x ||
+        partRight > parentRight ||
+        newPartY < resolvedParentRoom.y ||
+        partBottom > parentBottom;
+
+      // If the part would disconnect or be fully contained, don't update
+      if (!wouldTouch || !extendsRoom) {
         return;
       }
 
@@ -1641,8 +1649,16 @@ const FloorplanRendererComponent = ({
         newPartY <= parentBottom &&
         partBottom >= resolvedParentRoom.y;
 
-      // If the part would disconnect, don't update
-      if (!wouldTouch) {
+      // Check that the part extends beyond at least one edge of the parent room
+      // (i.e., it's not completely contained within the parent)
+      const extendsRoom =
+        newPartX < resolvedParentRoom.x ||
+        partRight > parentRight ||
+        newPartY < resolvedParentRoom.y ||
+        partBottom > parentBottom;
+
+      // If the part would disconnect or be fully contained, don't update
+      if (!wouldTouch || !extendsRoom) {
         return;
       }
 
