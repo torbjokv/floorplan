@@ -191,6 +191,8 @@ const FloorplanRendererComponent = ({
     startDepth: number;
     startX: number;
     startY: number;
+    startOffsetX: number;
+    startOffsetY: number;
   } | null>(null);
   const partResizeStateRef = useRef(partResizeState);
   // Keep hoveredRoomId for UI hover effects (CSS class changes)
@@ -1470,39 +1472,50 @@ const FloorplanRendererComponent = ({
           break;
       }
 
-      // Get the resolved parent room and part to check if they would still touch
-      const resolvedParentRoom = roomMap[currentPartResizeState.parentRoomId];
+      // Get the resolved part
       const resolvedPart = roomMap[currentPartResizeState.partId];
-      if (!resolvedParentRoom || !resolvedPart) return;
+      if (!resolvedPart) return;
+
+      // Get the part data to find what it's attached to
+      const parentRoomData = data.rooms.find(r => r.id === currentPartResizeState.parentRoomId);
+      const partData = parentRoomData?.parts?.find(p => p.id === currentPartResizeState.partId);
+
+      // Determine what the part is attached to (could be main room or another part)
+      const attachToTarget = partData?.attachTo?.split(':')[0];
+      const resolvedAttachTarget = attachToTarget ? roomMap[attachToTarget] : null;
+
+      // If we can't find the attach target, use the parent room as fallback
+      const resolvedParentRoom = roomMap[currentPartResizeState.parentRoomId];
+      const targetForValidation = resolvedAttachTarget || resolvedParentRoom;
+      if (!targetForValidation) return;
 
       // Calculate where the part would be after resize
       const newPartX = resolvedPart.x + newOffsetX;
       const newPartY = resolvedPart.y + newOffsetY;
 
-      // Check if the part would still touch or overlap with the parent room
+      // Check if the part would still touch or overlap with its attach target
       const partRight = newPartX + newWidth;
       const partBottom = newPartY + newDepth;
-      const parentRight = resolvedParentRoom.x + resolvedParentRoom.width;
-      const parentBottom = resolvedParentRoom.y + resolvedParentRoom.depth;
+      const targetRight = targetForValidation.x + targetForValidation.width;
+      const targetBottom = targetForValidation.y + targetForValidation.depth;
 
       const wouldTouch =
-        newPartX <= parentRight &&
-        partRight >= resolvedParentRoom.x &&
-        newPartY <= parentBottom &&
-        partBottom >= resolvedParentRoom.y;
+        newPartX <= targetRight &&
+        partRight >= targetForValidation.x &&
+        newPartY <= targetBottom &&
+        partBottom >= targetForValidation.y;
 
-      // Part must be COMPLETELY OUTSIDE the parent room (only touching at boundary)
-      // This means the part cannot overlap with the interior of the parent
-      const completelyToRight = newPartX >= parentRight;
-      const completelyToLeft = partRight <= resolvedParentRoom.x;
-      const completelyBelow = newPartY >= parentBottom;
-      const completelyAbove = partBottom <= resolvedParentRoom.y;
+      // Part must be COMPLETELY OUTSIDE its attach target (only touching at boundary)
+      const completelyToRight = newPartX >= targetRight;
+      const completelyToLeft = partRight <= targetForValidation.x;
+      const completelyBelow = newPartY >= targetBottom;
+      const completelyAbove = partBottom <= targetForValidation.y;
 
-      const outsideParent =
+      const outsideTarget =
         completelyToRight || completelyToLeft || completelyBelow || completelyAbove;
 
-      // If the part would disconnect or overlap with parent interior, don't update
-      if (!wouldTouch || !outsideParent) {
+      // If the part would disconnect or overlap with target interior, don't update
+      if (!wouldTouch || !outsideTarget) {
         return;
       }
 
@@ -1512,15 +1525,17 @@ const FloorplanRendererComponent = ({
         if (parentRoom && parentRoom.parts) {
           const partIndex = parentRoom.parts.findIndex(p => p.id === currentPartResizeState.partId);
           if (partIndex >= 0) {
-            const partData = parentRoom.parts[partIndex];
-            const updatedPart = { ...partData };
+            const partDataFromRooms = parentRoom.parts[partIndex];
+            const updatedPart = { ...partDataFromRooms };
             updatedPart.width = newWidth;
             updatedPart.depth = newDepth;
 
-            // If left or top edge, also adjust offset
+            // If left or top edge, also adjust offset from the stored start offset
             if (currentPartResizeState.edge === 'left' || currentPartResizeState.edge === 'top') {
-              const currentOffset = partData.offset || [0, 0];
-              updatedPart.offset = [currentOffset[0] + newOffsetX, currentOffset[1] + newOffsetY];
+              updatedPart.offset = [
+                currentPartResizeState.startOffsetX + newOffsetX,
+                currentPartResizeState.startOffsetY + newOffsetY,
+              ];
             }
 
             const updatedParts = [...parentRoom.parts];
@@ -1541,6 +1556,11 @@ const FloorplanRendererComponent = ({
     (parentRoomId: string, partId: string, edge: ResizeEdge) => {
       const part = roomMap[partId];
       if (!part) return;
+
+      // Get the original offset from the part data
+      const parentRoom = data.rooms.find(r => r.id === parentRoomId);
+      const partData = parentRoom?.parts?.find(p => p.id === partId);
+      const originalOffset = partData?.offset || [0, 0];
 
       const handleMouseMove = (e: MouseEvent) => {
         const { x, y } = screenToMM(e.clientX, e.clientY);
@@ -1567,9 +1587,11 @@ const FloorplanRendererComponent = ({
         startDepth: part.depth,
         startX: part.x,
         startY: part.y,
+        startOffsetX: originalOffset[0],
+        startOffsetY: originalOffset[1],
       });
     },
-    [roomMap, handlePartResizeMove, handlePartResizeEnd]
+    [data.rooms, roomMap, handlePartResizeMove, handlePartResizeEnd]
   );
 
   // Part offset drag handlers
@@ -1625,10 +1647,19 @@ const FloorplanRendererComponent = ({
           break;
       }
 
-      // Get the resolved parent room and part to check if they would still touch
-      const resolvedParentRoom = roomMap[currentPartOffsetDragState.parentRoomId];
+      // Get the resolved part
       const resolvedPart = roomMap[currentPartOffsetDragState.partId];
-      if (!resolvedParentRoom || !resolvedPart) return;
+      if (!resolvedPart) return;
+
+      // Determine what the part is attached to (could be main room or another part)
+      // Parse attachTo to get the target ID (format: "targetId:corner")
+      const attachToTarget = partData.attachTo?.split(':')[0];
+      const resolvedAttachTarget = attachToTarget ? roomMap[attachToTarget] : null;
+
+      // If we can't find the attach target, use the parent room as fallback
+      const resolvedParentRoom = roomMap[currentPartOffsetDragState.parentRoomId];
+      const targetForValidation = resolvedAttachTarget || resolvedParentRoom;
+      if (!targetForValidation) return;
 
       // Calculate where the part would be with the new offset
       const currentOffset = partData.offset || [0, 0];
@@ -1637,32 +1668,30 @@ const FloorplanRendererComponent = ({
       const newPartX = resolvedPart.x + offsetDeltaX;
       const newPartY = resolvedPart.y + offsetDeltaY;
 
-      // Check if the part would still touch or overlap with the parent room
-      // Parts must share at least one edge or overlap
+      // Check if the part would still touch or overlap with its attach target
       const partRight = newPartX + resolvedPart.width;
       const partBottom = newPartY + resolvedPart.depth;
-      const parentRight = resolvedParentRoom.x + resolvedParentRoom.width;
-      const parentBottom = resolvedParentRoom.y + resolvedParentRoom.depth;
+      const targetRight = targetForValidation.x + targetForValidation.width;
+      const targetBottom = targetForValidation.y + targetForValidation.depth;
 
       // Check if rectangles would still touch (allowing edge contact)
       const wouldTouch =
-        newPartX <= parentRight &&
-        partRight >= resolvedParentRoom.x &&
-        newPartY <= parentBottom &&
-        partBottom >= resolvedParentRoom.y;
+        newPartX <= targetRight &&
+        partRight >= targetForValidation.x &&
+        newPartY <= targetBottom &&
+        partBottom >= targetForValidation.y;
 
-      // Part must be COMPLETELY OUTSIDE the parent room (only touching at boundary)
-      // This means the part cannot overlap with the interior of the parent
-      const completelyToRight = newPartX >= parentRight; // Part's left edge at/past parent's right
-      const completelyToLeft = partRight <= resolvedParentRoom.x; // Part's right edge at/past parent's left
-      const completelyBelow = newPartY >= parentBottom; // Part's top edge at/past parent's bottom
-      const completelyAbove = partBottom <= resolvedParentRoom.y; // Part's bottom edge at/past parent's top
+      // Part must be COMPLETELY OUTSIDE its attach target (only touching at boundary)
+      const completelyToRight = newPartX >= targetRight;
+      const completelyToLeft = partRight <= targetForValidation.x;
+      const completelyBelow = newPartY >= targetBottom;
+      const completelyAbove = partBottom <= targetForValidation.y;
 
-      const outsideParent =
+      const outsideTarget =
         completelyToRight || completelyToLeft || completelyBelow || completelyAbove;
 
-      // If the part would disconnect or overlap with parent interior, don't update
-      if (!wouldTouch || !outsideParent) {
+      // If the part would disconnect or overlap with target interior, don't update
+      if (!wouldTouch || !outsideTarget) {
         return;
       }
 
@@ -2595,21 +2624,26 @@ const FloorplanRendererComponent = ({
             const originalPart = parentRoom?.parts?.find(p => p.id === focusedElement.partId);
             if (!originalPart) return null;
 
-            // Determine which direction the part extends relative to parent
             const resolvedPart = roomMap[focusedElement.partId];
+            if (!resolvedPart) return null;
+
+            // Determine what the part is attached to (could be main room or another part)
+            const attachToTarget = originalPart.attachTo?.split(':')[0];
+            const resolvedAttachTarget = attachToTarget ? roomMap[attachToTarget] : null;
             const resolvedParent = roomMap[focusedElement.roomId];
-            if (!resolvedPart || !resolvedParent) return null;
+            const targetForValidation = resolvedAttachTarget || resolvedParent;
+            if (!targetForValidation) return null;
 
             const partRight = resolvedPart.x + resolvedPart.width;
             const partBottom = resolvedPart.y + resolvedPart.depth;
-            const parentRight = resolvedParent.x + resolvedParent.width;
-            const parentBottom = resolvedParent.y + resolvedParent.depth;
+            const targetRight = targetForValidation.x + targetForValidation.width;
+            const targetBottom = targetForValidation.y + targetForValidation.depth;
 
-            // Check which direction the part extends (is completely outside)
-            const extendsRight = resolvedPart.x >= parentRight;
-            const extendsLeft = partRight <= resolvedParent.x;
-            const extendsBottom = resolvedPart.y >= parentBottom;
-            const extendsTop = partBottom <= resolvedParent.y;
+            // Check which direction the part extends relative to its attach target
+            const extendsRight = resolvedPart.x >= targetRight;
+            const extendsLeft = partRight <= targetForValidation.x;
+            const extendsBottom = resolvedPart.y >= targetBottom;
+            const extendsTop = partBottom <= targetForValidation.y;
 
             // If part extends horizontally, show vertical arrows (to slide along edge)
             // If part extends vertically, show horizontal arrows (to slide along edge)
