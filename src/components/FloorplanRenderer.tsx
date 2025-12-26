@@ -2593,11 +2593,39 @@ const FloorplanRendererComponent = ({
           (() => {
             const parentRoom = data.rooms.find(r => r.id === focusedElement.roomId);
             const originalPart = parentRoom?.parts?.find(p => p.id === focusedElement.partId);
-            // Parts always have attachTo, so we can render offset arrows
-            // Cast to Room since the fields used (attachTo, offset) are present in both types
-            return originalPart ? (
+            if (!originalPart) return null;
+
+            // Determine which direction the part extends relative to parent
+            const resolvedPart = roomMap[focusedElement.partId];
+            const resolvedParent = roomMap[focusedElement.roomId];
+            if (!resolvedPart || !resolvedParent) return null;
+
+            const partRight = resolvedPart.x + resolvedPart.width;
+            const partBottom = resolvedPart.y + resolvedPart.depth;
+            const parentRight = resolvedParent.x + resolvedParent.width;
+            const parentBottom = resolvedParent.y + resolvedParent.depth;
+
+            // Check which direction the part extends (is completely outside)
+            const extendsRight = resolvedPart.x >= parentRight;
+            const extendsLeft = partRight <= resolvedParent.x;
+            const extendsBottom = resolvedPart.y >= parentBottom;
+            const extendsTop = partBottom <= resolvedParent.y;
+
+            // If part extends horizontally, show vertical arrows (to slide along edge)
+            // If part extends vertically, show horizontal arrows (to slide along edge)
+            let showDirections: Array<'left' | 'right' | 'top' | 'bottom'>;
+            if (extendsLeft || extendsRight) {
+              showDirections = ['top', 'bottom'];
+            } else if (extendsTop || extendsBottom) {
+              showDirections = ['left', 'right'];
+            } else {
+              // Fallback: show all (shouldn't happen with valid parts)
+              showDirections = ['left', 'right', 'top', 'bottom'];
+            }
+
+            return (
               <OffsetArrows
-                room={roomMap[focusedElement.partId]}
+                room={resolvedPart}
                 originalRoom={originalPart as unknown as import('../types').Room}
                 mm={mm}
                 onOffsetDragStart={(partId, direction) =>
@@ -2605,8 +2633,9 @@ const FloorplanRendererComponent = ({
                 }
                 onMouseEnter={() => setHoveredRoomId(focusedElement.roomId)}
                 visible={true}
+                showDirections={showDirections}
               />
-            ) : null;
+            );
           })()}
 
         {/* Corner highlights - rendered on top */}

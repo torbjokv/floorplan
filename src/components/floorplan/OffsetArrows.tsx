@@ -9,6 +9,7 @@ interface OffsetArrowsProps {
   onOffsetDragStart?: (roomId: string, direction: OffsetDirection) => void;
   onMouseEnter?: () => void;
   visible?: boolean;
+  showDirections?: OffsetDirection[]; // If provided, only show these directions
 }
 
 const ARROW_SIZE = 24; // pixels - visual size
@@ -66,6 +67,7 @@ export function OffsetArrows({
   onOffsetDragStart,
   onMouseEnter,
   visible = true,
+  showDirections,
 }: OffsetArrowsProps) {
   if (!visible) return null;
 
@@ -73,6 +75,12 @@ export function OffsetArrows({
   // (not the first room at origin which doesn't have meaningful offset adjustment)
   const hasAttachTo = originalRoom.attachTo && !originalRoom.attachTo.startsWith('zeropoint:');
   if (!hasAttachTo) return null;
+
+  // Determine which directions to show
+  const showLeft = !showDirections || showDirections.includes('left');
+  const showRight = !showDirections || showDirections.includes('right');
+  const showTop = !showDirections || showDirections.includes('top');
+  const showBottom = !showDirections || showDirections.includes('bottom');
 
   // Calculate arrow positions at the middle of each edge, offset outward
   const leftArrowX = mm(room.x) - ARROW_OFFSET;
@@ -94,108 +102,116 @@ export function OffsetArrows({
       onMouseEnter={onMouseEnter}
     >
       {/* Left arrow - horizontal */}
-      <g>
-        <path
-          d={createArrowPath(leftArrowX, leftArrowY, true, ARROW_SIZE)}
-          fill={ARROW_COLOR}
-          stroke="#fff"
-          strokeWidth="1"
-          className="offset-arrow offset-arrow-left"
-          pointerEvents="none"
-        />
-        <rect
-          data-testid={`offset-arrow-${room.id}-left`}
-          x={leftArrowX - ARROW_HITBOX_SIZE / 2}
-          y={leftArrowY - ARROW_HITBOX_SIZE / 2}
-          width={ARROW_HITBOX_SIZE}
-          height={ARROW_HITBOX_SIZE}
-          fill="transparent"
-          cursor="move"
-          className="offset-arrow-hitbox"
-          onMouseDown={e => {
-            e.stopPropagation();
-            onOffsetDragStart?.(room.id, 'left');
-          }}
-        />
-      </g>
+      {showLeft && (
+        <g>
+          <path
+            d={createArrowPath(leftArrowX, leftArrowY, true, ARROW_SIZE)}
+            fill={ARROW_COLOR}
+            stroke="#fff"
+            strokeWidth="1"
+            className="offset-arrow offset-arrow-left"
+            pointerEvents="none"
+          />
+          <rect
+            data-testid={`offset-arrow-${room.id}-left`}
+            x={leftArrowX - ARROW_HITBOX_SIZE / 2}
+            y={leftArrowY - ARROW_HITBOX_SIZE / 2}
+            width={ARROW_HITBOX_SIZE}
+            height={ARROW_HITBOX_SIZE}
+            fill="transparent"
+            cursor="move"
+            className="offset-arrow-hitbox"
+            onMouseDown={e => {
+              e.stopPropagation();
+              onOffsetDragStart?.(room.id, 'left');
+            }}
+          />
+        </g>
+      )}
 
       {/* Right arrow - horizontal */}
-      <g>
-        <path
-          d={createArrowPath(rightArrowX, rightArrowY, true, ARROW_SIZE)}
-          fill={ARROW_COLOR}
-          stroke="#fff"
-          strokeWidth="1"
-          className="offset-arrow offset-arrow-right"
-          pointerEvents="none"
-        />
-        <rect
-          data-testid={`offset-arrow-${room.id}-right`}
-          x={rightArrowX - ARROW_HITBOX_SIZE / 2}
-          y={rightArrowY - ARROW_HITBOX_SIZE / 2}
-          width={ARROW_HITBOX_SIZE}
-          height={ARROW_HITBOX_SIZE}
-          fill="transparent"
-          cursor="move"
-          className="offset-arrow-hitbox"
-          onMouseDown={e => {
-            e.stopPropagation();
-            onOffsetDragStart?.(room.id, 'right');
-          }}
-        />
-      </g>
+      {showRight && (
+        <g>
+          <path
+            d={createArrowPath(rightArrowX, rightArrowY, true, ARROW_SIZE)}
+            fill={ARROW_COLOR}
+            stroke="#fff"
+            strokeWidth="1"
+            className="offset-arrow offset-arrow-right"
+            pointerEvents="none"
+          />
+          <rect
+            data-testid={`offset-arrow-${room.id}-right`}
+            x={rightArrowX - ARROW_HITBOX_SIZE / 2}
+            y={rightArrowY - ARROW_HITBOX_SIZE / 2}
+            width={ARROW_HITBOX_SIZE}
+            height={ARROW_HITBOX_SIZE}
+            fill="transparent"
+            cursor="move"
+            className="offset-arrow-hitbox"
+            onMouseDown={e => {
+              e.stopPropagation();
+              onOffsetDragStart?.(room.id, 'right');
+            }}
+          />
+        </g>
+      )}
 
       {/* Top arrow - vertical */}
-      <g>
-        <path
-          d={createArrowPath(topArrowX, topArrowY, false, ARROW_SIZE)}
-          fill={ARROW_COLOR}
-          stroke="#fff"
-          strokeWidth="1"
-          className="offset-arrow offset-arrow-top"
-          pointerEvents="none"
-        />
-        <rect
-          data-testid={`offset-arrow-${room.id}-top`}
-          x={topArrowX - ARROW_HITBOX_SIZE / 2}
-          y={topArrowY - ARROW_HITBOX_SIZE / 2}
-          width={ARROW_HITBOX_SIZE}
-          height={ARROW_HITBOX_SIZE}
-          fill="transparent"
-          cursor="move"
-          className="offset-arrow-hitbox"
-          onMouseDown={e => {
-            e.stopPropagation();
-            onOffsetDragStart?.(room.id, 'top');
-          }}
-        />
-      </g>
+      {showTop && (
+        <g>
+          <path
+            d={createArrowPath(topArrowX, topArrowY, false, ARROW_SIZE)}
+            fill={ARROW_COLOR}
+            stroke="#fff"
+            strokeWidth="1"
+            className="offset-arrow offset-arrow-top"
+            pointerEvents="none"
+          />
+          <rect
+            data-testid={`offset-arrow-${room.id}-top`}
+            x={topArrowX - ARROW_HITBOX_SIZE / 2}
+            y={topArrowY - ARROW_HITBOX_SIZE / 2}
+            width={ARROW_HITBOX_SIZE}
+            height={ARROW_HITBOX_SIZE}
+            fill="transparent"
+            cursor="move"
+            className="offset-arrow-hitbox"
+            onMouseDown={e => {
+              e.stopPropagation();
+              onOffsetDragStart?.(room.id, 'top');
+            }}
+          />
+        </g>
+      )}
 
       {/* Bottom arrow - vertical */}
-      <g>
-        <path
-          d={createArrowPath(bottomArrowX, bottomArrowY, false, ARROW_SIZE)}
-          fill={ARROW_COLOR}
-          stroke="#fff"
-          strokeWidth="1"
-          className="offset-arrow offset-arrow-bottom"
-          pointerEvents="none"
-        />
-        <rect
-          data-testid={`offset-arrow-${room.id}-bottom`}
-          x={bottomArrowX - ARROW_HITBOX_SIZE / 2}
-          y={bottomArrowY - ARROW_HITBOX_SIZE / 2}
-          width={ARROW_HITBOX_SIZE}
-          height={ARROW_HITBOX_SIZE}
-          fill="transparent"
-          cursor="move"
-          className="offset-arrow-hitbox"
-          onMouseDown={e => {
-            e.stopPropagation();
-            onOffsetDragStart?.(room.id, 'bottom');
-          }}
-        />
-      </g>
+      {showBottom && (
+        <g>
+          <path
+            d={createArrowPath(bottomArrowX, bottomArrowY, false, ARROW_SIZE)}
+            fill={ARROW_COLOR}
+            stroke="#fff"
+            strokeWidth="1"
+            className="offset-arrow offset-arrow-bottom"
+            pointerEvents="none"
+          />
+          <rect
+            data-testid={`offset-arrow-${room.id}-bottom`}
+            x={bottomArrowX - ARROW_HITBOX_SIZE / 2}
+            y={bottomArrowY - ARROW_HITBOX_SIZE / 2}
+            width={ARROW_HITBOX_SIZE}
+            height={ARROW_HITBOX_SIZE}
+            fill="transparent"
+            cursor="move"
+            className="offset-arrow-hitbox"
+            onMouseDown={e => {
+              e.stopPropagation();
+              onOffsetDragStart?.(room.id, 'bottom');
+            }}
+          />
+        </g>
+      )}
     </g>
   );
 }
