@@ -108,6 +108,7 @@ export function ObjectResizeHandles({
             width={HANDLE_HITBOX_SIZE}
             height={HANDLE_HITBOX_SIZE}
             fill="transparent"
+            pointerEvents="all"
             cursor={corner.cursor}
             className="object-resize-handle-hitbox"
             onMouseEnter={onMouseEnter}

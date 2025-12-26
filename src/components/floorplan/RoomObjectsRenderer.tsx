@@ -369,7 +369,7 @@ function RoomObject({
             width={boundingBoxWidth}
             height={boundingBoxHeight}
             fill="transparent"
-            pointerEvents="visiblePainted"
+            pointerEvents="all"
           />
           {/* Visible circle */}
           <circle
