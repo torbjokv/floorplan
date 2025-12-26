@@ -1585,15 +1585,17 @@ const FloorplanRendererComponent = ({
   // Touchpad pinch-to-zoom sends wheel events with ctrlKey: true
   // Touchpad two-finger scroll sends regular wheel events
   const handleWheel = useCallback(
-    (e: React.WheelEvent<SVGSVGElement>) => {
-      e.preventDefault();
-
+    (e: WheelEvent) => {
+      // Only prevent default for pinch-to-zoom (ctrlKey), not for regular Ctrl++ page zoom
+      // This allows Ctrl++ keyboard shortcut to still zoom the page
       if (!svgRef.current) return;
 
-      // Pinch-to-zoom (touchpad) or Ctrl+wheel (mouse) -> zoom
+      // Pinch-to-zoom (touchpad) or Ctrl+wheel (mouse) -> zoom SVG
       if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+
         // Touchpad pinch uses smaller delta values, so use a gentler zoom factor
-        const zoomFactor = e.ctrlKey ? 1.02 : 1.1;
+        const zoomFactor = 1.02;
         const delta = e.deltaY > 0 ? 1 / zoomFactor : zoomFactor;
         const newZoom = Math.min(Math.max(zoom * delta, 0.1), 10);
 
@@ -1636,6 +1638,8 @@ const FloorplanRendererComponent = ({
         setPanOffset({ x: newPanX, y: newPanY });
       } else {
         // Regular scroll (touchpad two-finger or mouse wheel without Ctrl) -> pan
+        e.preventDefault();
+
         const svg = svgRef.current;
         const viewBox = svg.viewBox.baseVal;
         const rect = svg.getBoundingClientRect();
@@ -1656,6 +1660,17 @@ const FloorplanRendererComponent = ({
     },
     [zoom, panOffset, bounds]
   );
+
+  // Attach wheel listener with passive: false to allow preventDefault
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    svg.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      svg.removeEventListener('wheel', handleWheel);
+    };
+  }, [handleWheel]);
 
   // Handle pan start (middle mouse button or space+left click)
   const handlePanStart = useCallback(
@@ -1759,7 +1774,6 @@ const FloorplanRendererComponent = ({
         onMouseDown={handlePanStart}
         onMouseUp={handleCombinedMouseUp}
         onMouseLeave={handlePanEnd}
-        onWheel={handleWheel}
         onClick={handleSvgClick}
         style={{ cursor: isPanning ? 'grabbing' : isSpacePressed ? 'grab' : undefined }}
       >
