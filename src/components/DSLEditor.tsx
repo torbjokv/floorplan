@@ -6,6 +6,7 @@ import type { DecorationSet } from '@codemirror/view';
 import { StateEffect, StateField } from '@codemirror/state';
 import { vscodeDark } from '@uiw/codemirror-theme-vscode';
 import { dslLanguage } from './dsl-language';
+import { dslDocsExtension } from './dsl-docs-extension';
 import './DSLEditor.css';
 
 interface DSLEditorProps {
@@ -130,6 +131,7 @@ export const DSLEditor = forwardRef<DSLEditorRef, DSLEditorProps>(function DSLEd
           extensions={[
             ...dslLanguage,
             highlightField,
+            dslDocsExtension,
             EditorView.lineWrapping,
             // Overlay custom syntax highlighting colors for DSL-specific tokens
             EditorView.theme({
