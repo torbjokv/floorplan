@@ -1646,7 +1646,7 @@ const FloorplanRendererComponent = ({
       );
       onRoomUpdate({ ...data, rooms: updatedRooms });
     },
-    [data, onRoomUpdate]
+    [data, onRoomUpdate, roomMap]
   );
 
   const handlePartOffsetDragStart = useCallback(
