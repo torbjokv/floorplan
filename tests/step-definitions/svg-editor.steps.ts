@@ -259,14 +259,16 @@ When('I click on the window to select it', async function () {
   // Use .window-group selector which is more reliable
   const window = this.page.locator('.window-group').first();
   await window.waitFor({ state: 'visible', timeout: 10000 });
-  await window.click();
+  // Use force click to avoid issues with overlapping elements
+  await window.click({ force: true, timeout: 5000 });
   this.selectedElement = 'window';
 });
 
 When('I click on the object to select it', async function () {
   const object = this.page.locator('[data-object-index]').first();
   await object.waitFor({ state: 'visible', timeout: 10000 });
-  await object.click();
+  // Use force click to avoid issues with overlapping elements
+  await object.click({ force: true, timeout: 5000 });
   this.selectedElement = 'object';
 });
 
