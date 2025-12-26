@@ -1,5 +1,6 @@
-import { EditorView, showPanel, Panel } from '@codemirror/view';
-import { Extension } from '@codemirror/state';
+import { EditorView, showPanel } from '@codemirror/view';
+import type { Panel } from '@codemirror/view';
+import type { Extension } from '@codemirror/state';
 
 // Documentation for each DSL element type
 const dslDocs: Record<string, { title: string; syntax: string; description: string }> = {
