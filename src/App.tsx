@@ -1090,9 +1090,15 @@ function App() {
     [dslText, updateDslText]
   );
 
-  // Delete key handler for selected elements
+  // Keyboard handler for selected elements (Delete to remove, Escape to deselect)
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Escape clears selection
+      if (event.key === 'Escape' && selectedElement) {
+        setSelectedElement(null);
+        return;
+      }
+
       if (event.key === 'Delete' && selectedElement) {
         event.preventDefault();
 
@@ -1493,6 +1499,7 @@ function App() {
           onDoorSwingUpdate={handleDoorSwingUpdate}
           onDoorResizeUpdate={handleDoorResizeUpdate}
           onWindowResizeUpdate={handleWindowResizeUpdate}
+          onBackgroundClick={() => setSelectedElement(null)}
         />
         <button
           className="download-svg-button"

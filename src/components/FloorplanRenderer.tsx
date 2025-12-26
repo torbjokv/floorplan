@@ -85,6 +85,7 @@ interface FloorplanRendererProps {
   onDoorSwingUpdate?: (doorIndex: number, newSwing: SwingDirection) => void;
   onDoorResizeUpdate?: (doorIndex: number, newWidth: number, newOffset: number) => void;
   onWindowResizeUpdate?: (windowIndex: number, newWidth: number, newOffset: number) => void;
+  onBackgroundClick?: () => void;
 }
 
 interface DragState {
@@ -149,6 +150,7 @@ const FloorplanRendererComponent = ({
   onDoorSwingUpdate,
   onDoorResizeUpdate,
   onWindowResizeUpdate,
+  onBackgroundClick,
 }: FloorplanRendererProps) => {
   const gridStep = data.grid_step || 1000;
   const svgRef = useRef<SVGSVGElement>(null);
@@ -1509,12 +1511,16 @@ const FloorplanRendererComponent = ({
   }, []);
 
   // Handler for clicking on SVG background (empty space) to clear focus
-  const handleSvgClick = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
-    // Only clear focus if clicking directly on SVG (not on a child element)
-    if (e.target === e.currentTarget) {
-      setFocusedElement(null);
-    }
-  }, []);
+  const handleSvgClick = useCallback(
+    (e: React.MouseEvent<SVGSVGElement>) => {
+      // Only clear focus if clicking directly on SVG (not on a child element)
+      if (e.target === e.currentTarget) {
+        setFocusedElement(null);
+        onBackgroundClick?.();
+      }
+    },
+    [onBackgroundClick]
+  );
 
   // Handlers for setting focus on different element types
   const handleDoorFocus = useCallback((index: number) => {
