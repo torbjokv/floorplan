@@ -569,6 +569,100 @@ export function DoorRenderer({
         stroke={snappedWall ? '#00ff00' : '#333'}
         strokeWidth={snappedWall ? '3' : '1'}
       />
+      {/* Dimension and offset labels */}
+      {!isDragging &&
+        (() => {
+          const doorWidth = door.width;
+          const doorOffset = door.offset ?? 0;
+          const isHorizontalWall = activeWall === 'top' || activeWall === 'bottom';
+          const offsetArrow = isHorizontalWall ? '→' : '↓';
+
+          // Calculate label positions based on wall
+          let labelX: number, labelY: number;
+          let offsetLabelX: number, offsetLabelY: number;
+          let textAnchor: 'start' | 'middle' | 'end' = 'middle';
+          let offsetTextAnchor: 'start' | 'middle' | 'end' = 'middle';
+
+          switch (activeWall) {
+            case 'top':
+              // Dimension label above door (outside room)
+              labelX = x + doorRect.x + doorRect.width / 2;
+              labelY = y + doorRect.y - 8;
+              // Offset label to the left of door start
+              offsetLabelX = x + doorRect.x - 4;
+              offsetLabelY = y + doorRect.y - 8;
+              offsetTextAnchor = 'end';
+              break;
+            case 'bottom':
+              // Dimension label below door (outside room)
+              labelX = x + doorRect.x + doorRect.width / 2;
+              labelY = y + doorRect.y + doorRect.height + 12;
+              // Offset label to the left of door start
+              offsetLabelX = x + doorRect.x - 4;
+              offsetLabelY = y + doorRect.y + doorRect.height + 12;
+              offsetTextAnchor = 'end';
+              break;
+            case 'left':
+              // Dimension label to the left of door (outside room)
+              labelX = x + doorRect.x - 8;
+              labelY = y + doorRect.y + doorRect.height / 2;
+              textAnchor = 'end';
+              // Offset label above door start
+              offsetLabelX = x + doorRect.x - 8;
+              offsetLabelY = y + doorRect.y - 4;
+              offsetTextAnchor = 'end';
+              break;
+            case 'right':
+              // Dimension label to the right of door (outside room)
+              labelX = x + doorRect.x + doorRect.width + 8;
+              labelY = y + doorRect.y + doorRect.height / 2;
+              textAnchor = 'start';
+              // Offset label above door start
+              offsetLabelX = x + doorRect.x + doorRect.width + 8;
+              offsetLabelY = y + doorRect.y - 4;
+              offsetTextAnchor = 'start';
+              break;
+            default:
+              labelX = x + doorRect.x + doorRect.width / 2;
+              labelY = y + doorRect.y - 8;
+              offsetLabelX = x + doorRect.x - 4;
+              offsetLabelY = y + doorRect.y - 8;
+          }
+
+          return (
+            <>
+              {/* Dimension label (width) */}
+              <text
+                data-testid={`door-${index}-dimensions`}
+                x={labelX}
+                y={labelY}
+                fontSize="9"
+                textAnchor={textAnchor}
+                dominantBaseline="middle"
+                fill="#666"
+                pointerEvents="none"
+              >
+                {doorWidth}
+              </text>
+              {/* Offset label with direction */}
+              {doorOffset > 0 && (
+                <text
+                  data-testid={`door-${index}-offset`}
+                  x={offsetLabelX}
+                  y={offsetLabelY}
+                  fontSize="8"
+                  textAnchor={offsetTextAnchor}
+                  dominantBaseline="middle"
+                  fill="#888"
+                  pointerEvents="none"
+                >
+                  {offsetArrow}
+                  {doorOffset}
+                </text>
+              )}
+            </>
+          );
+        })()}
       {/* Door swing arc (not shown for openings or freestanding preview) */}
       {!isOpening && arcPath && (
         <path

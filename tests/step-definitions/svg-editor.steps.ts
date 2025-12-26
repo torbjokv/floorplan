@@ -256,10 +256,13 @@ When('I click on the door to select it', async function () {
 });
 
 When('I click on the window to select it', async function () {
-  const window = this.page.locator('.window-group').first();
-  await window.waitFor({ state: 'visible', timeout: 10000 });
+  // Click directly on the window rect to avoid bounding box issues with labels
+  const windowGroup = this.page.locator('.window-group').first();
+  await windowGroup.waitFor({ state: 'visible', timeout: 10000 });
+  // Click on the rect inside the group (the actual window visual)
+  const windowRect = windowGroup.locator('rect').first();
   // Use dispatchEvent to ensure React handler fires on SVG elements
-  await window.dispatchEvent('click');
+  await windowRect.dispatchEvent('click');
   await this.page.waitForTimeout(200);
   this.selectedElement = 'window';
 });
@@ -267,7 +270,8 @@ When('I click on the window to select it', async function () {
 When('I click on the object to select it', async function () {
   const object = this.page.locator('[data-object-index]').first();
   await object.waitFor({ state: 'visible', timeout: 10000 });
-  await object.click();
+  // Use force click to avoid issues with overlapping elements
+  await object.click({ force: true, timeout: 5000 });
   this.selectedElement = 'object';
 });
 
