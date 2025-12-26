@@ -23,7 +23,7 @@ When('I click on {string} in the menu', async function (this: FloorplanWorld, me
   const menuItemMap: Record<string, string> = {
     'New Project': 'project-menu-new',
     'Load Example': 'project-menu-load-example',
-    'Upload JSON': 'project-menu-upload',
+    'Upload Floorplan': 'project-menu-upload',
     'Download JSON': 'project-menu-download',
     Share: 'project-menu-share',
     Duplicate: 'project-menu-duplicate',
@@ -112,7 +112,7 @@ When('I click on {string}', async function (this: FloorplanWorld, buttonText: st
   // Special handling for menu items to avoid ambiguity
   const menuItemMap: Record<string, string> = {
     'Download JSON': 'project-menu-download',
-    'Upload JSON': 'project-menu-upload',
+    'Upload Floorplan': 'project-menu-upload',
     Share: 'project-menu-share',
   };
 
@@ -124,8 +124,8 @@ When('I click on {string}', async function (this: FloorplanWorld, buttonText: st
       const download = await downloadPromise;
       // Store download for later verification
       (this as any).lastDownload = download;
-    } else if (buttonText === 'Upload JSON') {
-      // For Upload JSON, set up file chooser listener before clicking
+    } else if (buttonText === 'Upload Floorplan') {
+      // For Upload Floorplan, set up file chooser listener before clicking
       const fileChooserPromise = this.page.waitForEvent('filechooser');
       await this.page.getByTestId(menuItemMap[buttonText]).click();
       const fileChooser = await fileChooserPromise;

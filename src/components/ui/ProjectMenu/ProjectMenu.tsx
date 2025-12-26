@@ -42,7 +42,7 @@ export function ProjectMenu({
         📋 Load Example
       </button>
       <button onClick={onUploadJSON} className={styles.menuItem} data-testid="project-menu-upload">
-        📁 Upload JSON
+        📁 Upload Floorplan
       </button>
       <button
         onClick={onDuplicateProject}
