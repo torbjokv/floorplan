@@ -1456,6 +1456,32 @@ const FloorplanRendererComponent = ({
           break;
       }
 
+      // Get the resolved parent room and part to check if they would still touch
+      const resolvedParentRoom = roomMap[currentPartResizeState.parentRoomId];
+      const resolvedPart = roomMap[currentPartResizeState.partId];
+      if (!resolvedParentRoom || !resolvedPart) return;
+
+      // Calculate where the part would be after resize
+      const newPartX = resolvedPart.x + newOffsetX;
+      const newPartY = resolvedPart.y + newOffsetY;
+
+      // Check if the part would still touch or overlap with the parent room
+      const partRight = newPartX + newWidth;
+      const partBottom = newPartY + newDepth;
+      const parentRight = resolvedParentRoom.x + resolvedParentRoom.width;
+      const parentBottom = resolvedParentRoom.y + resolvedParentRoom.depth;
+
+      const wouldTouch =
+        newPartX <= parentRight &&
+        partRight >= resolvedParentRoom.x &&
+        newPartY <= parentBottom &&
+        partBottom >= resolvedParentRoom.y;
+
+      // If the part would disconnect, don't update
+      if (!wouldTouch) {
+        return;
+      }
+
       // Update the part in data to show live resize feedback
       if (onRoomUpdate) {
         const parentRoom = data.rooms.find(r => r.id === currentPartResizeState.parentRoomId);
@@ -1577,6 +1603,37 @@ const FloorplanRendererComponent = ({
           // Vertical arrows adjust Y offset
           newOffsetY = Math.round(currentPartOffsetDragState.startOffset[1] + deltaY);
           break;
+      }
+
+      // Get the resolved parent room and part to check if they would still touch
+      const resolvedParentRoom = roomMap[currentPartOffsetDragState.parentRoomId];
+      const resolvedPart = roomMap[currentPartOffsetDragState.partId];
+      if (!resolvedParentRoom || !resolvedPart) return;
+
+      // Calculate where the part would be with the new offset
+      const currentOffset = partData.offset || [0, 0];
+      const offsetDeltaX = newOffsetX - currentOffset[0];
+      const offsetDeltaY = newOffsetY - currentOffset[1];
+      const newPartX = resolvedPart.x + offsetDeltaX;
+      const newPartY = resolvedPart.y + offsetDeltaY;
+
+      // Check if the part would still touch or overlap with the parent room
+      // Parts must share at least one edge or overlap
+      const partRight = newPartX + resolvedPart.width;
+      const partBottom = newPartY + resolvedPart.depth;
+      const parentRight = resolvedParentRoom.x + resolvedParentRoom.width;
+      const parentBottom = resolvedParentRoom.y + resolvedParentRoom.depth;
+
+      // Check if rectangles would still touch (allowing edge contact)
+      const wouldTouch =
+        newPartX <= parentRight &&
+        partRight >= resolvedParentRoom.x &&
+        newPartY <= parentBottom &&
+        partBottom >= resolvedParentRoom.y;
+
+      // If the part would disconnect, don't update
+      if (!wouldTouch) {
+        return;
       }
 
       // Update the part offset
