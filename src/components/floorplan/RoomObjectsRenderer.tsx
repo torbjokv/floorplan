@@ -48,6 +48,18 @@ interface RoomObjectsRendererProps {
   ) => void;
   focusedObject?: { roomId: string; objectIndex: number; partId?: string } | null;
   onObjectFocus?: (roomId: string, objectIndex: number, partId?: string) => void;
+  onObjectTextUpdate?: (
+    roomId: string,
+    objectIndex: number,
+    currentText: string | undefined,
+    partId?: string
+  ) => void;
+  onObjectColorUpdate?: (
+    roomId: string,
+    objectIndex: number,
+    currentColor: string | undefined,
+    partId?: string
+  ) => void;
 }
 
 // Helper function to get room corner position
@@ -102,6 +114,8 @@ function RoomObject({
   partId,
   isFocused,
   onFocus,
+  onTextUpdate,
+  onColorUpdate,
 }: {
   room: ResolvedRoom;
   parentRoomId?: string; // Parent room ID for test IDs when room is a part
@@ -139,6 +153,18 @@ function RoomObject({
   partId?: string;
   isFocused?: boolean;
   onFocus?: (roomId: string, objectIndex: number, partId?: string) => void;
+  onTextUpdate?: (
+    roomId: string,
+    objectIndex: number,
+    currentText: string | undefined,
+    partId?: string
+  ) => void;
+  onColorUpdate?: (
+    roomId: string,
+    objectIndex: number,
+    currentColor: string | undefined,
+    partId?: string
+  ) => void;
 }) {
   const [isObjectDragging, setIsObjectDragging] = useState(false);
   const [currentObjX, setCurrentObjX] = useState(obj.x);
@@ -365,6 +391,10 @@ function RoomObject({
                 onFocus?.(roomIdForTestId, idx, partId);
               }
             }}
+            onDoubleClick={e => {
+              e.stopPropagation();
+              onColorUpdate?.(roomIdForTestId, idx, obj.color, partId);
+            }}
             onMouseDown={handleMouseDown}
             style={{
               cursor: isObjectDragging ? 'grabbing' : onObjectDragUpdate ? 'grab' : 'pointer',
@@ -372,13 +402,21 @@ function RoomObject({
           />
           {obj.text && (
             <text
+              data-testid={`${testIdBase}-text`}
               x={centerX}
               y={centerY - 10}
               fontSize="12"
               textAnchor="middle"
               dominantBaseline="middle"
               fill="#000"
-              style={{ pointerEvents: 'none' }}
+              style={{
+                pointerEvents: 'auto',
+                cursor: 'pointer',
+              }}
+              onDoubleClick={e => {
+                e.stopPropagation();
+                onTextUpdate?.(roomIdForTestId, idx, obj.text, partId);
+              }}
             >
               {obj.text}
             </text>
@@ -468,6 +506,10 @@ function RoomObject({
                 onFocus?.(roomIdForTestId, idx, partId);
               }
             }}
+            onDoubleClick={e => {
+              e.stopPropagation();
+              onColorUpdate?.(roomIdForTestId, idx, obj.color, partId);
+            }}
             onMouseDown={handleMouseDown}
             onMouseEnter={() => onObjectMouseEnter?.(roomIdForTestId, idx, partId)}
             onMouseLeave={onObjectMouseLeave}
@@ -477,13 +519,21 @@ function RoomObject({
           />
           {obj.text && (
             <text
+              data-testid={`${testIdBase}-text`}
               x={centerX}
               y={centerY - 10}
               fontSize="12"
               textAnchor="middle"
               dominantBaseline="middle"
               fill="#000"
-              style={{ pointerEvents: 'none' }}
+              style={{
+                pointerEvents: 'auto',
+                cursor: 'pointer',
+              }}
+              onDoubleClick={e => {
+                e.stopPropagation();
+                onTextUpdate?.(roomIdForTestId, idx, obj.text, partId);
+              }}
             >
               {obj.text}
             </text>
@@ -548,6 +598,8 @@ export function RoomObjectsRenderer({
   onObjectResizeNumeric,
   focusedObject,
   onObjectFocus,
+  onObjectTextUpdate,
+  onObjectColorUpdate,
 }: RoomObjectsRendererProps) {
   return (
     <>
@@ -591,6 +643,8 @@ export function RoomObjectsRenderer({
                     !focusedObject?.partId
                   }
                   onFocus={onObjectFocus}
+                  onTextUpdate={onObjectTextUpdate}
+                  onColorUpdate={onObjectColorUpdate}
                 />
               ))}
               {/* Render part-level objects */}
@@ -627,6 +681,8 @@ export function RoomObjectsRenderer({
                       focusedObject?.partId === part.id
                     }
                     onFocus={onObjectFocus}
+                    onTextUpdate={onObjectTextUpdate}
+                    onColorUpdate={onObjectColorUpdate}
                   />
                 ));
               })}
