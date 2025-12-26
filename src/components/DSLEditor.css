@@ -210,3 +210,46 @@
   animation: highlight-fade-out 2s ease-out forwards;
   border-radius: 2px;
 }
+
+/* Documentation panel styles */
+.dsl-docs-panel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  background-color: #1e1e1e;
+  border-top: 1px solid #3c3c3c;
+  font-size: 12px;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #cccccc;
+  min-height: 28px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.dsl-docs-title {
+  color: #569cd6;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.dsl-docs-syntax {
+  color: #4ec9b0;
+  background-color: #2d2d2d;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-family: Consolas, Monaco, monospace;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 400px;
+}
+
+.dsl-docs-desc {
+  color: #9cdcfe;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
