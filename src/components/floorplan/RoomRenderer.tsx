@@ -378,51 +378,47 @@ export function RoomRenderer({
         pointerEvents="none"
       />
 
-      {/* Layer 3: Invisible click regions for individual parts (only for composite rooms) */}
-      {hasMultipleParts && (
-        <>
-          {/* Main room click region */}
-          <rect
-            className="room-rect composite-part"
-            x={mm(room.x)}
-            y={mm(room.y)}
-            width={mm(room.width)}
-            height={mm(room.depth)}
-            fill="transparent"
-            stroke="none"
-            onClick={() => {
-              onClick?.(room.id);
-              onFocus?.(room.id);
-            }}
-            onMouseDown={e => onMouseDown(e, room.id)}
-            style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
-          />
+      {/* Layer 3: Main room rect for hover effects and resize handle detection */}
+      <rect
+        className={hasMultipleParts ? 'room-rect composite-part' : 'room-rect'}
+        x={mm(room.x)}
+        y={mm(room.y)}
+        width={mm(room.width)}
+        height={mm(room.depth)}
+        fill="transparent"
+        stroke="none"
+        onClick={() => {
+          onClick?.(room.id);
+          onFocus?.(room.id);
+        }}
+        onMouseDown={e => onMouseDown(e, room.id)}
+        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+      />
 
-          {/* Part click regions with selection highlight */}
-          {parts.map((part, idx) => {
-            const isPartSelected = selectedPartId === part.id;
-            return (
-              <rect
-                className="room-rect composite-part"
-                key={`part-${idx}`}
-                data-part-id={part.id}
-                x={mm(part.x)}
-                y={mm(part.y)}
-                width={mm(part.width)}
-                height={mm(part.depth)}
-                fill="transparent"
-                stroke={isPartSelected ? '#646cff' : 'none'}
-                strokeWidth={isPartSelected ? '4' : '0'}
-                onClick={e => {
-                  e.stopPropagation();
-                  onPartClick?.(room.id, part.id);
-                }}
-                style={{ cursor: 'pointer' }}
-              />
-            );
-          })}
-        </>
-      )}
+      {/* Layer 4: Part click regions with selection highlight (only for composite rooms) */}
+      {hasMultipleParts &&
+        parts.map((part, idx) => {
+          const isPartSelected = selectedPartId === part.id;
+          return (
+            <rect
+              className="room-rect composite-part"
+              key={`part-${idx}`}
+              data-part-id={part.id}
+              x={mm(part.x)}
+              y={mm(part.y)}
+              width={mm(part.width)}
+              height={mm(part.depth)}
+              fill="transparent"
+              stroke={isPartSelected ? '#646cff' : 'none'}
+              strokeWidth={isPartSelected ? '4' : '0'}
+              onClick={e => {
+                e.stopPropagation();
+                onPartClick?.(room.id, part.id);
+              }}
+              style={{ cursor: 'pointer' }}
+            />
+          );
+        })}
 
       {/* Room label */}
       <EditableRoomLabel room={room} x={labelX} y={labelY - 10} onNameUpdate={onNameUpdate} />
