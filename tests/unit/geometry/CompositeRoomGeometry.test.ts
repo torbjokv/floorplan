@@ -4,7 +4,7 @@ import {
   polygonToSvgPath,
   getCompositeBounds,
   type Rectangle,
-} from './CompositeRoomGeometry';
+} from '../../../src/geometry/CompositeRoomGeometry';
 
 describe('CompositeRoomGeometry', () => {
   describe('calculateCompositeRoomOutline', () => {
