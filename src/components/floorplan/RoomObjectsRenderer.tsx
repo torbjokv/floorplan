@@ -441,6 +441,23 @@ function RoomObject({
           >
             ⌀{diameter}
           </text>
+          {/* Offset label with direction */}
+          {(obj.x !== 0 || obj.y !== 0) && (
+            <text
+              data-testid={`${testIdBase}-offset`}
+              x={centerX}
+              y={obj.text ? centerY + 24 : centerY + 12}
+              fontSize="8"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="#888"
+              pointerEvents="none"
+            >
+              {obj.x !== 0 && `${obj.x >= 0 ? '→' : '←'}${Math.abs(obj.x)}`}
+              {obj.x !== 0 && obj.y !== 0 && ' '}
+              {obj.y !== 0 && `${obj.y >= 0 ? '↓' : '↑'}${Math.abs(obj.y)}`}
+            </text>
+          )}
         </g>
         {showHandles && onObjectResizeStart && (
           <ObjectResizeHandles
@@ -558,6 +575,23 @@ function RoomObject({
           >
             {width}×{height}
           </text>
+          {/* Offset label with direction */}
+          {(obj.x !== 0 || obj.y !== 0) && (
+            <text
+              data-testid={`${testIdBase}-offset`}
+              x={centerX}
+              y={obj.text ? centerY + 24 : centerY + 12}
+              fontSize="8"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="#888"
+              pointerEvents="none"
+            >
+              {obj.x !== 0 && `${obj.x >= 0 ? '→' : '←'}${Math.abs(obj.x)}`}
+              {obj.x !== 0 && obj.y !== 0 && ' '}
+              {obj.y !== 0 && `${obj.y >= 0 ? '↓' : '↑'}${Math.abs(obj.y)}`}
+            </text>
+          )}
         </g>
         {showHandles && onObjectResizeStart && (
           <ObjectResizeHandles

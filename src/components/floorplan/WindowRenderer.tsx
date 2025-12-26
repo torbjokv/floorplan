@@ -446,6 +446,98 @@ export function WindowRenderer({
         stroke={snappedWall ? '#00ff00' : '#444'}
         strokeWidth={snappedWall ? '3' : '2'}
       />
+      {/* Dimension and offset labels */}
+      {!isDragging &&
+        (() => {
+          const windowWidth = window.width;
+          const windowOffset = window.offset ?? 0;
+          const isHorizontalWall = activeWall === 'top' || activeWall === 'bottom';
+          const offsetArrow = isHorizontalWall ? '→' : '↓';
+
+          // For windows, labels are rendered in the rotated coordinate space
+          // so we need to adjust based on rotation
+          let labelX: number, labelY: number;
+          let offsetLabelX: number, offsetLabelY: number;
+          const textAnchor: 'start' | 'middle' | 'end' = 'middle';
+          let offsetTextAnchor: 'start' | 'middle' | 'end' = 'middle';
+          let labelRotation = 0;
+
+          if (rotation === 90) {
+            // Vertical walls (left/right) - labels need counter-rotation
+            labelX = w / 2;
+            labelY = rectY + d + 15;
+            labelRotation = -90;
+            // Offset label
+            offsetLabelX = -4;
+            offsetLabelY = rectY + d + 15;
+            offsetTextAnchor = 'end';
+          } else {
+            // Horizontal walls (top/bottom)
+            switch (activeWall) {
+              case 'top':
+                labelX = w / 2;
+                labelY = rectY - 8;
+                offsetLabelX = -4;
+                offsetLabelY = rectY - 8;
+                offsetTextAnchor = 'end';
+                break;
+              case 'bottom':
+                labelX = w / 2;
+                labelY = rectY + d + 12;
+                offsetLabelX = -4;
+                offsetLabelY = rectY + d + 12;
+                offsetTextAnchor = 'end';
+                break;
+              default:
+                labelX = w / 2;
+                labelY = rectY - 8;
+                offsetLabelX = -4;
+                offsetLabelY = rectY - 8;
+            }
+          }
+
+          return (
+            <>
+              {/* Dimension label (width) */}
+              <text
+                data-testid={`window-${index}-dimensions`}
+                x={labelX}
+                y={labelY}
+                fontSize="9"
+                textAnchor={textAnchor}
+                dominantBaseline="middle"
+                fill="#666"
+                pointerEvents="none"
+                transform={
+                  labelRotation !== 0 ? `rotate(${labelRotation} ${labelX} ${labelY})` : undefined
+                }
+              >
+                {windowWidth}
+              </text>
+              {/* Offset label with direction */}
+              {windowOffset > 0 && (
+                <text
+                  data-testid={`window-${index}-offset`}
+                  x={offsetLabelX}
+                  y={offsetLabelY}
+                  fontSize="8"
+                  textAnchor={offsetTextAnchor}
+                  dominantBaseline="middle"
+                  fill="#888"
+                  pointerEvents="none"
+                  transform={
+                    labelRotation !== 0
+                      ? `rotate(${labelRotation} ${offsetLabelX} ${offsetLabelY})`
+                      : undefined
+                  }
+                >
+                  {offsetArrow}
+                  {windowOffset}
+                </text>
+              )}
+            </>
+          );
+        })()}
       {/* Resize handles (shown when focused, not when dragging) */}
       {showButtons && onResizeUpdate && (
         <DoorWindowResizeHandles
