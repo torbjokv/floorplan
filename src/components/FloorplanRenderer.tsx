@@ -1649,16 +1649,27 @@ const FloorplanRendererComponent = ({
         newPartY <= parentBottom &&
         partBottom >= resolvedParentRoom.y;
 
-      // Check that the part extends beyond at least one edge of the parent room
-      // (i.e., it's not completely contained within the parent)
-      const extendsRoom =
-        newPartX < resolvedParentRoom.x ||
-        partRight > parentRight ||
-        newPartY < resolvedParentRoom.y ||
-        partBottom > parentBottom;
+      // Check extension based on drag direction:
+      // - Horizontal arrows (left/right): part must extend horizontally
+      // - Vertical arrows (top/bottom): part must extend vertically
+      // This prevents parts from sliding across the room by extending in a perpendicular direction
+      const extendsHorizontally = newPartX < resolvedParentRoom.x || partRight > parentRight;
+      const extendsVertically = newPartY < resolvedParentRoom.y || partBottom > parentBottom;
 
-      // If the part would disconnect or be fully contained, don't update
-      if (!wouldTouch || !extendsRoom) {
+      let validExtension = false;
+      if (
+        currentPartOffsetDragState.direction === 'left' ||
+        currentPartOffsetDragState.direction === 'right'
+      ) {
+        // Horizontal movement requires horizontal extension
+        validExtension = extendsHorizontally;
+      } else {
+        // Vertical movement requires vertical extension
+        validExtension = extendsVertically;
+      }
+
+      // If the part would disconnect or not extend in the correct direction, don't update
+      if (!wouldTouch || !validExtension) {
         return;
       }
 
