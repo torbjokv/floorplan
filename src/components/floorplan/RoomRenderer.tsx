@@ -386,7 +386,6 @@ export function RoomRenderer({
         width={mm(room.width)}
         height={mm(room.depth)}
         fill="transparent"
-        pointerEvents="all"
         stroke="none"
         onClick={() => {
           onClick?.(room.id);
@@ -417,7 +416,6 @@ export function RoomRenderer({
               width={mm(part.width)}
               height={mm(part.depth)}
               fill="transparent"
-              pointerEvents="all"
               stroke={isPartSelected ? '#646cff' : 'none'}
               strokeWidth={isPartSelected ? '4' : '0'}
               transform={partTransform}

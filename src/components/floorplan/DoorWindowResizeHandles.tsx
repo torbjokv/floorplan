@@ -138,7 +138,6 @@ export function DoorWindowResizeHandles({
             width={HANDLE_HITBOX_SIZE}
             height={HANDLE_HITBOX_SIZE}
             fill="transparent"
-            pointerEvents="all"
             cursor={handle.cursor}
             className="door-window-resize-handle-hitbox"
             onMouseEnter={onMouseEnter}

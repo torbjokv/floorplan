@@ -721,14 +721,11 @@ const FloorplanRendererComponent = ({
 
       // Initialize start position on first move
       if (currentResizeState.startMouseX === 0 && currentResizeState.startMouseY === 0) {
-        const updatedState = {
+        setResizeState({
           ...currentResizeState,
           startMouseX: x,
           startMouseY: y,
-        };
-        // Update ref immediately so next mousemove can use the start position
-        resizeStateRef.current = updatedState;
-        setResizeState(updatedState);
+        });
         return;
       }
 
@@ -858,8 +855,11 @@ const FloorplanRendererComponent = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
 
-      // Create initial resize state (will be updated with actual mouse position on first move)
-      const initialState = {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+
+      // Set initial resize state (will be updated with actual mouse position on first move)
+      setResizeState({
         roomId,
         edge,
         startMouseX: 0, // Will be set on first move
@@ -868,15 +868,7 @@ const FloorplanRendererComponent = ({
         startDepth: room.depth,
         startX: room.x,
         startY: room.y,
-      };
-
-      // Update ref immediately so mousemove handlers can access it synchronously
-      // (React state updates are async, but mousemove events can fire before useEffect runs)
-      resizeStateRef.current = initialState;
-      setResizeState(initialState);
-
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      });
     },
     [roomMap, handleResizeMove, handleResizeEnd]
   );
@@ -987,14 +979,11 @@ const FloorplanRendererComponent = ({
         currentObjectResizeState.startMouseX === 0 &&
         currentObjectResizeState.startMouseY === 0
       ) {
-        const updatedState = {
+        setObjectResizeState({
           ...currentObjectResizeState,
           startMouseX: x,
           startMouseY: y,
-        };
-        // Update ref immediately so next mousemove can use the start position
-        objectResizeStateRef.current = updatedState;
-        setObjectResizeState(updatedState);
+        });
         return;
       }
 
@@ -1112,8 +1101,10 @@ const FloorplanRendererComponent = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
 
-      // Create initial resize state
-      const initialState = {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+
+      setObjectResizeState({
         roomId,
         objectIndex,
         partId,
@@ -1124,14 +1115,7 @@ const FloorplanRendererComponent = ({
         startHeight: objHeight,
         startX: obj.x,
         startY: obj.y,
-      };
-
-      // Update ref immediately so mousemove handlers can access it synchronously
-      objectResizeStateRef.current = initialState;
-      setObjectResizeState(initialState);
-
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      });
     },
     [roomMap, handleObjectResizeMove, handleObjectResizeEnd, screenToMM]
   );
@@ -1314,14 +1298,11 @@ const FloorplanRendererComponent = ({
 
       // Initialize start position on first move
       if (currentState.startMouseX === 0 && currentState.startMouseY === 0) {
-        const updatedState = {
+        setFreestandingObjectResizeState({
           ...currentState,
           startMouseX: x,
           startMouseY: y,
-        };
-        // Update ref immediately so next mousemove can use the start position
-        freestandingObjectResizeStateRef.current = updatedState;
-        setFreestandingObjectResizeState(updatedState);
+        });
         return;
       }
 
@@ -1382,8 +1363,10 @@ const FloorplanRendererComponent = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
 
-      // Create initial resize state
-      const initialState = {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+
+      setFreestandingObjectResizeState({
         objectIndex,
         corner,
         startMouseX: 0,
@@ -1392,14 +1375,7 @@ const FloorplanRendererComponent = ({
         startHeight: objHeight,
         startX: obj.x,
         startY: obj.y,
-      };
-
-      // Update ref immediately so mousemove handlers can access it synchronously
-      freestandingObjectResizeStateRef.current = initialState;
-      setFreestandingObjectResizeState(initialState);
-
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      });
     },
     [
       data.objects,
@@ -1486,14 +1462,11 @@ const FloorplanRendererComponent = ({
 
       // Initialize start position on first move
       if (currentOffsetDragState.startMouseX === 0 && currentOffsetDragState.startMouseY === 0) {
-        const updatedState = {
+        setOffsetDragState({
           ...currentOffsetDragState,
           startMouseX: x,
           startMouseY: y,
-        };
-        // Update ref immediately so next mousemove can use the start position
-        offsetDragStateRef.current = updatedState;
-        setOffsetDragState(updatedState);
+        });
         return;
       }
 
@@ -1544,22 +1517,18 @@ const FloorplanRendererComponent = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
 
-      // Create initial offset drag state
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+
+      // Set initial offset drag state
       const currentOffset = room.offset || [0, 0];
-      const initialState = {
+      setOffsetDragState({
         roomId,
         direction,
         startMouseX: 0, // Will be set on first move
         startMouseY: 0, // Will be set on first move
-        startOffset: [currentOffset[0], currentOffset[1]] as [number, number],
-      };
-
-      // Update ref immediately so mousemove handlers can access it synchronously
-      offsetDragStateRef.current = initialState;
-      setOffsetDragState(initialState);
-
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+        startOffset: [currentOffset[0], currentOffset[1]],
+      });
     },
     [data, handleOffsetDragMove, handleOffsetDragEnd]
   );
@@ -1579,14 +1548,11 @@ const FloorplanRendererComponent = ({
 
       // Initialize start position on first move
       if (currentPartResizeState.startMouseX === 0 && currentPartResizeState.startMouseY === 0) {
-        const updatedState = {
+        setPartResizeState({
           ...currentPartResizeState,
           startMouseX: x,
           startMouseY: y,
-        };
-        // Update ref immediately so next mousemove can use the start position
-        partResizeStateRef.current = updatedState;
-        setPartResizeState(updatedState);
+        });
         return;
       }
 
@@ -1720,8 +1686,11 @@ const FloorplanRendererComponent = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
 
-      // Create initial resize state
-      const initialState = {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+
+      // Set initial resize state
+      setPartResizeState({
         parentRoomId,
         partId,
         edge,
@@ -1733,14 +1702,7 @@ const FloorplanRendererComponent = ({
         startY: part.y,
         startOffsetX: originalOffset[0],
         startOffsetY: originalOffset[1],
-      };
-
-      // Update ref immediately so mousemove handlers can access it synchronously
-      partResizeStateRef.current = initialState;
-      setPartResizeState(initialState);
-
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      });
     },
     [data.rooms, roomMap, handlePartResizeMove, handlePartResizeEnd]
   );
@@ -1769,14 +1731,11 @@ const FloorplanRendererComponent = ({
         currentPartOffsetDragState.startMouseX === 0 &&
         currentPartOffsetDragState.startMouseY === 0
       ) {
-        const updatedState = {
+        setPartOffsetDragState({
           ...currentPartOffsetDragState,
           startMouseX: x,
           startMouseY: y,
-        };
-        // Update ref immediately so next mousemove can use the start position
-        partOffsetDragStateRef.current = updatedState;
-        setPartOffsetDragState(updatedState);
+        });
         return;
       }
 
@@ -1881,23 +1840,19 @@ const FloorplanRendererComponent = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
 
-      // Create initial offset drag state
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+
+      // Set initial offset drag state
       const currentOffset = part.offset || [0, 0];
-      const initialState = {
+      setPartOffsetDragState({
         parentRoomId,
         partId,
         direction,
         startMouseX: 0, // Will be set on first move
         startMouseY: 0, // Will be set on first move
-        startOffset: [currentOffset[0], currentOffset[1]] as [number, number],
-      };
-
-      // Update ref immediately so mousemove handlers can access it synchronously
-      partOffsetDragStateRef.current = initialState;
-      setPartOffsetDragState(initialState);
-
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+        startOffset: [currentOffset[0], currentOffset[1]],
+      });
     },
     [data, handlePartOffsetDragMove, handlePartOffsetDragEnd]
   );

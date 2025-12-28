@@ -67,7 +67,6 @@ export function ResizeHandles({
           width={HANDLE_HITBOX_SIZE}
           height={HANDLE_HITBOX_SIZE}
           fill="transparent"
-          pointerEvents="all"
           cursor="ew-resize"
           className="resize-handle-hitbox"
           onMouseDown={e => {
@@ -102,7 +101,6 @@ export function ResizeHandles({
           width={HANDLE_HITBOX_SIZE}
           height={HANDLE_HITBOX_SIZE}
           fill="transparent"
-          pointerEvents="all"
           cursor="ew-resize"
           className="resize-handle-hitbox"
           onMouseDown={e => {
@@ -137,7 +135,6 @@ export function ResizeHandles({
           width={HANDLE_HITBOX_SIZE}
           height={HANDLE_HITBOX_SIZE}
           fill="transparent"
-          pointerEvents="all"
           cursor="ns-resize"
           className="resize-handle-hitbox"
           onMouseDown={e => {
@@ -172,7 +169,6 @@ export function ResizeHandles({
           width={HANDLE_HITBOX_SIZE}
           height={HANDLE_HITBOX_SIZE}
           fill="transparent"
-          pointerEvents="all"
           cursor="ns-resize"
           className="resize-handle-hitbox"
           onMouseDown={e => {

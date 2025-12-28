@@ -282,7 +282,7 @@ function FreestandingObject({
             width={boundingBoxWidth}
             height={boundingBoxHeight}
             fill="transparent"
-            pointerEvents="all"
+            pointerEvents="visiblePainted"
           />
           {/* Visible circle */}
           <circle
