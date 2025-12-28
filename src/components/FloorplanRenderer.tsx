@@ -855,11 +855,8 @@ const FloorplanRendererComponent = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
 
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-
-      // Set initial resize state (will be updated with actual mouse position on first move)
-      setResizeState({
+      // Create initial resize state (will be updated with actual mouse position on first move)
+      const initialState = {
         roomId,
         edge,
         startMouseX: 0, // Will be set on first move
@@ -868,7 +865,15 @@ const FloorplanRendererComponent = ({
         startDepth: room.depth,
         startX: room.x,
         startY: room.y,
-      });
+      };
+
+      // Update ref immediately so mousemove handlers can access it synchronously
+      // (React state updates are async, but mousemove events can fire before useEffect runs)
+      resizeStateRef.current = initialState;
+      setResizeState(initialState);
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
     },
     [roomMap, handleResizeMove, handleResizeEnd]
   );
@@ -1101,10 +1106,8 @@ const FloorplanRendererComponent = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
 
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-
-      setObjectResizeState({
+      // Create initial resize state
+      const initialState = {
         roomId,
         objectIndex,
         partId,
@@ -1115,7 +1118,14 @@ const FloorplanRendererComponent = ({
         startHeight: objHeight,
         startX: obj.x,
         startY: obj.y,
-      });
+      };
+
+      // Update ref immediately so mousemove handlers can access it synchronously
+      objectResizeStateRef.current = initialState;
+      setObjectResizeState(initialState);
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
     },
     [roomMap, handleObjectResizeMove, handleObjectResizeEnd, screenToMM]
   );
@@ -1363,10 +1373,8 @@ const FloorplanRendererComponent = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
 
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-
-      setFreestandingObjectResizeState({
+      // Create initial resize state
+      const initialState = {
         objectIndex,
         corner,
         startMouseX: 0,
@@ -1375,7 +1383,14 @@ const FloorplanRendererComponent = ({
         startHeight: objHeight,
         startX: obj.x,
         startY: obj.y,
-      });
+      };
+
+      // Update ref immediately so mousemove handlers can access it synchronously
+      freestandingObjectResizeStateRef.current = initialState;
+      setFreestandingObjectResizeState(initialState);
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
     },
     [
       data.objects,
@@ -1517,18 +1532,22 @@ const FloorplanRendererComponent = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
 
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-
-      // Set initial offset drag state
+      // Create initial offset drag state
       const currentOffset = room.offset || [0, 0];
-      setOffsetDragState({
+      const initialState = {
         roomId,
         direction,
         startMouseX: 0, // Will be set on first move
         startMouseY: 0, // Will be set on first move
-        startOffset: [currentOffset[0], currentOffset[1]],
-      });
+        startOffset: [currentOffset[0], currentOffset[1]] as [number, number],
+      };
+
+      // Update ref immediately so mousemove handlers can access it synchronously
+      offsetDragStateRef.current = initialState;
+      setOffsetDragState(initialState);
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
     },
     [data, handleOffsetDragMove, handleOffsetDragEnd]
   );
@@ -1686,11 +1705,8 @@ const FloorplanRendererComponent = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
 
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-
-      // Set initial resize state
-      setPartResizeState({
+      // Create initial resize state
+      const initialState = {
         parentRoomId,
         partId,
         edge,
@@ -1702,7 +1718,14 @@ const FloorplanRendererComponent = ({
         startY: part.y,
         startOffsetX: originalOffset[0],
         startOffsetY: originalOffset[1],
-      });
+      };
+
+      // Update ref immediately so mousemove handlers can access it synchronously
+      partResizeStateRef.current = initialState;
+      setPartResizeState(initialState);
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
     },
     [data.rooms, roomMap, handlePartResizeMove, handlePartResizeEnd]
   );
@@ -1840,19 +1863,23 @@ const FloorplanRendererComponent = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
 
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-
-      // Set initial offset drag state
+      // Create initial offset drag state
       const currentOffset = part.offset || [0, 0];
-      setPartOffsetDragState({
+      const initialState = {
         parentRoomId,
         partId,
         direction,
         startMouseX: 0, // Will be set on first move
         startMouseY: 0, // Will be set on first move
-        startOffset: [currentOffset[0], currentOffset[1]],
-      });
+        startOffset: [currentOffset[0], currentOffset[1]] as [number, number],
+      };
+
+      // Update ref immediately so mousemove handlers can access it synchronously
+      partOffsetDragStateRef.current = initialState;
+      setPartOffsetDragState(initialState);
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
     },
     [data, handlePartOffsetDragMove, handlePartOffsetDragEnd]
   );
