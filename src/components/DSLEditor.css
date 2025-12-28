@@ -225,7 +225,7 @@
     -apple-system,
     sans-serif;
   color: #cccccc;
-  min-height: 28px;
+  height: 28px;
   box-sizing: border-box;
   flex-shrink: 0;
 }
@@ -248,11 +248,4 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 400px;
-}
-
-.dsl-docs-desc {
-  color: #9cdcfe;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }

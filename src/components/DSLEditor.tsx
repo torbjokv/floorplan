@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useRef, useCallback, useState, useMemo } from 'react';
+import { forwardRef, useImperativeHandle, useRef, useCallback } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import type { ReactCodeMirrorRef, ViewUpdate } from '@uiw/react-codemirror';
 import { EditorView, Decoration } from '@codemirror/view';
@@ -52,23 +52,33 @@ export const DSLEditor = forwardRef<DSLEditorRef, DSLEditorProps>(function DSLEd
 ) {
   const editorRef = useRef<ReactCodeMirrorRef>(null);
   const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [currentElementType, setCurrentElementType] = useState<string | null>(null);
-
-  // Get current documentation based on element type
-  const currentDoc = useMemo(() => {
-    if (currentElementType && dslDocs[currentElementType]) {
-      return dslDocs[currentElementType];
-    }
-    return null;
-  }, [currentElementType]);
+  const docsPanelRef = useRef<HTMLDivElement>(null);
+  const docsUpdateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Handle editor updates to track cursor position
+  // Updates the docs panel directly via DOM to avoid React re-renders
   const handleUpdate = useCallback((update: ViewUpdate) => {
-    if (update.selectionSet || update.docChanged) {
-      const pos = update.state.selection.main.head;
-      const line = update.state.doc.lineAt(pos);
-      const elementType = detectElementType(line.text);
-      setCurrentElementType(elementType);
+    if (update.selectionSet && !update.docChanged) {
+      // Clear any pending update
+      if (docsUpdateTimeoutRef.current) {
+        clearTimeout(docsUpdateTimeoutRef.current);
+      }
+      // Short debounce for cursor movement
+      docsUpdateTimeoutRef.current = setTimeout(() => {
+        const pos = update.state.selection.main.head;
+        const line = update.state.doc.lineAt(pos);
+        const elementType = detectElementType(line.text);
+
+        // Update DOM directly instead of triggering React re-render
+        if (docsPanelRef.current) {
+          const doc = elementType && dslDocs[elementType] ? dslDocs[elementType] : null;
+          const titleEl = docsPanelRef.current.querySelector('.dsl-docs-title');
+          const syntaxEl = docsPanelRef.current.querySelector('.dsl-docs-syntax');
+
+          if (titleEl) titleEl.textContent = doc?.title || '';
+          if (syntaxEl) syntaxEl.textContent = doc?.syntax || '';
+        }
+      }, 50);
     }
   }, []);
 
@@ -206,13 +216,10 @@ export const DSLEditor = forwardRef<DSLEditorRef, DSLEditorProps>(function DSLEd
           indentWithTab={true}
         />
       </div>
-      {currentDoc && (
-        <div className="dsl-docs-panel" data-testid="dsl-docs-panel">
-          <span className="dsl-docs-title">{currentDoc.title}</span>
-          <code className="dsl-docs-syntax">{currentDoc.syntax}</code>
-          <span className="dsl-docs-desc">{currentDoc.description}</span>
-        </div>
-      )}
+      <div ref={docsPanelRef} className="dsl-docs-panel" data-testid="dsl-docs-panel">
+        <span className="dsl-docs-title"></span>
+        <code className="dsl-docs-syntax"></code>
+      </div>
     </div>
   );
 });
