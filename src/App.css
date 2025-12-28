@@ -453,7 +453,7 @@
 .delete-element-button {
   position: absolute;
   bottom: 100%;
-  right: 0;
+  left: 0;
   margin-bottom: 12px;
   padding: 10px 20px;
   font-size: 14px;
