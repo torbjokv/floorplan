@@ -721,11 +721,14 @@ const FloorplanRendererComponent = ({
 
       // Initialize start position on first move
       if (currentResizeState.startMouseX === 0 && currentResizeState.startMouseY === 0) {
-        setResizeState({
+        const updatedState = {
           ...currentResizeState,
           startMouseX: x,
           startMouseY: y,
-        });
+        };
+        // Update ref immediately so next mousemove can use the start position
+        resizeStateRef.current = updatedState;
+        setResizeState(updatedState);
         return;
       }
 
@@ -984,11 +987,14 @@ const FloorplanRendererComponent = ({
         currentObjectResizeState.startMouseX === 0 &&
         currentObjectResizeState.startMouseY === 0
       ) {
-        setObjectResizeState({
+        const updatedState = {
           ...currentObjectResizeState,
           startMouseX: x,
           startMouseY: y,
-        });
+        };
+        // Update ref immediately so next mousemove can use the start position
+        objectResizeStateRef.current = updatedState;
+        setObjectResizeState(updatedState);
         return;
       }
 
@@ -1308,11 +1314,14 @@ const FloorplanRendererComponent = ({
 
       // Initialize start position on first move
       if (currentState.startMouseX === 0 && currentState.startMouseY === 0) {
-        setFreestandingObjectResizeState({
+        const updatedState = {
           ...currentState,
           startMouseX: x,
           startMouseY: y,
-        });
+        };
+        // Update ref immediately so next mousemove can use the start position
+        freestandingObjectResizeStateRef.current = updatedState;
+        setFreestandingObjectResizeState(updatedState);
         return;
       }
 
@@ -1477,11 +1486,14 @@ const FloorplanRendererComponent = ({
 
       // Initialize start position on first move
       if (currentOffsetDragState.startMouseX === 0 && currentOffsetDragState.startMouseY === 0) {
-        setOffsetDragState({
+        const updatedState = {
           ...currentOffsetDragState,
           startMouseX: x,
           startMouseY: y,
-        });
+        };
+        // Update ref immediately so next mousemove can use the start position
+        offsetDragStateRef.current = updatedState;
+        setOffsetDragState(updatedState);
         return;
       }
 
@@ -1567,11 +1579,14 @@ const FloorplanRendererComponent = ({
 
       // Initialize start position on first move
       if (currentPartResizeState.startMouseX === 0 && currentPartResizeState.startMouseY === 0) {
-        setPartResizeState({
+        const updatedState = {
           ...currentPartResizeState,
           startMouseX: x,
           startMouseY: y,
-        });
+        };
+        // Update ref immediately so next mousemove can use the start position
+        partResizeStateRef.current = updatedState;
+        setPartResizeState(updatedState);
         return;
       }
 
@@ -1754,11 +1769,14 @@ const FloorplanRendererComponent = ({
         currentPartOffsetDragState.startMouseX === 0 &&
         currentPartOffsetDragState.startMouseY === 0
       ) {
-        setPartOffsetDragState({
+        const updatedState = {
           ...currentPartOffsetDragState,
           startMouseX: x,
           startMouseY: y,
-        });
+        };
+        // Update ref immediately so next mousemove can use the start position
+        partOffsetDragStateRef.current = updatedState;
+        setPartOffsetDragState(updatedState);
         return;
       }
 
