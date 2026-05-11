@@ -95,7 +95,7 @@
             uses: actions/configure-pages@v6
 
           - name: Upload build artifact
-            uses: actions/upload-pages-artifact@v4
+            uses: actions/upload-pages-artifact@v5
             with:
               path: './dist' # The directory where Vite outputs your build
 
