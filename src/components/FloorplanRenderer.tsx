@@ -2735,7 +2735,8 @@ const FloorplanRendererComponent = ({
           !partOffsetDragState &&
           roomMap[focusedElement.partId] &&
           (() => {
-            const parentRoom = data.rooms.find(r => r.id === focusedElement.roomId);
+            const focusedRoomId = focusedElement.roomId;
+            const parentRoom = data.rooms.find(r => r.id === focusedRoomId);
             const originalPart = parentRoom?.parts?.find(p => p.id === focusedElement.partId);
             if (!originalPart) return null;
 
@@ -2745,7 +2746,7 @@ const FloorplanRendererComponent = ({
             // Determine what the part is attached to (could be main room or another part)
             const attachToTarget = originalPart.attachTo?.split(':')[0];
             const resolvedAttachTarget = attachToTarget ? roomMap[attachToTarget] : null;
-            const resolvedParent = roomMap[focusedElement.roomId];
+            const resolvedParent = roomMap[focusedRoomId];
             const targetForValidation = resolvedAttachTarget || resolvedParent;
             if (!targetForValidation) return null;
 
@@ -2777,10 +2778,11 @@ const FloorplanRendererComponent = ({
                 room={resolvedPart}
                 originalRoom={originalPart as unknown as import('../types').Room}
                 mm={mm}
-                onOffsetDragStart={(partId, direction) =>
-                  handlePartOffsetDragStart(focusedElement.roomId, partId, direction)
-                }
-                onMouseEnter={() => setHoveredRoomId(focusedElement.roomId)}
+                onOffsetDragStart={(partId, direction) => {
+                  // eslint-disable-next-line react-hooks/refs
+                  handlePartOffsetDragStart(focusedRoomId, partId, direction);
+                }}
+                onMouseEnter={() => setHoveredRoomId(focusedRoomId)}
                 visible={true}
                 showDirections={showDirections}
               />
