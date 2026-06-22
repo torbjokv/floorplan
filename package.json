@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "npm run peggy:generate && vite",
     "build": "npm run peggy:generate && npm run lint && npm run format:check && tsc -b && vite build",
+    "ci-build": "npm run peggy:generate && tsc -b && vite build",
     "peggy:generate": "peggy src/floorplan.peggy -o src/floorplan-parser.js --format es",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
