@@ -1,0 +1,50 @@
+name: Autofix
+
+# Runs on Dependabot PRs to automatically apply lint and formatting fixes.
+# Uses autofix-ci/action which commits any changed files back to the PR branch.
+# pull_request_target is used so the workflow has write access to Dependabot branches,
+# which receive a read-only token with the plain pull_request event since Oct 2021.
+# Safe here because: (1) only runs for dependabot[bot], (2) no secrets are passed to
+# the checked-out code, (3) only runs deterministic lint/format tooling.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  autofix:
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v7
+        with:
+          # Check out the actual PR head (Dependabot branch in this repo)
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint autofix
+        # continue-on-error because some errors are not auto-fixable; the build
+        # workflow will catch anything that remains after this step.
+        run: npm run lint:fix
+        continue-on-error: true
+
+      - name: Run Prettier format
+        run: npm run format
+
+      - name: Commit fixes (if any)
+        uses: autofix-ci/action@v1
+        with:
+          commit-message: 'fix: autofix lint and formatting issues'

@@ -2778,6 +2778,7 @@ const FloorplanRendererComponent = ({
                 originalRoom={originalPart as unknown as import('../types').Room}
                 mm={mm}
                 onOffsetDragStart={(partId, direction) =>
+                  // eslint-disable-next-line react-hooks/refs -- screenToMM only reads svgRef inside event handlers, not during render
                   handlePartOffsetDragStart(focusedElement.roomId, partId, direction)
                 }
                 onMouseEnter={() => setHoveredRoomId(focusedElement.roomId)}
