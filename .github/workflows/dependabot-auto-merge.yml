@@ -3,12 +3,33 @@ name: Dependabot Auto-Merge
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - main
 
 permissions:
   pull-requests: write
   contents: write
 
 jobs:
+  rebase:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Rebase open Dependabot PRs
+        run: |
+          gh pr list \
+            --repo "$GITHUB_REPOSITORY" \
+            --author "app/dependabot" \
+            --state open \
+            --json number,mergeable \
+            --jq '.[] | select(.mergeable == "CONFLICTING") | .number' \
+          | xargs -r -I{} gh pr comment {} \
+              --repo "$GITHUB_REPOSITORY" \
+              --body "@dependabot rebase"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   auto-merge:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
@@ -20,16 +41,11 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Approve patch and minor updates
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
-        run: gh pr review --approve "$PR_URL"
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Enable auto-merge for patch and minor updates
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
-        run: gh pr merge --auto --squash "$PR_URL"
+      - name: Approve and enable auto-merge for patch and minor updates
+        if: contains(fromJSON('["version-update:semver-patch","version-update:semver-minor"]'), steps.metadata.outputs.update-type)
+        run: |
+          gh pr review --approve "$PR_URL"
+          gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
