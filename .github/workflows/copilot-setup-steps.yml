@@ -38,4 +38,4 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Build application
-        run: npm run build
+        run: npm run ci-build
