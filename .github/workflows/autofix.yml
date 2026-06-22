@@ -2,10 +2,17 @@ name: Autofix
 
 # Runs on Dependabot PRs to automatically apply lint and formatting fixes.
 # Uses autofix-ci/action which commits any changed files back to the PR branch.
-# pull_request_target is used so the workflow has write access to Dependabot branches,
-# which receive a read-only token with the plain pull_request event since Oct 2021.
-# Safe here because: (1) only runs for dependabot[bot], (2) no secrets are passed to
-# the checked-out code, (3) only runs deterministic lint/format tooling.
+#
+# Security notes:
+# - pull_request_target is required because GitHub gives Dependabot PRs a read-only
+#   token for the plain pull_request event (since Oct 2021), so write access would
+#   be unavailable for committing fixes.
+# - The job is gated on `github.actor == 'dependabot[bot]'` so only Dependabot
+#   pull requests ever reach the checkout step.
+# - Dependabot always creates branches in this repo (never forks), so the head ref
+#   being checked out is trusted first-party code.
+# - `npm ci --ignore-scripts` prevents any post-install scripts in the PR's
+#   dependency tree from executing in this privileged context.
 
 on:
   pull_request_target:
@@ -23,7 +30,7 @@ jobs:
       - name: Checkout PR branch
         uses: actions/checkout@v7
         with:
-          # Check out the actual PR head (Dependabot branch in this repo)
+          # Dependabot branches always live in this repo; this is not an external fork.
           ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Setup Node.js
@@ -33,7 +40,9 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        # --ignore-scripts prevents post-install scripts from running in this
+        # privileged workflow context (lint/format tools do not need them).
+        run: npm ci --ignore-scripts
 
       - name: Run ESLint autofix
         # continue-on-error because some errors are not auto-fixable; the build
