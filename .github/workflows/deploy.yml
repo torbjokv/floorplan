@@ -60,6 +60,80 @@
               path: test-results/
               retention-days: 30
 
+      lint-warnings-investigation:
+        runs-on: ubuntu-latest
+        continue-on-error: true
+
+        steps:
+          - name: Checkout code
+            uses: actions/checkout@v7
+
+          - name: Setup Node.js
+            uses: actions/setup-node@v6
+            with:
+              node-version: '20'
+              cache: 'npm'
+
+          - name: Install dependencies
+            run: npm ci
+
+          - name: Run lint and capture output
+            run: npm run lint | tee lint-output.txt
+
+          - name: Upload lint investigation artifact
+            if: always()
+            uses: actions/upload-artifact@v7
+            with:
+              name: lint-warnings-investigation
+              path: lint-output.txt
+              retention-days: 30
+
+      svg-rendering-investigation:
+        runs-on: ubuntu-latest
+        continue-on-error: true
+
+        steps:
+          - name: Checkout code
+            uses: actions/checkout@v7
+
+          - name: Setup Node.js
+            uses: actions/setup-node@v6
+            with:
+              node-version: '20'
+              cache: 'npm'
+
+          - name: Install dependencies
+            run: npm ci
+
+          - name: Install Playwright browsers
+            run: npx playwright install --with-deps chromium
+
+          - name: Build application
+            run: npm run ci-build
+
+          - name: Start preview server
+            run: npm run preview -- --host 127.0.0.1 &
+            env:
+              CI: true
+
+          - name: Wait for server
+            run: npx wait-on http://127.0.0.1:4173 --timeout 30000
+
+          - name: Run svg-rendering test
+            run: npm run test:svg-rendering
+            env:
+              BASE_URL: http://127.0.0.1:4173/floorplan/
+
+          - name: Upload svg-rendering investigation artifacts
+            if: always()
+            uses: actions/upload-artifact@v7
+            with:
+              name: svg-rendering-investigation
+              path: |
+                test-results/
+                playwright-report/
+              retention-days: 30
+
       deploy:
         needs: test
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
