@@ -63,6 +63,8 @@
       lint-warnings-investigation:
         runs-on: ubuntu-latest
         continue-on-error: true
+        permissions:
+          contents: read
 
         steps:
           - name: Checkout code
@@ -91,6 +93,8 @@
       svg-rendering-investigation:
         runs-on: ubuntu-latest
         continue-on-error: true
+        permissions:
+          contents: read
 
         steps:
           - name: Checkout code
