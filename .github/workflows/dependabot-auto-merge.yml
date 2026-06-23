@@ -37,6 +37,8 @@ jobs:
       contents: write
     env:
       BUILD_WORKFLOW_PATH: .github/workflows/deploy.yml
+      BUILD_WORKFLOW_EVENT: pull_request
+      BUILD_WORKFLOW_RUNS_PER_PAGE: "100"
       BUILD_POLL_ATTEMPTS: "90"
       BUILD_POLL_INTERVAL_SECONDS: "10"
 
@@ -58,9 +60,15 @@ jobs:
         if: contains(fromJSON('["version-update:semver-patch","version-update:semver-minor"]'), steps.metadata.outputs.update-type)
         run: |
           for attempt in $(seq 1 "$BUILD_POLL_ATTEMPTS"); do
-            workflow_runs=$(gh api "/repos/$GITHUB_REPOSITORY/actions/runs?event=pull_request&head_sha=$HEAD_SHA&per_page=20")
-            workflow_run=$(jq -c --arg workflow_path "$BUILD_WORKFLOW_PATH" '
-              [.workflow_runs[] | select(.path == $workflow_path)][0] // empty
+            workflow_runs=$(gh api "/repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$HEAD_SHA&per_page=$BUILD_WORKFLOW_RUNS_PER_PAGE")
+            workflow_run=$(jq -c --arg workflow_path "$BUILD_WORKFLOW_PATH" --arg workflow_event "$BUILD_WORKFLOW_EVENT" '
+              [
+                .workflow_runs[]
+                | select(.path == $workflow_path and .event == $workflow_event)
+              ]
+              | sort_by(.created_at)
+              | reverse
+              | .[0] // empty
             ' <<<"$workflow_runs")
 
             if [ -z "$workflow_run" ]; then
