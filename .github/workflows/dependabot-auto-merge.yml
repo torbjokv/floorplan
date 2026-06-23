@@ -60,14 +60,12 @@ jobs:
         if: contains(fromJSON('["version-update:semver-patch","version-update:semver-minor"]'), steps.metadata.outputs.update-type)
         run: |
           for attempt in $(seq 1 "$BUILD_POLL_ATTEMPTS"); do
-            workflow_runs=$(gh api "/repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$HEAD_SHA&per_page=$BUILD_WORKFLOW_RUNS_PER_PAGE")
+            workflow_runs=$(gh api --paginate --slurp "/repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$HEAD_SHA&per_page=$BUILD_WORKFLOW_RUNS_PER_PAGE")
             workflow_run=$(jq -c --arg workflow_path "$BUILD_WORKFLOW_PATH" --arg workflow_event "$BUILD_WORKFLOW_EVENT" '
               [
-                .workflow_runs[]
+                .[].workflow_runs[]
                 | select(.path == $workflow_path and .event == $workflow_event)
               ]
-              | sort_by(.created_at)
-              | reverse
               | .[0] // empty
             ' <<<"$workflow_runs")
 
