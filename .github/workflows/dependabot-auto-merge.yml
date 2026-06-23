@@ -35,6 +35,10 @@ jobs:
       actions: read
       pull-requests: write
       contents: write
+    env:
+      BUILD_WORKFLOW_PATH: .github/workflows/deploy.yml
+      BUILD_POLL_ATTEMPTS: "90"
+      BUILD_POLL_INTERVAL_SECONDS: "10"
 
     steps:
       - name: Fetch Dependabot metadata
@@ -53,19 +57,15 @@ jobs:
       - name: Wait for PR build workflow to succeed
         if: contains(fromJSON('["version-update:semver-patch","version-update:semver-minor"]'), steps.metadata.outputs.update-type)
         run: |
-          workflow_path=".github/workflows/deploy.yml"
-          max_attempts=90
-          sleep_seconds=10
-
-          for attempt in $(seq 1 "$max_attempts"); do
+          for attempt in $(seq 1 "$BUILD_POLL_ATTEMPTS"); do
             workflow_runs=$(gh api "/repos/$GITHUB_REPOSITORY/actions/runs?event=pull_request&head_sha=$HEAD_SHA&per_page=20")
-            workflow_run=$(jq -c --arg workflow_path "$workflow_path" '
+            workflow_run=$(jq -c --arg workflow_path "$BUILD_WORKFLOW_PATH" '
               [.workflow_runs[] | select(.path == $workflow_path)][0] // empty
             ' <<<"$workflow_runs")
 
             if [ -z "$workflow_run" ]; then
-              echo "Waiting for PR build workflow to start for $HEAD_SHA (attempt $attempt/$max_attempts)"
-              sleep "$sleep_seconds"
+              echo "Waiting for PR build workflow to start for $HEAD_SHA (attempt $attempt/$BUILD_POLL_ATTEMPTS)"
+              sleep "$BUILD_POLL_INTERVAL_SECONDS"
               continue
             fi
 
@@ -74,8 +74,8 @@ jobs:
             run_url=$(jq -r '.html_url' <<<"$workflow_run")
 
             if [ "$status" != "completed" ]; then
-              echo "Waiting for PR build workflow to complete: $run_url ($status, attempt $attempt/$max_attempts)"
-              sleep "$sleep_seconds"
+              echo "Waiting for PR build workflow to complete: $run_url ($status, attempt $attempt/$BUILD_POLL_ATTEMPTS)"
+              sleep "$BUILD_POLL_INTERVAL_SECONDS"
               continue
             fi
 
@@ -88,7 +88,7 @@ jobs:
             exit 1
           done
 
-          echo "Timed out waiting for PR build workflow on $HEAD_SHA after $max_attempts attempts"
+          echo "Timed out waiting for PR build workflow on $HEAD_SHA after $BUILD_POLL_ATTEMPTS attempts"
           exit 1
         env:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
