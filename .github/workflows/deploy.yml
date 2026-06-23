@@ -8,7 +8,10 @@
         branches:
           - main
       workflow_dispatch: # Allows manual triggering of the workflow
-
+    
+    env:
+      NODE_VERSION: '20'
+    
     jobs:
       test:
         runs-on: ubuntu-latest
@@ -23,7 +26,7 @@
           - name: Setup Node.js
             uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
             with:
-              node-version: '20'
+              node-version: ${{ env.NODE_VERSION }}
               cache: 'npm'
 
           - name: Install dependencies
@@ -75,7 +78,7 @@
           - name: Setup Node.js
             uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
             with:
-              node-version: '20'
+              node-version: ${{ env.NODE_VERSION }}
               cache: 'npm'
 
           - name: Install dependencies
@@ -105,7 +108,7 @@
           - name: Setup Node.js
             uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
             with:
-              node-version: '20'
+              node-version: ${{ env.NODE_VERSION }}
               cache: 'npm'
 
           - name: Install dependencies
@@ -156,11 +159,11 @@
           - name: Set up Node.js
             uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
             with:
-              node-version: '22' # Or your preferred Node.js version
+              node-version: ${{ env.NODE_VERSION }}
               cache: 'npm'
 
           - name: Install dependencies
-            run: npm install
+            run: npm ci
 
           - name: Run ESLint
             run: npm run lint
