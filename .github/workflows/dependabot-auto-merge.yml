@@ -32,6 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request_target' && github.event.pull_request.user.login == 'dependabot[bot]'
     permissions:
+      actions: read
       pull-requests: write
       contents: write
 
@@ -42,11 +43,59 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Approve and enable auto-merge for patch and minor updates
+      - name: Approve patch and minor updates
+        if: contains(fromJSON('["version-update:semver-patch","version-update:semver-minor"]'), steps.metadata.outputs.update-type)
+        run: gh pr review --approve "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wait for PR build workflow to succeed
         if: contains(fromJSON('["version-update:semver-patch","version-update:semver-minor"]'), steps.metadata.outputs.update-type)
         run: |
-          gh pr review --approve "$PR_URL"
-          gh pr merge --auto --squash "$PR_URL"
+          workflow_path=".github/workflows/deploy.yml"
+
+          for attempt in {1..90}; do
+            workflow_runs=$(gh api "/repos/$GITHUB_REPOSITORY/actions/runs?event=pull_request&head_sha=$HEAD_SHA&per_page=20")
+            workflow_run=$(jq -c --arg workflow_path "$workflow_path" '
+              [.workflow_runs[] | select(.path == $workflow_path)][0] // empty
+            ' <<<"$workflow_runs")
+
+            if [ -z "$workflow_run" ]; then
+              echo "Waiting for PR build workflow to start for $HEAD_SHA"
+              sleep 10
+              continue
+            fi
+
+            status=$(jq -r '.status' <<<"$workflow_run")
+            conclusion=$(jq -r '.conclusion // empty' <<<"$workflow_run")
+            run_url=$(jq -r '.html_url' <<<"$workflow_run")
+
+            if [ "$status" != "completed" ]; then
+              echo "Waiting for PR build workflow to complete: $run_url ($status)"
+              sleep 10
+              continue
+            fi
+
+            if [ "$conclusion" = "success" ]; then
+              echo "PR build workflow succeeded: $run_url"
+              exit 0
+            fi
+
+            echo "PR build workflow did not succeed: $run_url ($conclusion)"
+            exit 1
+          done
+
+          echo "Timed out waiting for PR build workflow on $HEAD_SHA"
+          exit 1
         env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge patch and minor updates after green build
+        if: contains(fromJSON('["version-update:semver-patch","version-update:semver-minor"]'), steps.metadata.outputs.update-type)
+        run: gh pr merge --squash --match-head-commit "$HEAD_SHA" "$PR_URL"
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
