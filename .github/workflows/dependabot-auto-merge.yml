@@ -39,7 +39,7 @@ jobs:
       BUILD_WORKFLOW_PATH: .github/workflows/deploy.yml
       BUILD_WORKFLOW_EVENT: pull_request
       BUILD_WORKFLOW_RUNS_PER_PAGE: "100"
-      BUILD_POLL_ATTEMPTS: "90"
+      BUILD_POLL_ATTEMPTS: "180"
       BUILD_POLL_INTERVAL_SECONDS: "10"
 
     steps:
@@ -66,6 +66,10 @@ jobs:
               [ .[].workflows[] | select(.path == $workflow_path) | .id ][0] // empty
             ')
 
+          if [ -z "$workflow_id" ]; then
+            echo "Could not find workflow with path '$BUILD_WORKFLOW_PATH' in $GITHUB_REPOSITORY"
+            exit 1
+          fi
           for attempt in $(seq 1 "$BUILD_POLL_ATTEMPTS"); do
             workflow_runs=$(gh api --paginate --slurp "/repos/$GITHUB_REPOSITORY/actions/workflows/$workflow_id/runs?head_sha=$HEAD_SHA&per_page=$BUILD_WORKFLOW_RUNS_PER_PAGE")
             workflow_run=$(jq -c --arg workflow_event "$BUILD_WORKFLOW_EVENT" '
