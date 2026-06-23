@@ -71,11 +71,12 @@ jobs:
             exit 1
           fi
           for attempt in $(seq 1 "$BUILD_POLL_ATTEMPTS"); do
-            workflow_runs=$(gh api --paginate --slurp "/repos/$GITHUB_REPOSITORY/actions/workflows/$workflow_id/runs?head_sha=$HEAD_SHA&per_page=$BUILD_WORKFLOW_RUNS_PER_PAGE")
-            workflow_run=$(jq -c --arg workflow_event "$BUILD_WORKFLOW_EVENT" '
+            workflow_runs=$(gh api --paginate --slurp \
+              "/repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$HEAD_SHA&per_page=$BUILD_WORKFLOW_RUNS_PER_PAGE")
+            workflow_run=$(jq -c --arg workflow_path "$BUILD_WORKFLOW_PATH" --arg workflow_event "$BUILD_WORKFLOW_EVENT" '
               [
                 .[].workflow_runs[]
-                | select(.event == $workflow_event)
+                | select(.path == $workflow_path and .event == $workflow_event)
               ]
               | .[0] // empty
             ' <<<"$workflow_runs")
