@@ -73,13 +73,13 @@ jobs:
           for attempt in $(seq 1 "$BUILD_POLL_ATTEMPTS"); do
             workflow_runs=$(gh api --paginate --slurp \
               "/repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$HEAD_SHA&per_page=$BUILD_WORKFLOW_RUNS_PER_PAGE")
-            workflow_run=$(jq -c --arg workflow_path "$BUILD_WORKFLOW_PATH" --arg workflow_event "$BUILD_WORKFLOW_EVENT" '
-              [
-                .[].workflow_runs[]
-                | select(.path == $workflow_path and .event == $workflow_event)
-              ]
-              | .[0] // empty
-            ' <<<"$workflow_runs")
+workflow_run=$(jq -c --argjson workflow_id "$workflow_id" --arg workflow_event "$BUILD_WORKFLOW_EVENT" '
+  [
+    .[].workflow_runs[]
+    | select(.workflow_id == $workflow_id and .event == $workflow_event)
+  ]
+  | .[0] // empty
+' <<<"$workflow_runs")
 
             if [ -z "$workflow_run" ]; then
               echo "Waiting for PR build workflow to start for $HEAD_SHA (attempt $attempt/$BUILD_POLL_ATTEMPTS)"
