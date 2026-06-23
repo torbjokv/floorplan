@@ -32,8 +32,15 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request_target' && github.event.pull_request.user.login == 'dependabot[bot]'
     permissions:
+      actions: read
       pull-requests: write
       contents: write
+    env:
+      BUILD_WORKFLOW_PATH: .github/workflows/deploy.yml
+      BUILD_WORKFLOW_EVENT: pull_request
+      BUILD_WORKFLOW_RUNS_PER_PAGE: "100"
+      BUILD_POLL_ATTEMPTS: "180"
+      BUILD_POLL_INTERVAL_SECONDS: "10"
 
     steps:
       - name: Fetch Dependabot metadata
@@ -42,11 +49,73 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Approve and enable auto-merge for patch and minor updates
+      - name: Approve patch and minor updates
+        if: contains(fromJSON('["version-update:semver-patch","version-update:semver-minor"]'), steps.metadata.outputs.update-type)
+        run: gh pr review --approve "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wait for PR build workflow to succeed
         if: contains(fromJSON('["version-update:semver-patch","version-update:semver-minor"]'), steps.metadata.outputs.update-type)
         run: |
-          gh pr review --approve "$PR_URL"
-          gh pr merge --auto --squash "$PR_URL"
+          set -euo pipefail
+
+          workflow_id=$(gh api --paginate --slurp "/repos/$GITHUB_REPOSITORY/actions/workflows" \
+            | jq -r --arg workflow_path "$BUILD_WORKFLOW_PATH" '
+              [ .[].workflows[] | select(.path == $workflow_path) | .id ][0] // empty
+            ')
+
+          if [ -z "$workflow_id" ]; then
+            echo "Could not find workflow with path '$BUILD_WORKFLOW_PATH' in $GITHUB_REPOSITORY"
+            exit 1
+          fi
+          for attempt in $(seq 1 "$BUILD_POLL_ATTEMPTS"); do
+            workflow_runs=$(gh api --paginate --slurp \
+              "/repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$HEAD_SHA&per_page=$BUILD_WORKFLOW_RUNS_PER_PAGE")
+workflow_run=$(jq -c --argjson workflow_id "$workflow_id" --arg workflow_event "$BUILD_WORKFLOW_EVENT" '
+  [
+    .[].workflow_runs[]
+    | select(.workflow_id == $workflow_id and .event == $workflow_event)
+  ]
+  | .[0] // empty
+' <<<"$workflow_runs")
+
+            if [ -z "$workflow_run" ]; then
+              echo "Waiting for PR build workflow to start for $HEAD_SHA (attempt $attempt/$BUILD_POLL_ATTEMPTS)"
+              sleep "$BUILD_POLL_INTERVAL_SECONDS"
+              continue
+            fi
+
+            status=$(jq -r '.status' <<<"$workflow_run")
+            conclusion=$(jq -r '.conclusion // empty' <<<"$workflow_run")
+            run_url=$(jq -r '.html_url' <<<"$workflow_run")
+
+            if [ "$status" != "completed" ]; then
+              echo "Waiting for PR build workflow to complete: $run_url ($status, attempt $attempt/$BUILD_POLL_ATTEMPTS)"
+              sleep "$BUILD_POLL_INTERVAL_SECONDS"
+              continue
+            fi
+
+            if [ "$conclusion" = "success" ]; then
+              echo "PR build workflow succeeded: $run_url"
+              exit 0
+            fi
+
+            echo "PR build workflow did not succeed: $run_url ($conclusion)"
+            exit 1
+          done
+
+          echo "Timed out waiting for PR build workflow on $HEAD_SHA after $BUILD_POLL_ATTEMPTS attempts"
+          exit 1
         env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge patch and minor updates after green build
+        if: contains(fromJSON('["version-update:semver-patch","version-update:semver-minor"]'), steps.metadata.outputs.update-type)
+        run: gh pr merge --squash --match-head-commit "$HEAD_SHA" "$PR_URL"
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
