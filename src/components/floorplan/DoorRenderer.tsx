@@ -299,7 +299,7 @@ export function DoorRenderer({
           ? mouseX - resizeStateRef.current.startMouseX
           : mouseY - resizeStateRef.current.startMouseY;
 
-        let newWidth = resizeStateRef.current.startWidth;
+        let newWidth: number;
         let newOffset = resizeStateRef.current.startOffset;
 
         if (resizeEnd === 'start') {

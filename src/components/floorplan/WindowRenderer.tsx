@@ -266,7 +266,7 @@ export function WindowRenderer({
           ? mouseX - resizeStateRef.current.startMouseX
           : mouseY - resizeStateRef.current.startMouseY;
 
-        let newWidth = resizeStateRef.current.startWidth;
+        let newWidth: number;
         let newOffset = resizeStateRef.current.startOffset;
 
         if (end === 'start') {
@@ -367,15 +367,13 @@ export function WindowRenderer({
 
   // Calculate position and rotation based on wall
   let posX: number, posY: number, rotation: number;
-  let rectX = 0,
-    rectY = 0;
+  let rectY = 0;
 
   // If dragging with no snap, show at cursor position (freestanding preview)
   if (isDragging && !snappedWall) {
     posX = mm(currentX);
     posY = mm(currentY);
     rotation = 0;
-    rectX = 0;
     rectY = -d / 2; // Center vertically
   } else {
     // Wall-attached positioning
@@ -384,7 +382,6 @@ export function WindowRenderer({
         posX = mm(activeRoom.x);
         posY = mm(activeRoom.y) + offset;
         rotation = 90;
-        rectX = 0; // Window extends into room (rightward)
         rectY = -d; // Shift up by thickness
         break;
 
@@ -392,7 +389,6 @@ export function WindowRenderer({
         posX = mm(activeRoom.x + activeRoom.width);
         posY = mm(activeRoom.y) + offset;
         rotation = 90;
-        rectX = 0; // Window extends into room (leftward)
         rectY = 0; // Shift up by thickness
         break;
 
@@ -400,7 +396,6 @@ export function WindowRenderer({
         posX = mm(activeRoom.x) + offset;
         posY = mm(activeRoom.y);
         rotation = 0;
-        rectX = 0;
         rectY = 0; // Window extends into room (downward)
         break;
 
@@ -408,7 +403,6 @@ export function WindowRenderer({
         posX = mm(activeRoom.x) + offset;
         posY = mm(activeRoom.y + activeRoom.depth);
         rotation = 0;
-        rectX = 0;
         rectY = -d; // Window extends into room (upward)
         break;
 
@@ -438,7 +432,7 @@ export function WindowRenderer({
       style={{ cursor: isDragging ? 'grabbing' : onDragUpdate ? 'grab' : 'pointer' }}
     >
       <rect
-        x={rectX}
+        x={0}
         y={rectY}
         width={w}
         height={d}
