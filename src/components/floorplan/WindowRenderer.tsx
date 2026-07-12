@@ -267,7 +267,7 @@ export function WindowRenderer({
           : mouseY - resizeStateRef.current.startMouseY;
 
         let newWidth: number;
-        let newOffset = resizeStateRef.current.startOffset;
+        let newOffset: number;
 
         if (end === 'start') {
           // Dragging start handle - adjust both offset and width
@@ -275,6 +275,7 @@ export function WindowRenderer({
           newWidth = resizeStateRef.current.startWidth - delta;
         } else {
           // Dragging end handle - only adjust width
+          newOffset = resizeStateRef.current.startOffset;
           newWidth = resizeStateRef.current.startWidth + delta;
         }
 
@@ -367,7 +368,7 @@ export function WindowRenderer({
 
   // Calculate position and rotation based on wall
   let posX: number, posY: number, rotation: number;
-  let rectY = 0;
+  let rectY: number;
 
   // If dragging with no snap, show at cursor position (freestanding preview)
   if (isDragging && !snappedWall) {
