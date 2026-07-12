@@ -299,8 +299,8 @@ export function DoorRenderer({
           ? mouseX - resizeStateRef.current.startMouseX
           : mouseY - resizeStateRef.current.startMouseY;
 
-        let newWidth = resizeStateRef.current.startWidth;
-        let newOffset = resizeStateRef.current.startOffset;
+        let newWidth: number;
+        let newOffset: number;
 
         if (resizeEnd === 'start') {
           // Dragging start handle - adjust both offset and width
@@ -308,6 +308,7 @@ export function DoorRenderer({
           newWidth = resizeStateRef.current.startWidth - delta;
         } else {
           // Dragging end handle - only adjust width
+          newOffset = resizeStateRef.current.startOffset;
           newWidth = resizeStateRef.current.startWidth + delta;
         }
 

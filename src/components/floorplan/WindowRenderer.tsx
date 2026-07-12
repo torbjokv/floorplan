@@ -266,8 +266,8 @@ export function WindowRenderer({
           ? mouseX - resizeStateRef.current.startMouseX
           : mouseY - resizeStateRef.current.startMouseY;
 
-        let newWidth = resizeStateRef.current.startWidth;
-        let newOffset = resizeStateRef.current.startOffset;
+        let newWidth: number;
+        let newOffset: number;
 
         if (end === 'start') {
           // Dragging start handle - adjust both offset and width
@@ -275,6 +275,7 @@ export function WindowRenderer({
           newWidth = resizeStateRef.current.startWidth - delta;
         } else {
           // Dragging end handle - only adjust width
+          newOffset = resizeStateRef.current.startOffset;
           newWidth = resizeStateRef.current.startWidth + delta;
         }
 
@@ -367,15 +368,13 @@ export function WindowRenderer({
 
   // Calculate position and rotation based on wall
   let posX: number, posY: number, rotation: number;
-  let rectX = 0,
-    rectY = 0;
+  let rectY: number;
 
   // If dragging with no snap, show at cursor position (freestanding preview)
   if (isDragging && !snappedWall) {
     posX = mm(currentX);
     posY = mm(currentY);
     rotation = 0;
-    rectX = 0;
     rectY = -d / 2; // Center vertically
   } else {
     // Wall-attached positioning
@@ -384,7 +383,6 @@ export function WindowRenderer({
         posX = mm(activeRoom.x);
         posY = mm(activeRoom.y) + offset;
         rotation = 90;
-        rectX = 0; // Window extends into room (rightward)
         rectY = -d; // Shift up by thickness
         break;
 
@@ -392,7 +390,6 @@ export function WindowRenderer({
         posX = mm(activeRoom.x + activeRoom.width);
         posY = mm(activeRoom.y) + offset;
         rotation = 90;
-        rectX = 0; // Window extends into room (leftward)
         rectY = 0; // Shift up by thickness
         break;
 
@@ -400,7 +397,6 @@ export function WindowRenderer({
         posX = mm(activeRoom.x) + offset;
         posY = mm(activeRoom.y);
         rotation = 0;
-        rectX = 0;
         rectY = 0; // Window extends into room (downward)
         break;
 
@@ -408,7 +404,6 @@ export function WindowRenderer({
         posX = mm(activeRoom.x) + offset;
         posY = mm(activeRoom.y + activeRoom.depth);
         rotation = 0;
-        rectX = 0;
         rectY = -d; // Window extends into room (upward)
         break;
 
@@ -438,7 +433,7 @@ export function WindowRenderer({
       style={{ cursor: isDragging ? 'grabbing' : onDragUpdate ? 'grab' : 'pointer' }}
     >
       <rect
-        x={rectX}
+        x={0}
         y={rectY}
         width={w}
         height={d}
@@ -541,7 +536,7 @@ export function WindowRenderer({
       {/* Resize handles (shown when focused, not when dragging) */}
       {showButtons && onResizeUpdate && (
         <DoorWindowResizeHandles
-          x={rectX}
+          x={0}
           y={rectY}
           width={w}
           thickness={d}
