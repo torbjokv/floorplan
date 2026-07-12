@@ -58,7 +58,7 @@
     "peggy": "^5.0.6",
     "prettier": "^3.8.4",
     "ts-node": "^10.9.2",
-    "typescript": "~5.9.3",
+    "typescript": "~6.0.3",
     "typescript-eslint": "^8.61.1",
     "vite": "^8.0.16",
     "vitest": "^4.1.9",
