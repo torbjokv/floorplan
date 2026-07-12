@@ -46,11 +46,7 @@ export interface Room {
 
 export type WallPosition = 'top' | 'bottom' | 'left' | 'right';
 export type SwingDirection =
-  | 'inwards-left'
-  | 'inwards-right'
-  | 'outwards-left'
-  | 'outwards-right'
-  | 'opening'; // No door blade, just the opening
+  'inwards-left' | 'inwards-right' | 'outwards-left' | 'outwards-right' | 'opening'; // No door blade, just the opening
 
 export interface Door {
   room?: string; // Format: "RoomName:wall" e.g., "Living Room:left". Undefined if freestanding.
