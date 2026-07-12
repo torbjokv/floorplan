@@ -535,7 +535,7 @@ export function WindowRenderer({
       {/* Resize handles (shown when focused, not when dragging) */}
       {showButtons && onResizeUpdate && (
         <DoorWindowResizeHandles
-          x={rectX}
+          x={0}
           y={rectY}
           width={w}
           thickness={d}
