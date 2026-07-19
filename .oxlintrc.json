@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "react", "react-hooks"],
+  "categories": {
+    "correctness": "error"
+  },
+  "ignorePatterns": ["src/floorplan-parser.js", "dist/**", "coverage/**"],
+  "rules": {
+    "no-unused-vars": [
+      "warn",
+      {
+        "vars": "all",
+        "varsIgnorePattern": "^_",
+        "args": "after-used",
+        "argsIgnorePattern": "^_"
+      }
+    ],
+    "react-hooks/exhaustive-deps": "warn"
+  },
+  "env": {
+    "builtin": true,
+    "browser": true
+  }
+}
