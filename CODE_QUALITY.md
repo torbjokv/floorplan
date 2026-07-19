@@ -21,7 +21,7 @@ npm run format:check
 - 100 character line width
 - 2 space indentation
 
-### Linting (ESLint)
+### Linting (Oxlint)
 
 ```bash
 # Check for linting issues
@@ -31,7 +31,7 @@ npm run lint
 npm run lint:fix
 ```
 
-**Configuration**: [eslint.config.js](eslint.config.js)
+**Configuration**: [.oxlintrc.json](.oxlintrc.json)
 
 **Checks for**:
 
@@ -66,7 +66,7 @@ npm run validate
 
 This command runs:
 
-1. ESLint checks
+1. Oxlint checks
 2. Prettier format validation
 3. Full Cucumber test suite (121 scenarios)
 
@@ -79,7 +79,7 @@ npm run build
 
 The build process:
 
-1. Runs ESLint
+1. Runs Oxlint
 2. Checks code formatting
 3. Compiles TypeScript
 4. Builds with Vite
@@ -96,7 +96,7 @@ npm install --save-dev husky lint-staged
 
 # Add to package.json:
 "lint-staged": {
-  "*.{ts,tsx}": ["prettier --write", "eslint --fix"],
+  "*.{ts,tsx}": ["prettier --write", "oxlint --fix"],
   "*.{json,css,md}": ["prettier --write"]
 }
 ```
@@ -105,7 +105,7 @@ npm install --save-dev husky lint-staged
 
 **VS Code**: Install these extensions for real-time feedback:
 
-- ESLint (dbaeumer.vscode-eslint)
+- Oxlint (oxc-project.oxc) — fast Rust-based linter
 - Prettier (esbenp.prettier-vscode)
 
 Add to `.vscode/settings.json`:
@@ -115,7 +115,7 @@ Add to `.vscode/settings.json`:
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true
+    "source.fixAll.oxc": true
   }
 }
 ```

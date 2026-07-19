@@ -2,7 +2,6 @@ const config = {
   default: {
     paths: ['tests/features/**/*.feature'],
     import: ['tests/support/**/*.ts', 'tests/step-definitions/**/*.ts'],
-    requireModule: ['ts-node/register'],
     format: [
       'progress-bar',
       'html:test-results/cucumber-report.html',
