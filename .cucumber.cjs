@@ -2,7 +2,6 @@ module.exports = {
   default: {
     // paths removed - specify on command line for better control
     import: ['tests/support/**/*.ts', 'tests/step-definitions/**/*.ts'],
-    loader: ['ts-node/esm'],
     format: [
       'progress-bar',
       'html:test-results/cucumber-report.html',
