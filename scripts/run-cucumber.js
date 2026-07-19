@@ -13,18 +13,12 @@ const cucumberArgs = [
 ];
 
 // Base Node options
-const nodeOptions = [
-  '--loader',
-  'ts-node/esm',
-  '--experimental-specifier-resolution=node',
-  '--no-warnings',
-];
+const nodeOptions = ['--import', 'tsx', '--no-warnings'];
 
 // Inherit environment and customize per run
 const env = {
   ...process.env,
   NODE_OPTIONS: nodeOptions.join(' '),
-  TS_NODE_PROJECT: 'tsconfig.cucumber.json',
 };
 
 // Spawn cucumber-js via npx

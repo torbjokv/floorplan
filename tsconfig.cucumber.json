@@ -14,11 +14,6 @@
     "outDir": "./dist-tests",
     "rootDir": "."
   },
-  "ts-node": {
-    "esm": true,
-    "experimentalSpecifierResolution": "node",
-    "transpileOnly": true
-  },
   "include": ["tests/**/*.ts"],
   "exclude": ["node_modules", "dist", "dist-tests"]
 }
