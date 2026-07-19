@@ -13,11 +13,7 @@ const cucumberArgs = [
 ];
 
 // Base Node options
-const nodeOptions = [
-  '--import',
-  'tsx',
-  '--no-warnings',
-];
+const nodeOptions = ['--import', 'tsx', '--no-warnings'];
 
 // Inherit environment and customize per run
 const env = {
