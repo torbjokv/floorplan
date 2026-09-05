@@ -114,7 +114,7 @@ jobs:
 
       - name: Merge patch and minor updates after green build
         if: contains(fromJSON('["version-update:semver-patch","version-update:semver-minor"]'), steps.metadata.outputs.update-type)
-        run: gh pr merge --squash --match-head-commit "$HEAD_SHA" "$PR_URL"
+        run: gh pr merge --squash --auto --match-head-commit "$HEAD_SHA" "$PR_URL"
         env:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_URL: ${{ github.event.pull_request.html_url }}
